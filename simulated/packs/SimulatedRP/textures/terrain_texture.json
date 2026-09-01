@@ -12,7 +12,7 @@
       "textures": "textures/create/common/blocks/mechanical_bearing_side"
     },
     "create:andesite_casing": {
-      "textures": "textures/create/common/blocks/andesite_casing"
+      "textures": "textures/create/common/blocks/casing/andesite_casing"
     }
   }
 }
