@@ -17,7 +17,6 @@
         "keep_ratio": false
     },
     "slider_button_hover@physics_assembler.slider_button_default": {
-        "color": [1.0, 0.92, 0.7]
     },
     "slider_button_locked@physics_assembler.slider_button_default": {
         "alpha": 0.65
