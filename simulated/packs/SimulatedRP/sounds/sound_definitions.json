@@ -43,6 +43,16 @@
         "sounds/simulated/common/machines/physics_assembler/tick_3",
         "sounds/simulated/common/machines/physics_assembler/tick_4"
       ]
+    },
+    "ui.button_release": {
+      "category": "ui",
+      "sounds": [
+        {
+          "name": "sounds/simulated/common/ui/button_release",
+          "volume": 1,
+          "load_on_low_memory": true
+        }
+      ]
     }
   }
 }
