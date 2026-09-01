@@ -38,9 +38,4 @@ subtitles.block.physics_assembler.tick=物理组装器：咔哒
 
 #simulated.prevent_disassembly=已阻止通过非主物理组装器拆卸
 
-#simulated.subtitle.block.physics_assembler.assemble=物理结构：开始移动
-#simulated.subtitle.block.physics_assembler.disassemble=物理结构：停止
-#simulated.subtitle.block.physics_assembler.fail=物理组装器：组装失败
-#simulated.subtitle.block.physics_assembler.tick=物理组装器：咔哒
-
 #stat.simulated.interact_with_assembler=与物理组装器交互次数
