@@ -1,7 +1,4 @@
 tile.simulated:physics_assembler.name=Physics Assembler
-physics_assembler.title=Physics Assembler
-physics_assembler.lever.text=Lever position
-physics_assembler.confirm.text=Confirm
 
 subtitles.block.physics_assembler.assemble=Simulated Contraption moves
 subtitles.block.physics_assembler.disassemble=Simulated Contraption stops

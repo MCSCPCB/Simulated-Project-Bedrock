@@ -1,7 +1,4 @@
 tile.simulated:physics_assembler.name=物理组装器
-physics_assembler.title=物理组装器
-physics_assembler.lever.text=拉杆位置
-physics_assembler.confirm.text=确认
 
 subtitles.block.physics_assembler.assemble=物理结构：开始移动
 subtitles.block.physics_assembler.disassemble=物理结构：停止
