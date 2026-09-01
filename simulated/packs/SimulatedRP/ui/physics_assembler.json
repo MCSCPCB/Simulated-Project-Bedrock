@@ -3,7 +3,7 @@
 
     "assembler_button_image": {
         "type": "image",
-        "texture": "textures/ui/simulated/machines/assembler",
+        "texture": "textures/ui/simulated/empty",
         "uv": [14, 0],
         "uv_size": [18, 14],
         "keep_ratio": false
@@ -183,7 +183,8 @@
         "$button_text": "",
         "$button_text_binding_type": "none",
         "$pressed_button_name": "button.submit_custom_form",
-        "size": ["21px", "16px"],
+        "size": ["100%", "100%"],
+        "alpha": 0,
         "sound_name": "block.physics_assembler.shift",
         "sound_volume": 0.7,
         "sound_pitch": 1.0
@@ -195,20 +196,6 @@
         "anchor_from": "center",
         "anchor_to": "center",
         "controls": [
-            {
-                "submit_button@physics_assembler.submit_button": {
-                    "anchor_from": "top_middle",
-                    "anchor_to": "top_middle",
-                    "offset": [0, 0],
-                    "size": ["21px", "16px"],
-                    "bindings": [
-                        {
-                            "binding_name": "#submit_button_visible",
-                            "binding_name_override": "#visible"
-                        }
-                    ]
-                }
-            },
             {
                 "generated_form@physics_assembler.generated_contents": {
                     "anchor_from": "top_middle",
@@ -238,9 +225,23 @@
         ],
         "controls": [
             {
+                "submit_button@physics_assembler.submit_button": {
+                    "anchor_from": "center",
+                    "anchor_to": "center",
+                    "layer": 0,
+                    "bindings": [
+                        {
+                            "binding_name": "#submit_button_visible",
+                            "binding_name_override": "#visible"
+                        }
+                    ]
+                }
+            },
+            {
                 "physics_assembler_content@physics_assembler.physics_assembler_content": {
                     "anchor_from": "center",
                     "anchor_to": "center",
+                    "layer": 2,
                     "offset": [24, -10]
                 }
             }
