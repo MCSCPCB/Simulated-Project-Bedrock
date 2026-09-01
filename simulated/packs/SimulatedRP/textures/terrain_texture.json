@@ -1,0 +1,18 @@
+{
+  "resource_pack_name": "simulated",
+  "texture_name": "atlas.terrain",
+  "texture_data": {
+    "simulated:physics_assembler": {
+      "textures": "textures/simulated/common/blocks/physics_assembler"
+    },
+    "create:bearing_top": {
+      "textures": "textures/create/common/blocks/bearing_top"
+    },
+    "create:mechanical_bearing_side": {
+      "textures": "textures/create/common/blocks/mechanical_bearing_side"
+    },
+    "create:andesite_casing": {
+      "textures": "textures/create/common/blocks/andesite_casing"
+    }
+  }
+}

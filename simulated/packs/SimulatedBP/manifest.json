@@ -1,0 +1,24 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Simulated Physics Assembler Behavior",
+    "description": "Behavior pack container for the Physics Assembler.",
+    "uuid": "8d58f9b5-4e65-4e5e-9f8d-5a6f9f8c1e21",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 26, 40]
+  },
+  "modules": [
+    {
+      "description": "Physics Assembler behavior data",
+      "type": "data",
+      "uuid": "d80ab548-6b91-4e0b-b5b4-1a20a8eb4a8b",
+      "version": [1, 0, 0]
+    }
+  ],
+  "dependencies": [
+    {
+      "uuid": "31eeb6c9-1e43-4931-8bdc-55b32dddf2e4",
+      "version": [1, 0, 0]
+    }
+  ]
+}
