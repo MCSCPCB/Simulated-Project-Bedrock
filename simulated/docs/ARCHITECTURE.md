@@ -40,9 +40,9 @@ simulated/
       ├─ manifest.json
       ├─ blocks.json                     木质通用方块音效映射
       ├─ models/blocks/physics_assembler/
-      │  ├─ block.geo.json               Bedrock geometry.physics_assembler
+      │  ├─ block.geo.json               合并主体与 256 个预旋转拉杆帧的 geometry.physics_assembler
       │  ├─ item.geo.json                静态物品 geometry.physics_assembler_item
-      │  └─ lever.geo.json               静态拉杆 geometry（动态渲染暂未接线）
+      │  └─ lever.geo.json               原始静态拉杆 geometry（保留作来源追踪）
       ├─ textures/blocks/physics_assembler.png
       ├─ textures/create/block/            内置 Create 纹理副本（不依赖 Create RP）
       ├─ textures/terrain_texture.json
@@ -64,5 +64,6 @@ simulated/
 `create:andesite_alloy` 和 `create:andesite_casing`，即可直接使用这些物品。
 
 当前已落地的方块层能力：方块标识、创造模式分类、显示名称、本地化字幕、木质音效类型、挖掘/爆炸/可燃参数、
-斧/镐破坏标签、Java 两段碰撞体、包围选择框、放置面与水平朝向状态，以及对应的 12 组视觉变换排列。
-支撑面检查、组装运行时、UI、封包和动态拉杆动画仍只保留脚本空壳或归档，不在本阶段实现。
+斧/镐破坏标签、Java 两段碰撞体、包围选择框、放置面与水平朝向状态、对应的 12 组视觉变换排列，以及
+通过两个 16 值状态和 `bone_visibility` 选择的 256 个离散拉杆角度帧。支撑面检查、组装运行时、UI、封包和
+拉杆状态的脚本驱动仍只保留脚本空壳或归档，不在本阶段实现。

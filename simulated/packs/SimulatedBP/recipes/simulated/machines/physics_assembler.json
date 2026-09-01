@@ -1,5 +1,5 @@
 {
-  "format_version": "1.26.40",
+  "format_version": "1.20.10",
   "minecraft:recipe_shaped": {
     "description": {
       "identifier": "simulated:physics_assembler"

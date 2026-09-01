@@ -1,40 +1,47 @@
-advancement.simulated.applied_kinematics=응용 운동학
-advancement.simulated.applied_kinematics.desc=모의 구조물의 핵심인 물리 조립기를 얻으세요
-block.simulated.physics_assembler=물리 조립기
 tile.simulated:physics_assembler.name=물리 조립기
-simulated.gui.assembly.exception.couldNotAlign=분해하기 위해 모의 구조물 방향을 맞출 수 없습니다!
-simulated.gui.assembly.exception.outOfWorld=세계 밖으로 분해할 수 없습니다!
-simulated.gui.assembly.exception.sameSubLevel=같은 모의 구조물로 해체할 수 없습니다!
-simulated.gui.assembly.exception.tooFarFromGround=분해하기에 지면에서 너무 멉니다!
-simulated.gui.assembly.exception.tooFast=분해하기에 너무 빠르게 움직이고 있습니다!
-simulated.gui.hold_tip.hold_to_assemble=잡아당겨서 조립
-simulated.gui.hold_tip.hold_to_disassemble=잡아당겨서 분해
-simulated.ponder.physics_assembler_block_properties.header=블록의 물리적 속성
-simulated.ponder.physics_assembler_block_properties.text_1=몇몇 블록은 다른 질량을 갖고 있으며...
-simulated.ponder.physics_assembler_block_properties.text_2=가벼움
-simulated.ponder.physics_assembler_block_properties.text_3=매우 무거움
-simulated.ponder.physics_assembler_block_properties.text_4=...다른 특이속성이 있을 수도 있습니다
-simulated.ponder.physics_assembler_block_properties.text_5=미끄러움
-simulated.ponder.physics_assembler_block_properties.text_6=취약
-simulated.ponder.physics_assembler_intro.header=모의 구조물 조립하기
-simulated.ponder.physics_assembler_intro.text_1=물리 조립기는 블록을 모의 구조물로 조립합니다
-simulated.ponder.physics_assembler_intro.text_2=강력 접착제 또는 꿀 접착제를 사용해서 블록을 선택하고...
-simulated.ponder.physics_assembler_intro.text_3=...우클릭을 꾹 눌러 레버를 당겨서 조립합니다
-simulated.ponder.physics_assembler_intro.text_4=대각선으로 연결된 블록도 포함된다는 점도 알아두셔야 합니다
-simulated.ponder.physics_assembler_intro.text_5=조립한 후에는 기존에 쓰던 물리 조립기는 필요 없어지고...
-simulated.ponder.physics_assembler_intro.text_6=...아무 물리 조립기로 분해할 수 있습니다
-simulated.ponder.physics_assembler_simulated_contraptions.header=모의 구조물이랑 상호작용하기
-simulated.ponder.physics_assembler_simulated_contraptions.text_1=모의 구조물은 물리적인 영향을 받고 조립 후에도 완전히 상호작용이 가능합니다
-simulated.ponder.physics_assembler_sub_level_splitting.header=모의 구조물 분리 및 결합
-simulated.ponder.physics_assembler_sub_level_splitting.text_1=모의 구조물에서 연결이 끊긴 부분은 분리됩니다
-simulated.ponder.physics_assembler_sub_level_splitting.text_2=슬라임볼을 통해서 두 개의 모의 구조물을 결합할 수 있습니다
-simulated.prevent_disassembly=주 물리 조립기가 아닌 조립기로 분해하는 것을 막았습니다
-simulated.subtitle.block.physics_assembler.assemble=모의 구조물이 움직임
-simulated.subtitle.block.physics_assembler.disassemble=모의 구조물이 멈춤
-simulated.subtitle.block.physics_assembler.fail=물리 조립기가 실패함
-simulated.subtitle.block.physics_assembler.tick=물리 조립기가 덜컹함
-stat.simulated.interact_with_assembler=조립기 사용 횟수
+
 subtitles.block.physics_assembler.assemble=모의 구조물이 움직임
 subtitles.block.physics_assembler.disassemble=모의 구조물이 멈춤
 subtitles.block.physics_assembler.fail=물리 조립기가 실패함
 subtitles.block.physics_assembler.tick=물리 조립기가 덜컹함
+
+#advancement.simulated.applied_kinematics=응용 운동학
+#advancement.simulated.applied_kinematics.desc=모의 구조물의 핵심인 물리 조립기를 얻으세요
+#block.simulated.physics_assembler=물리 조립기
+
+#simulated.gui.assembly.exception.couldNotAlign=분해하기 위해 모의 구조물 방향을 맞출 수 없습니다!
+#simulated.gui.assembly.exception.outOfWorld=세계 밖으로 분해할 수 없습니다!
+#simulated.gui.assembly.exception.sameSubLevel=같은 모의 구조물로 해체할 수 없습니다!
+#simulated.gui.assembly.exception.tooFarFromGround=분해하기에 지면에서 너무 멉니다!
+#simulated.gui.assembly.exception.tooFast=분해하기에 너무 빠르게 움직이고 있습니다!
+#simulated.gui.hold_tip.hold_to_assemble=잡아당겨서 조립
+#simulated.gui.hold_tip.hold_to_disassemble=잡아당겨서 분해
+
+#simulated.ponder.physics_assembler_block_properties.header=블록의 물리적 속성
+#simulated.ponder.physics_assembler_block_properties.text_1=몇몇 블록은 다른 질량을 갖고 있으며...
+#simulated.ponder.physics_assembler_block_properties.text_2=가벼움
+#simulated.ponder.physics_assembler_block_properties.text_3=매우 무거움
+#simulated.ponder.physics_assembler_block_properties.text_4=...다른 특이속성이 있을 수도 있습니다
+#simulated.ponder.physics_assembler_block_properties.text_5=미끄러움
+#simulated.ponder.physics_assembler_block_properties.text_6=취약
+#simulated.ponder.physics_assembler_intro.header=모의 구조물 조립하기
+#simulated.ponder.physics_assembler_intro.text_1=물리 조립기는 블록을 모의 구조물로 조립합니다
+#simulated.ponder.physics_assembler_intro.text_2=강력 접착제 또는 꿀 접착제를 사용해서 블록을 선택하고...
+#simulated.ponder.physics_assembler_intro.text_3=...우클릭을 꾹 눌러 레버를 당겨서 조립합니다
+#simulated.ponder.physics_assembler_intro.text_4=대각선으로 연결된 블록도 포함된다는 점도 알아두셔야 합니다
+#simulated.ponder.physics_assembler_intro.text_5=조립한 후에는 기존에 쓰던 물리 조립기는 필요 없어지고...
+#simulated.ponder.physics_assembler_intro.text_6=...아무 물리 조립기로 분해할 수 있습니다
+#simulated.ponder.physics_assembler_simulated_contraptions.header=모의 구조물이랑 상호작용하기
+#simulated.ponder.physics_assembler_simulated_contraptions.text_1=모의 구조물은 물리적인 영향을 받고 조립 후에도 완전히 상호작용이 가능합니다
+#simulated.ponder.physics_assembler_sub_level_splitting.header=모의 구조물 분리 및 결합
+#simulated.ponder.physics_assembler_sub_level_splitting.text_1=모의 구조물에서 연결이 끊긴 부분은 분리됩니다
+#simulated.ponder.physics_assembler_sub_level_splitting.text_2=슬라임볼을 통해서 두 개의 모의 구조물을 결합할 수 있습니다
+
+#simulated.prevent_disassembly=주 물리 조립기가 아닌 조립기로 분해하는 것을 막았습니다
+
+#simulated.subtitle.block.physics_assembler.assemble=모의 구조물이 움직임
+#simulated.subtitle.block.physics_assembler.disassemble=모의 구조물이 멈춤
+#simulated.subtitle.block.physics_assembler.fail=물리 조립기가 실패함
+#simulated.subtitle.block.physics_assembler.tick=물리 조립기가 덜컹함
+
+#stat.simulated.interact_with_assembler=조립기 사용 횟수

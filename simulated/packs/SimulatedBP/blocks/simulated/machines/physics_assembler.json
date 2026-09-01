@@ -1,0 +1,558 @@
+{
+  "format_version": "1.26.20",
+  "minecraft:block": {
+    "description": {
+      "identifier": "simulated:physics_assembler",
+      "menu_category": {
+        "category": "construction"
+      },
+      "traits": {
+        "minecraft:placement_position": {
+          "enabled_states": [
+            "minecraft:block_face"
+          ]
+        },
+        "minecraft:placement_direction": {
+          "enabled_states": [
+            "minecraft:cardinal_direction"
+          ],
+          "y_rotation_offset": 180
+        }
+      },
+      "states": {
+        "simulated:lever_frame_major": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "simulated:lever_frame_minor": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ]
+      }
+    },
+    "components": {
+      "minecraft:display_name": "tile.simulated:physics_assembler.name",
+      "minecraft:geometry": {
+        "identifier": "geometry.physics_assembler",
+        "bone_visibility": {
+          "lever_frame_000": "q.block_state('simulated:lever_frame_major') == 0 && q.block_state('simulated:lever_frame_minor') == 0",
+          "lever_frame_001": "q.block_state('simulated:lever_frame_major') == 0 && q.block_state('simulated:lever_frame_minor') == 1",
+          "lever_frame_002": "q.block_state('simulated:lever_frame_major') == 0 && q.block_state('simulated:lever_frame_minor') == 2",
+          "lever_frame_003": "q.block_state('simulated:lever_frame_major') == 0 && q.block_state('simulated:lever_frame_minor') == 3",
+          "lever_frame_004": "q.block_state('simulated:lever_frame_major') == 0 && q.block_state('simulated:lever_frame_minor') == 4",
+          "lever_frame_005": "q.block_state('simulated:lever_frame_major') == 0 && q.block_state('simulated:lever_frame_minor') == 5",
+          "lever_frame_006": "q.block_state('simulated:lever_frame_major') == 0 && q.block_state('simulated:lever_frame_minor') == 6",
+          "lever_frame_007": "q.block_state('simulated:lever_frame_major') == 0 && q.block_state('simulated:lever_frame_minor') == 7",
+          "lever_frame_008": "q.block_state('simulated:lever_frame_major') == 0 && q.block_state('simulated:lever_frame_minor') == 8",
+          "lever_frame_009": "q.block_state('simulated:lever_frame_major') == 0 && q.block_state('simulated:lever_frame_minor') == 9",
+          "lever_frame_010": "q.block_state('simulated:lever_frame_major') == 0 && q.block_state('simulated:lever_frame_minor') == 10",
+          "lever_frame_011": "q.block_state('simulated:lever_frame_major') == 0 && q.block_state('simulated:lever_frame_minor') == 11",
+          "lever_frame_012": "q.block_state('simulated:lever_frame_major') == 0 && q.block_state('simulated:lever_frame_minor') == 12",
+          "lever_frame_013": "q.block_state('simulated:lever_frame_major') == 0 && q.block_state('simulated:lever_frame_minor') == 13",
+          "lever_frame_014": "q.block_state('simulated:lever_frame_major') == 0 && q.block_state('simulated:lever_frame_minor') == 14",
+          "lever_frame_015": "q.block_state('simulated:lever_frame_major') == 0 && q.block_state('simulated:lever_frame_minor') == 15",
+          "lever_frame_016": "q.block_state('simulated:lever_frame_major') == 1 && q.block_state('simulated:lever_frame_minor') == 0",
+          "lever_frame_017": "q.block_state('simulated:lever_frame_major') == 1 && q.block_state('simulated:lever_frame_minor') == 1",
+          "lever_frame_018": "q.block_state('simulated:lever_frame_major') == 1 && q.block_state('simulated:lever_frame_minor') == 2",
+          "lever_frame_019": "q.block_state('simulated:lever_frame_major') == 1 && q.block_state('simulated:lever_frame_minor') == 3",
+          "lever_frame_020": "q.block_state('simulated:lever_frame_major') == 1 && q.block_state('simulated:lever_frame_minor') == 4",
+          "lever_frame_021": "q.block_state('simulated:lever_frame_major') == 1 && q.block_state('simulated:lever_frame_minor') == 5",
+          "lever_frame_022": "q.block_state('simulated:lever_frame_major') == 1 && q.block_state('simulated:lever_frame_minor') == 6",
+          "lever_frame_023": "q.block_state('simulated:lever_frame_major') == 1 && q.block_state('simulated:lever_frame_minor') == 7",
+          "lever_frame_024": "q.block_state('simulated:lever_frame_major') == 1 && q.block_state('simulated:lever_frame_minor') == 8",
+          "lever_frame_025": "q.block_state('simulated:lever_frame_major') == 1 && q.block_state('simulated:lever_frame_minor') == 9",
+          "lever_frame_026": "q.block_state('simulated:lever_frame_major') == 1 && q.block_state('simulated:lever_frame_minor') == 10",
+          "lever_frame_027": "q.block_state('simulated:lever_frame_major') == 1 && q.block_state('simulated:lever_frame_minor') == 11",
+          "lever_frame_028": "q.block_state('simulated:lever_frame_major') == 1 && q.block_state('simulated:lever_frame_minor') == 12",
+          "lever_frame_029": "q.block_state('simulated:lever_frame_major') == 1 && q.block_state('simulated:lever_frame_minor') == 13",
+          "lever_frame_030": "q.block_state('simulated:lever_frame_major') == 1 && q.block_state('simulated:lever_frame_minor') == 14",
+          "lever_frame_031": "q.block_state('simulated:lever_frame_major') == 1 && q.block_state('simulated:lever_frame_minor') == 15",
+          "lever_frame_032": "q.block_state('simulated:lever_frame_major') == 2 && q.block_state('simulated:lever_frame_minor') == 0",
+          "lever_frame_033": "q.block_state('simulated:lever_frame_major') == 2 && q.block_state('simulated:lever_frame_minor') == 1",
+          "lever_frame_034": "q.block_state('simulated:lever_frame_major') == 2 && q.block_state('simulated:lever_frame_minor') == 2",
+          "lever_frame_035": "q.block_state('simulated:lever_frame_major') == 2 && q.block_state('simulated:lever_frame_minor') == 3",
+          "lever_frame_036": "q.block_state('simulated:lever_frame_major') == 2 && q.block_state('simulated:lever_frame_minor') == 4",
+          "lever_frame_037": "q.block_state('simulated:lever_frame_major') == 2 && q.block_state('simulated:lever_frame_minor') == 5",
+          "lever_frame_038": "q.block_state('simulated:lever_frame_major') == 2 && q.block_state('simulated:lever_frame_minor') == 6",
+          "lever_frame_039": "q.block_state('simulated:lever_frame_major') == 2 && q.block_state('simulated:lever_frame_minor') == 7",
+          "lever_frame_040": "q.block_state('simulated:lever_frame_major') == 2 && q.block_state('simulated:lever_frame_minor') == 8",
+          "lever_frame_041": "q.block_state('simulated:lever_frame_major') == 2 && q.block_state('simulated:lever_frame_minor') == 9",
+          "lever_frame_042": "q.block_state('simulated:lever_frame_major') == 2 && q.block_state('simulated:lever_frame_minor') == 10",
+          "lever_frame_043": "q.block_state('simulated:lever_frame_major') == 2 && q.block_state('simulated:lever_frame_minor') == 11",
+          "lever_frame_044": "q.block_state('simulated:lever_frame_major') == 2 && q.block_state('simulated:lever_frame_minor') == 12",
+          "lever_frame_045": "q.block_state('simulated:lever_frame_major') == 2 && q.block_state('simulated:lever_frame_minor') == 13",
+          "lever_frame_046": "q.block_state('simulated:lever_frame_major') == 2 && q.block_state('simulated:lever_frame_minor') == 14",
+          "lever_frame_047": "q.block_state('simulated:lever_frame_major') == 2 && q.block_state('simulated:lever_frame_minor') == 15",
+          "lever_frame_048": "q.block_state('simulated:lever_frame_major') == 3 && q.block_state('simulated:lever_frame_minor') == 0",
+          "lever_frame_049": "q.block_state('simulated:lever_frame_major') == 3 && q.block_state('simulated:lever_frame_minor') == 1",
+          "lever_frame_050": "q.block_state('simulated:lever_frame_major') == 3 && q.block_state('simulated:lever_frame_minor') == 2",
+          "lever_frame_051": "q.block_state('simulated:lever_frame_major') == 3 && q.block_state('simulated:lever_frame_minor') == 3",
+          "lever_frame_052": "q.block_state('simulated:lever_frame_major') == 3 && q.block_state('simulated:lever_frame_minor') == 4",
+          "lever_frame_053": "q.block_state('simulated:lever_frame_major') == 3 && q.block_state('simulated:lever_frame_minor') == 5",
+          "lever_frame_054": "q.block_state('simulated:lever_frame_major') == 3 && q.block_state('simulated:lever_frame_minor') == 6",
+          "lever_frame_055": "q.block_state('simulated:lever_frame_major') == 3 && q.block_state('simulated:lever_frame_minor') == 7",
+          "lever_frame_056": "q.block_state('simulated:lever_frame_major') == 3 && q.block_state('simulated:lever_frame_minor') == 8",
+          "lever_frame_057": "q.block_state('simulated:lever_frame_major') == 3 && q.block_state('simulated:lever_frame_minor') == 9",
+          "lever_frame_058": "q.block_state('simulated:lever_frame_major') == 3 && q.block_state('simulated:lever_frame_minor') == 10",
+          "lever_frame_059": "q.block_state('simulated:lever_frame_major') == 3 && q.block_state('simulated:lever_frame_minor') == 11",
+          "lever_frame_060": "q.block_state('simulated:lever_frame_major') == 3 && q.block_state('simulated:lever_frame_minor') == 12",
+          "lever_frame_061": "q.block_state('simulated:lever_frame_major') == 3 && q.block_state('simulated:lever_frame_minor') == 13",
+          "lever_frame_062": "q.block_state('simulated:lever_frame_major') == 3 && q.block_state('simulated:lever_frame_minor') == 14",
+          "lever_frame_063": "q.block_state('simulated:lever_frame_major') == 3 && q.block_state('simulated:lever_frame_minor') == 15",
+          "lever_frame_064": "q.block_state('simulated:lever_frame_major') == 4 && q.block_state('simulated:lever_frame_minor') == 0",
+          "lever_frame_065": "q.block_state('simulated:lever_frame_major') == 4 && q.block_state('simulated:lever_frame_minor') == 1",
+          "lever_frame_066": "q.block_state('simulated:lever_frame_major') == 4 && q.block_state('simulated:lever_frame_minor') == 2",
+          "lever_frame_067": "q.block_state('simulated:lever_frame_major') == 4 && q.block_state('simulated:lever_frame_minor') == 3",
+          "lever_frame_068": "q.block_state('simulated:lever_frame_major') == 4 && q.block_state('simulated:lever_frame_minor') == 4",
+          "lever_frame_069": "q.block_state('simulated:lever_frame_major') == 4 && q.block_state('simulated:lever_frame_minor') == 5",
+          "lever_frame_070": "q.block_state('simulated:lever_frame_major') == 4 && q.block_state('simulated:lever_frame_minor') == 6",
+          "lever_frame_071": "q.block_state('simulated:lever_frame_major') == 4 && q.block_state('simulated:lever_frame_minor') == 7",
+          "lever_frame_072": "q.block_state('simulated:lever_frame_major') == 4 && q.block_state('simulated:lever_frame_minor') == 8",
+          "lever_frame_073": "q.block_state('simulated:lever_frame_major') == 4 && q.block_state('simulated:lever_frame_minor') == 9",
+          "lever_frame_074": "q.block_state('simulated:lever_frame_major') == 4 && q.block_state('simulated:lever_frame_minor') == 10",
+          "lever_frame_075": "q.block_state('simulated:lever_frame_major') == 4 && q.block_state('simulated:lever_frame_minor') == 11",
+          "lever_frame_076": "q.block_state('simulated:lever_frame_major') == 4 && q.block_state('simulated:lever_frame_minor') == 12",
+          "lever_frame_077": "q.block_state('simulated:lever_frame_major') == 4 && q.block_state('simulated:lever_frame_minor') == 13",
+          "lever_frame_078": "q.block_state('simulated:lever_frame_major') == 4 && q.block_state('simulated:lever_frame_minor') == 14",
+          "lever_frame_079": "q.block_state('simulated:lever_frame_major') == 4 && q.block_state('simulated:lever_frame_minor') == 15",
+          "lever_frame_080": "q.block_state('simulated:lever_frame_major') == 5 && q.block_state('simulated:lever_frame_minor') == 0",
+          "lever_frame_081": "q.block_state('simulated:lever_frame_major') == 5 && q.block_state('simulated:lever_frame_minor') == 1",
+          "lever_frame_082": "q.block_state('simulated:lever_frame_major') == 5 && q.block_state('simulated:lever_frame_minor') == 2",
+          "lever_frame_083": "q.block_state('simulated:lever_frame_major') == 5 && q.block_state('simulated:lever_frame_minor') == 3",
+          "lever_frame_084": "q.block_state('simulated:lever_frame_major') == 5 && q.block_state('simulated:lever_frame_minor') == 4",
+          "lever_frame_085": "q.block_state('simulated:lever_frame_major') == 5 && q.block_state('simulated:lever_frame_minor') == 5",
+          "lever_frame_086": "q.block_state('simulated:lever_frame_major') == 5 && q.block_state('simulated:lever_frame_minor') == 6",
+          "lever_frame_087": "q.block_state('simulated:lever_frame_major') == 5 && q.block_state('simulated:lever_frame_minor') == 7",
+          "lever_frame_088": "q.block_state('simulated:lever_frame_major') == 5 && q.block_state('simulated:lever_frame_minor') == 8",
+          "lever_frame_089": "q.block_state('simulated:lever_frame_major') == 5 && q.block_state('simulated:lever_frame_minor') == 9",
+          "lever_frame_090": "q.block_state('simulated:lever_frame_major') == 5 && q.block_state('simulated:lever_frame_minor') == 10",
+          "lever_frame_091": "q.block_state('simulated:lever_frame_major') == 5 && q.block_state('simulated:lever_frame_minor') == 11",
+          "lever_frame_092": "q.block_state('simulated:lever_frame_major') == 5 && q.block_state('simulated:lever_frame_minor') == 12",
+          "lever_frame_093": "q.block_state('simulated:lever_frame_major') == 5 && q.block_state('simulated:lever_frame_minor') == 13",
+          "lever_frame_094": "q.block_state('simulated:lever_frame_major') == 5 && q.block_state('simulated:lever_frame_minor') == 14",
+          "lever_frame_095": "q.block_state('simulated:lever_frame_major') == 5 && q.block_state('simulated:lever_frame_minor') == 15",
+          "lever_frame_096": "q.block_state('simulated:lever_frame_major') == 6 && q.block_state('simulated:lever_frame_minor') == 0",
+          "lever_frame_097": "q.block_state('simulated:lever_frame_major') == 6 && q.block_state('simulated:lever_frame_minor') == 1",
+          "lever_frame_098": "q.block_state('simulated:lever_frame_major') == 6 && q.block_state('simulated:lever_frame_minor') == 2",
+          "lever_frame_099": "q.block_state('simulated:lever_frame_major') == 6 && q.block_state('simulated:lever_frame_minor') == 3",
+          "lever_frame_100": "q.block_state('simulated:lever_frame_major') == 6 && q.block_state('simulated:lever_frame_minor') == 4",
+          "lever_frame_101": "q.block_state('simulated:lever_frame_major') == 6 && q.block_state('simulated:lever_frame_minor') == 5",
+          "lever_frame_102": "q.block_state('simulated:lever_frame_major') == 6 && q.block_state('simulated:lever_frame_minor') == 6",
+          "lever_frame_103": "q.block_state('simulated:lever_frame_major') == 6 && q.block_state('simulated:lever_frame_minor') == 7",
+          "lever_frame_104": "q.block_state('simulated:lever_frame_major') == 6 && q.block_state('simulated:lever_frame_minor') == 8",
+          "lever_frame_105": "q.block_state('simulated:lever_frame_major') == 6 && q.block_state('simulated:lever_frame_minor') == 9",
+          "lever_frame_106": "q.block_state('simulated:lever_frame_major') == 6 && q.block_state('simulated:lever_frame_minor') == 10",
+          "lever_frame_107": "q.block_state('simulated:lever_frame_major') == 6 && q.block_state('simulated:lever_frame_minor') == 11",
+          "lever_frame_108": "q.block_state('simulated:lever_frame_major') == 6 && q.block_state('simulated:lever_frame_minor') == 12",
+          "lever_frame_109": "q.block_state('simulated:lever_frame_major') == 6 && q.block_state('simulated:lever_frame_minor') == 13",
+          "lever_frame_110": "q.block_state('simulated:lever_frame_major') == 6 && q.block_state('simulated:lever_frame_minor') == 14",
+          "lever_frame_111": "q.block_state('simulated:lever_frame_major') == 6 && q.block_state('simulated:lever_frame_minor') == 15",
+          "lever_frame_112": "q.block_state('simulated:lever_frame_major') == 7 && q.block_state('simulated:lever_frame_minor') == 0",
+          "lever_frame_113": "q.block_state('simulated:lever_frame_major') == 7 && q.block_state('simulated:lever_frame_minor') == 1",
+          "lever_frame_114": "q.block_state('simulated:lever_frame_major') == 7 && q.block_state('simulated:lever_frame_minor') == 2",
+          "lever_frame_115": "q.block_state('simulated:lever_frame_major') == 7 && q.block_state('simulated:lever_frame_minor') == 3",
+          "lever_frame_116": "q.block_state('simulated:lever_frame_major') == 7 && q.block_state('simulated:lever_frame_minor') == 4",
+          "lever_frame_117": "q.block_state('simulated:lever_frame_major') == 7 && q.block_state('simulated:lever_frame_minor') == 5",
+          "lever_frame_118": "q.block_state('simulated:lever_frame_major') == 7 && q.block_state('simulated:lever_frame_minor') == 6",
+          "lever_frame_119": "q.block_state('simulated:lever_frame_major') == 7 && q.block_state('simulated:lever_frame_minor') == 7",
+          "lever_frame_120": "q.block_state('simulated:lever_frame_major') == 7 && q.block_state('simulated:lever_frame_minor') == 8",
+          "lever_frame_121": "q.block_state('simulated:lever_frame_major') == 7 && q.block_state('simulated:lever_frame_minor') == 9",
+          "lever_frame_122": "q.block_state('simulated:lever_frame_major') == 7 && q.block_state('simulated:lever_frame_minor') == 10",
+          "lever_frame_123": "q.block_state('simulated:lever_frame_major') == 7 && q.block_state('simulated:lever_frame_minor') == 11",
+          "lever_frame_124": "q.block_state('simulated:lever_frame_major') == 7 && q.block_state('simulated:lever_frame_minor') == 12",
+          "lever_frame_125": "q.block_state('simulated:lever_frame_major') == 7 && q.block_state('simulated:lever_frame_minor') == 13",
+          "lever_frame_126": "q.block_state('simulated:lever_frame_major') == 7 && q.block_state('simulated:lever_frame_minor') == 14",
+          "lever_frame_127": "q.block_state('simulated:lever_frame_major') == 7 && q.block_state('simulated:lever_frame_minor') == 15",
+          "lever_frame_128": "q.block_state('simulated:lever_frame_major') == 8 && q.block_state('simulated:lever_frame_minor') == 0",
+          "lever_frame_129": "q.block_state('simulated:lever_frame_major') == 8 && q.block_state('simulated:lever_frame_minor') == 1",
+          "lever_frame_130": "q.block_state('simulated:lever_frame_major') == 8 && q.block_state('simulated:lever_frame_minor') == 2",
+          "lever_frame_131": "q.block_state('simulated:lever_frame_major') == 8 && q.block_state('simulated:lever_frame_minor') == 3",
+          "lever_frame_132": "q.block_state('simulated:lever_frame_major') == 8 && q.block_state('simulated:lever_frame_minor') == 4",
+          "lever_frame_133": "q.block_state('simulated:lever_frame_major') == 8 && q.block_state('simulated:lever_frame_minor') == 5",
+          "lever_frame_134": "q.block_state('simulated:lever_frame_major') == 8 && q.block_state('simulated:lever_frame_minor') == 6",
+          "lever_frame_135": "q.block_state('simulated:lever_frame_major') == 8 && q.block_state('simulated:lever_frame_minor') == 7",
+          "lever_frame_136": "q.block_state('simulated:lever_frame_major') == 8 && q.block_state('simulated:lever_frame_minor') == 8",
+          "lever_frame_137": "q.block_state('simulated:lever_frame_major') == 8 && q.block_state('simulated:lever_frame_minor') == 9",
+          "lever_frame_138": "q.block_state('simulated:lever_frame_major') == 8 && q.block_state('simulated:lever_frame_minor') == 10",
+          "lever_frame_139": "q.block_state('simulated:lever_frame_major') == 8 && q.block_state('simulated:lever_frame_minor') == 11",
+          "lever_frame_140": "q.block_state('simulated:lever_frame_major') == 8 && q.block_state('simulated:lever_frame_minor') == 12",
+          "lever_frame_141": "q.block_state('simulated:lever_frame_major') == 8 && q.block_state('simulated:lever_frame_minor') == 13",
+          "lever_frame_142": "q.block_state('simulated:lever_frame_major') == 8 && q.block_state('simulated:lever_frame_minor') == 14",
+          "lever_frame_143": "q.block_state('simulated:lever_frame_major') == 8 && q.block_state('simulated:lever_frame_minor') == 15",
+          "lever_frame_144": "q.block_state('simulated:lever_frame_major') == 9 && q.block_state('simulated:lever_frame_minor') == 0",
+          "lever_frame_145": "q.block_state('simulated:lever_frame_major') == 9 && q.block_state('simulated:lever_frame_minor') == 1",
+          "lever_frame_146": "q.block_state('simulated:lever_frame_major') == 9 && q.block_state('simulated:lever_frame_minor') == 2",
+          "lever_frame_147": "q.block_state('simulated:lever_frame_major') == 9 && q.block_state('simulated:lever_frame_minor') == 3",
+          "lever_frame_148": "q.block_state('simulated:lever_frame_major') == 9 && q.block_state('simulated:lever_frame_minor') == 4",
+          "lever_frame_149": "q.block_state('simulated:lever_frame_major') == 9 && q.block_state('simulated:lever_frame_minor') == 5",
+          "lever_frame_150": "q.block_state('simulated:lever_frame_major') == 9 && q.block_state('simulated:lever_frame_minor') == 6",
+          "lever_frame_151": "q.block_state('simulated:lever_frame_major') == 9 && q.block_state('simulated:lever_frame_minor') == 7",
+          "lever_frame_152": "q.block_state('simulated:lever_frame_major') == 9 && q.block_state('simulated:lever_frame_minor') == 8",
+          "lever_frame_153": "q.block_state('simulated:lever_frame_major') == 9 && q.block_state('simulated:lever_frame_minor') == 9",
+          "lever_frame_154": "q.block_state('simulated:lever_frame_major') == 9 && q.block_state('simulated:lever_frame_minor') == 10",
+          "lever_frame_155": "q.block_state('simulated:lever_frame_major') == 9 && q.block_state('simulated:lever_frame_minor') == 11",
+          "lever_frame_156": "q.block_state('simulated:lever_frame_major') == 9 && q.block_state('simulated:lever_frame_minor') == 12",
+          "lever_frame_157": "q.block_state('simulated:lever_frame_major') == 9 && q.block_state('simulated:lever_frame_minor') == 13",
+          "lever_frame_158": "q.block_state('simulated:lever_frame_major') == 9 && q.block_state('simulated:lever_frame_minor') == 14",
+          "lever_frame_159": "q.block_state('simulated:lever_frame_major') == 9 && q.block_state('simulated:lever_frame_minor') == 15",
+          "lever_frame_160": "q.block_state('simulated:lever_frame_major') == 10 && q.block_state('simulated:lever_frame_minor') == 0",
+          "lever_frame_161": "q.block_state('simulated:lever_frame_major') == 10 && q.block_state('simulated:lever_frame_minor') == 1",
+          "lever_frame_162": "q.block_state('simulated:lever_frame_major') == 10 && q.block_state('simulated:lever_frame_minor') == 2",
+          "lever_frame_163": "q.block_state('simulated:lever_frame_major') == 10 && q.block_state('simulated:lever_frame_minor') == 3",
+          "lever_frame_164": "q.block_state('simulated:lever_frame_major') == 10 && q.block_state('simulated:lever_frame_minor') == 4",
+          "lever_frame_165": "q.block_state('simulated:lever_frame_major') == 10 && q.block_state('simulated:lever_frame_minor') == 5",
+          "lever_frame_166": "q.block_state('simulated:lever_frame_major') == 10 && q.block_state('simulated:lever_frame_minor') == 6",
+          "lever_frame_167": "q.block_state('simulated:lever_frame_major') == 10 && q.block_state('simulated:lever_frame_minor') == 7",
+          "lever_frame_168": "q.block_state('simulated:lever_frame_major') == 10 && q.block_state('simulated:lever_frame_minor') == 8",
+          "lever_frame_169": "q.block_state('simulated:lever_frame_major') == 10 && q.block_state('simulated:lever_frame_minor') == 9",
+          "lever_frame_170": "q.block_state('simulated:lever_frame_major') == 10 && q.block_state('simulated:lever_frame_minor') == 10",
+          "lever_frame_171": "q.block_state('simulated:lever_frame_major') == 10 && q.block_state('simulated:lever_frame_minor') == 11",
+          "lever_frame_172": "q.block_state('simulated:lever_frame_major') == 10 && q.block_state('simulated:lever_frame_minor') == 12",
+          "lever_frame_173": "q.block_state('simulated:lever_frame_major') == 10 && q.block_state('simulated:lever_frame_minor') == 13",
+          "lever_frame_174": "q.block_state('simulated:lever_frame_major') == 10 && q.block_state('simulated:lever_frame_minor') == 14",
+          "lever_frame_175": "q.block_state('simulated:lever_frame_major') == 10 && q.block_state('simulated:lever_frame_minor') == 15",
+          "lever_frame_176": "q.block_state('simulated:lever_frame_major') == 11 && q.block_state('simulated:lever_frame_minor') == 0",
+          "lever_frame_177": "q.block_state('simulated:lever_frame_major') == 11 && q.block_state('simulated:lever_frame_minor') == 1",
+          "lever_frame_178": "q.block_state('simulated:lever_frame_major') == 11 && q.block_state('simulated:lever_frame_minor') == 2",
+          "lever_frame_179": "q.block_state('simulated:lever_frame_major') == 11 && q.block_state('simulated:lever_frame_minor') == 3",
+          "lever_frame_180": "q.block_state('simulated:lever_frame_major') == 11 && q.block_state('simulated:lever_frame_minor') == 4",
+          "lever_frame_181": "q.block_state('simulated:lever_frame_major') == 11 && q.block_state('simulated:lever_frame_minor') == 5",
+          "lever_frame_182": "q.block_state('simulated:lever_frame_major') == 11 && q.block_state('simulated:lever_frame_minor') == 6",
+          "lever_frame_183": "q.block_state('simulated:lever_frame_major') == 11 && q.block_state('simulated:lever_frame_minor') == 7",
+          "lever_frame_184": "q.block_state('simulated:lever_frame_major') == 11 && q.block_state('simulated:lever_frame_minor') == 8",
+          "lever_frame_185": "q.block_state('simulated:lever_frame_major') == 11 && q.block_state('simulated:lever_frame_minor') == 9",
+          "lever_frame_186": "q.block_state('simulated:lever_frame_major') == 11 && q.block_state('simulated:lever_frame_minor') == 10",
+          "lever_frame_187": "q.block_state('simulated:lever_frame_major') == 11 && q.block_state('simulated:lever_frame_minor') == 11",
+          "lever_frame_188": "q.block_state('simulated:lever_frame_major') == 11 && q.block_state('simulated:lever_frame_minor') == 12",
+          "lever_frame_189": "q.block_state('simulated:lever_frame_major') == 11 && q.block_state('simulated:lever_frame_minor') == 13",
+          "lever_frame_190": "q.block_state('simulated:lever_frame_major') == 11 && q.block_state('simulated:lever_frame_minor') == 14",
+          "lever_frame_191": "q.block_state('simulated:lever_frame_major') == 11 && q.block_state('simulated:lever_frame_minor') == 15",
+          "lever_frame_192": "q.block_state('simulated:lever_frame_major') == 12 && q.block_state('simulated:lever_frame_minor') == 0",
+          "lever_frame_193": "q.block_state('simulated:lever_frame_major') == 12 && q.block_state('simulated:lever_frame_minor') == 1",
+          "lever_frame_194": "q.block_state('simulated:lever_frame_major') == 12 && q.block_state('simulated:lever_frame_minor') == 2",
+          "lever_frame_195": "q.block_state('simulated:lever_frame_major') == 12 && q.block_state('simulated:lever_frame_minor') == 3",
+          "lever_frame_196": "q.block_state('simulated:lever_frame_major') == 12 && q.block_state('simulated:lever_frame_minor') == 4",
+          "lever_frame_197": "q.block_state('simulated:lever_frame_major') == 12 && q.block_state('simulated:lever_frame_minor') == 5",
+          "lever_frame_198": "q.block_state('simulated:lever_frame_major') == 12 && q.block_state('simulated:lever_frame_minor') == 6",
+          "lever_frame_199": "q.block_state('simulated:lever_frame_major') == 12 && q.block_state('simulated:lever_frame_minor') == 7",
+          "lever_frame_200": "q.block_state('simulated:lever_frame_major') == 12 && q.block_state('simulated:lever_frame_minor') == 8",
+          "lever_frame_201": "q.block_state('simulated:lever_frame_major') == 12 && q.block_state('simulated:lever_frame_minor') == 9",
+          "lever_frame_202": "q.block_state('simulated:lever_frame_major') == 12 && q.block_state('simulated:lever_frame_minor') == 10",
+          "lever_frame_203": "q.block_state('simulated:lever_frame_major') == 12 && q.block_state('simulated:lever_frame_minor') == 11",
+          "lever_frame_204": "q.block_state('simulated:lever_frame_major') == 12 && q.block_state('simulated:lever_frame_minor') == 12",
+          "lever_frame_205": "q.block_state('simulated:lever_frame_major') == 12 && q.block_state('simulated:lever_frame_minor') == 13",
+          "lever_frame_206": "q.block_state('simulated:lever_frame_major') == 12 && q.block_state('simulated:lever_frame_minor') == 14",
+          "lever_frame_207": "q.block_state('simulated:lever_frame_major') == 12 && q.block_state('simulated:lever_frame_minor') == 15",
+          "lever_frame_208": "q.block_state('simulated:lever_frame_major') == 13 && q.block_state('simulated:lever_frame_minor') == 0",
+          "lever_frame_209": "q.block_state('simulated:lever_frame_major') == 13 && q.block_state('simulated:lever_frame_minor') == 1",
+          "lever_frame_210": "q.block_state('simulated:lever_frame_major') == 13 && q.block_state('simulated:lever_frame_minor') == 2",
+          "lever_frame_211": "q.block_state('simulated:lever_frame_major') == 13 && q.block_state('simulated:lever_frame_minor') == 3",
+          "lever_frame_212": "q.block_state('simulated:lever_frame_major') == 13 && q.block_state('simulated:lever_frame_minor') == 4",
+          "lever_frame_213": "q.block_state('simulated:lever_frame_major') == 13 && q.block_state('simulated:lever_frame_minor') == 5",
+          "lever_frame_214": "q.block_state('simulated:lever_frame_major') == 13 && q.block_state('simulated:lever_frame_minor') == 6",
+          "lever_frame_215": "q.block_state('simulated:lever_frame_major') == 13 && q.block_state('simulated:lever_frame_minor') == 7",
+          "lever_frame_216": "q.block_state('simulated:lever_frame_major') == 13 && q.block_state('simulated:lever_frame_minor') == 8",
+          "lever_frame_217": "q.block_state('simulated:lever_frame_major') == 13 && q.block_state('simulated:lever_frame_minor') == 9",
+          "lever_frame_218": "q.block_state('simulated:lever_frame_major') == 13 && q.block_state('simulated:lever_frame_minor') == 10",
+          "lever_frame_219": "q.block_state('simulated:lever_frame_major') == 13 && q.block_state('simulated:lever_frame_minor') == 11",
+          "lever_frame_220": "q.block_state('simulated:lever_frame_major') == 13 && q.block_state('simulated:lever_frame_minor') == 12",
+          "lever_frame_221": "q.block_state('simulated:lever_frame_major') == 13 && q.block_state('simulated:lever_frame_minor') == 13",
+          "lever_frame_222": "q.block_state('simulated:lever_frame_major') == 13 && q.block_state('simulated:lever_frame_minor') == 14",
+          "lever_frame_223": "q.block_state('simulated:lever_frame_major') == 13 && q.block_state('simulated:lever_frame_minor') == 15",
+          "lever_frame_224": "q.block_state('simulated:lever_frame_major') == 14 && q.block_state('simulated:lever_frame_minor') == 0",
+          "lever_frame_225": "q.block_state('simulated:lever_frame_major') == 14 && q.block_state('simulated:lever_frame_minor') == 1",
+          "lever_frame_226": "q.block_state('simulated:lever_frame_major') == 14 && q.block_state('simulated:lever_frame_minor') == 2",
+          "lever_frame_227": "q.block_state('simulated:lever_frame_major') == 14 && q.block_state('simulated:lever_frame_minor') == 3",
+          "lever_frame_228": "q.block_state('simulated:lever_frame_major') == 14 && q.block_state('simulated:lever_frame_minor') == 4",
+          "lever_frame_229": "q.block_state('simulated:lever_frame_major') == 14 && q.block_state('simulated:lever_frame_minor') == 5",
+          "lever_frame_230": "q.block_state('simulated:lever_frame_major') == 14 && q.block_state('simulated:lever_frame_minor') == 6",
+          "lever_frame_231": "q.block_state('simulated:lever_frame_major') == 14 && q.block_state('simulated:lever_frame_minor') == 7",
+          "lever_frame_232": "q.block_state('simulated:lever_frame_major') == 14 && q.block_state('simulated:lever_frame_minor') == 8",
+          "lever_frame_233": "q.block_state('simulated:lever_frame_major') == 14 && q.block_state('simulated:lever_frame_minor') == 9",
+          "lever_frame_234": "q.block_state('simulated:lever_frame_major') == 14 && q.block_state('simulated:lever_frame_minor') == 10",
+          "lever_frame_235": "q.block_state('simulated:lever_frame_major') == 14 && q.block_state('simulated:lever_frame_minor') == 11",
+          "lever_frame_236": "q.block_state('simulated:lever_frame_major') == 14 && q.block_state('simulated:lever_frame_minor') == 12",
+          "lever_frame_237": "q.block_state('simulated:lever_frame_major') == 14 && q.block_state('simulated:lever_frame_minor') == 13",
+          "lever_frame_238": "q.block_state('simulated:lever_frame_major') == 14 && q.block_state('simulated:lever_frame_minor') == 14",
+          "lever_frame_239": "q.block_state('simulated:lever_frame_major') == 14 && q.block_state('simulated:lever_frame_minor') == 15",
+          "lever_frame_240": "q.block_state('simulated:lever_frame_major') == 15 && q.block_state('simulated:lever_frame_minor') == 0",
+          "lever_frame_241": "q.block_state('simulated:lever_frame_major') == 15 && q.block_state('simulated:lever_frame_minor') == 1",
+          "lever_frame_242": "q.block_state('simulated:lever_frame_major') == 15 && q.block_state('simulated:lever_frame_minor') == 2",
+          "lever_frame_243": "q.block_state('simulated:lever_frame_major') == 15 && q.block_state('simulated:lever_frame_minor') == 3",
+          "lever_frame_244": "q.block_state('simulated:lever_frame_major') == 15 && q.block_state('simulated:lever_frame_minor') == 4",
+          "lever_frame_245": "q.block_state('simulated:lever_frame_major') == 15 && q.block_state('simulated:lever_frame_minor') == 5",
+          "lever_frame_246": "q.block_state('simulated:lever_frame_major') == 15 && q.block_state('simulated:lever_frame_minor') == 6",
+          "lever_frame_247": "q.block_state('simulated:lever_frame_major') == 15 && q.block_state('simulated:lever_frame_minor') == 7",
+          "lever_frame_248": "q.block_state('simulated:lever_frame_major') == 15 && q.block_state('simulated:lever_frame_minor') == 8",
+          "lever_frame_249": "q.block_state('simulated:lever_frame_major') == 15 && q.block_state('simulated:lever_frame_minor') == 9",
+          "lever_frame_250": "q.block_state('simulated:lever_frame_major') == 15 && q.block_state('simulated:lever_frame_minor') == 10",
+          "lever_frame_251": "q.block_state('simulated:lever_frame_major') == 15 && q.block_state('simulated:lever_frame_minor') == 11",
+          "lever_frame_252": "q.block_state('simulated:lever_frame_major') == 15 && q.block_state('simulated:lever_frame_minor') == 12",
+          "lever_frame_253": "q.block_state('simulated:lever_frame_major') == 15 && q.block_state('simulated:lever_frame_minor') == 13",
+          "lever_frame_254": "q.block_state('simulated:lever_frame_major') == 15 && q.block_state('simulated:lever_frame_minor') == 14",
+          "lever_frame_255": "q.block_state('simulated:lever_frame_major') == 15 && q.block_state('simulated:lever_frame_minor') == 15"
+        }
+      },
+      "minecraft:destruction_particles": {
+        "texture": "create:andesite_casing"
+      },
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "simulated:physics_assembler"
+        },
+        "bearing_side": {
+          "texture": "create:mechanical_bearing_side"
+        },
+        "bearing_top": {
+          "texture": "create:bearing_top"
+        },
+        "casing": {
+          "texture": "create:andesite_casing"
+        }
+      },
+      "minecraft:item_visual": {
+        "geometry": "geometry.physics_assembler_item",
+        "material_instances": {
+          "*": {
+            "texture": "simulated:physics_assembler"
+          },
+          "bearing_side": {
+            "texture": "create:mechanical_bearing_side"
+          },
+          "bearing_top": {
+            "texture": "create:bearing_top"
+          },
+          "casing": {
+            "texture": "create:andesite_casing"
+          }
+        }
+      },
+      "minecraft:light_dampening": 15,
+      "minecraft:collision_box": [
+        {
+          "origin": [
+            -8,
+            0,
+            -8
+          ],
+          "size": [
+            16,
+            3,
+            16
+          ]
+        },
+        {
+          "origin": [
+            -6,
+            3,
+            -6
+          ],
+          "size": [
+            12,
+            9,
+            12
+          ]
+        }
+      ],
+      "minecraft:selection_box": {
+        "origin": [
+          -8,
+          0,
+          -8
+        ],
+        "size": [
+          16,
+          13,
+          16
+        ]
+      },
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 2
+      },
+      "minecraft:destructible_by_explosion": {
+        "explosion_resistance": 3
+      },
+      "minecraft:flammable": true,
+      "minecraft:loot": "loot_tables/simulated/blocks/physics_assembler.json",
+      "minecraft:tags": [
+        "minecraft:is_pickaxe_item_destructible",
+        "minecraft:is_axe_item_destructible",
+        "simulated:physics_assembler"
+      ]
+    },
+    "permutations": [
+      {
+        "condition": "q.block_state('minecraft:block_face') == 'up' && q.block_state('minecraft:cardinal_direction') == 'north'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('minecraft:block_face') == 'up' && q.block_state('minecraft:cardinal_direction') == 'east'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              0,
+              -90,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('minecraft:block_face') == 'up' && q.block_state('minecraft:cardinal_direction') == 'south'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              0,
+              180,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('minecraft:block_face') == 'up' && q.block_state('minecraft:cardinal_direction') == 'west'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              0,
+              90,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('minecraft:block_face') == 'down' && q.block_state('minecraft:cardinal_direction') == 'north'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              180,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('minecraft:block_face') == 'down' && q.block_state('minecraft:cardinal_direction') == 'east'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              180,
+              -90,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('minecraft:block_face') == 'down' && q.block_state('minecraft:cardinal_direction') == 'south'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              180,
+              180,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('minecraft:block_face') == 'down' && q.block_state('minecraft:cardinal_direction') == 'west'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              180,
+              90,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "condition": "(q.block_state('minecraft:block_face') == 'north' || q.block_state('minecraft:block_face') == 'south' || q.block_state('minecraft:block_face') == 'east' || q.block_state('minecraft:block_face') == 'west') && q.block_state('minecraft:cardinal_direction') == 'north'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              90,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "condition": "(q.block_state('minecraft:block_face') == 'north' || q.block_state('minecraft:block_face') == 'south' || q.block_state('minecraft:block_face') == 'east' || q.block_state('minecraft:block_face') == 'west') && q.block_state('minecraft:cardinal_direction') == 'east'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              90,
+              -90,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "condition": "(q.block_state('minecraft:block_face') == 'north' || q.block_state('minecraft:block_face') == 'south' || q.block_state('minecraft:block_face') == 'east' || q.block_state('minecraft:block_face') == 'west') && q.block_state('minecraft:cardinal_direction') == 'south'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              90,
+              180,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "condition": "(q.block_state('minecraft:block_face') == 'north' || q.block_state('minecraft:block_face') == 'south' || q.block_state('minecraft:block_face') == 'east' || q.block_state('minecraft:block_face') == 'west') && q.block_state('minecraft:cardinal_direction') == 'west'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              90,
+              90,
+              0
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

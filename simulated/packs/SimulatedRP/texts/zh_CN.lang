@@ -1,6 +1,5 @@
 tile.simulated:physics_assembler.name=物理组装器
 
-
 subtitles.block.physics_assembler.assemble=物理结构：开始移动
 subtitles.block.physics_assembler.disassemble=物理结构：停止
 subtitles.block.physics_assembler.fail=物理组装器：组装失败

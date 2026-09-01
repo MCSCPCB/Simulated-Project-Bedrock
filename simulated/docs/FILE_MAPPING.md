@@ -65,9 +65,9 @@
 | --- | --- |
 | `assets/simulated/textures/block/physics_assembler.png` | `packs/SimulatedRP/textures/blocks/physics_assembler.png` |
 | `assets/simulated/textures/gui/assembler.png` | `packs/SimulatedRP/textures/ui/assembler.png` |
-| `assets/simulated/models/block/physics_assembler/block.json` | `packs/SimulatedRP/models/blocks/physics_assembler/block.geo.json`，转换为 `geometry.physics_assembler`；Java 原文归档于 `src/reference/physics_assembler/legacy-assets/models/blocks/physics_assembler/block.json` |
+| `assets/simulated/models/block/physics_assembler/block.json` | `packs/SimulatedRP/models/blocks/physics_assembler/block.geo.json`，转换为单一 `geometry.physics_assembler`，并合并 256 个预旋转拉杆帧骨骼；Java 原文归档于 `src/reference/physics_assembler/legacy-assets/models/blocks/physics_assembler/block.json` |
 | `assets/simulated/models/block/physics_assembler/item.json` | `packs/SimulatedRP/models/blocks/physics_assembler/item.geo.json`，转换为 `geometry.physics_assembler_item`；Java 原文归档于 `src/reference/physics_assembler/legacy-assets/models/blocks/physics_assembler/item.json` |
-| `assets/simulated/models/block/physics_assembler/lever.json` | `packs/SimulatedRP/models/blocks/physics_assembler/lever.geo.json`，转换为可复用的静态 `geometry.physics_assembler_lever`；动态旋转尚未接线，Java 原文归档于 `src/reference/physics_assembler/legacy-assets/models/blocks/physics_assembler/lever.json` |
+| `assets/simulated/models/block/physics_assembler/lever.json` | `packs/SimulatedRP/models/blocks/physics_assembler/lever.geo.json`，保留为静态 `geometry.physics_assembler_lever` 来源追踪；世界方块使用合并 geometry 中的预旋转帧，Java 原文归档于 `src/reference/physics_assembler/legacy-assets/models/blocks/physics_assembler/lever.json` |
 | `assets/simulated/models/item/physics_assembler.json` | Java 物品模型原文归档；基岩版物品显示由方块的 `minecraft:item_visual` 指向 `geometry.physics_assembler_item` |
 | `assets/simulated/sounds/block/physics_assembler/*` | `packs/SimulatedRP/sounds/physics_assembler/` |
 | 原 `assets/simulated/sounds.json` | `src/reference/physics_assembler/legacy-assets/sounds.json` |
@@ -91,5 +91,6 @@
 | Java `data/simulated/advancement/*` | `src/reference/physics_assembler/legacy-advancements/` |
 
 `packs/SimulatedBP/blocks/physics_assembler.json` 已写入可由 Bedrock 直接加载的组件：放置面/水平朝向 traits、
-几何和材质、物品显示、安山岩套管破坏粒子、木质光照阻隔、两段碰撞体、朝向变换、包围选择框、木质破坏参数、战利品引用和斧/镐标签。
+两个 16 值拉杆帧状态、单一 geometry 的 `bone_visibility` 帧选择、几何和材质、物品显示、安山岩套管破坏粒子、
+木质光照阻隔、两段碰撞体、朝向变换、包围选择框、木质破坏参数、战利品引用和斧/镐标签。
 `packs/SimulatedRP/blocks.json` 将通用方块音效设为 `wood`，而自定义装配器事件位于 `sounds/sound_definitions.json`。

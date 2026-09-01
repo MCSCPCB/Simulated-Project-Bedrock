@@ -1,40 +1,47 @@
-advancement.simulated.applied_kinematics=Прикладная кинематика
-advancement.simulated.applied_kinematics.desc=Получите физический сборщик — сердце каждой физической штуковины
-block.simulated.physics_assembler=Физический сборщик
 tile.simulated:physics_assembler.name=Физический сборщик
-simulated.gui.assembly.exception.couldNotAlign=Невозможно выровнять физическую штуковину для разборки!
-simulated.gui.assembly.exception.outOfWorld=Невозможно разобрать за пределами мира!
-simulated.gui.assembly.exception.sameSubLevel=Невозможно разобрать на одни и те же части физическую штуковину!
-simulated.gui.assembly.exception.tooFarFromGround=Слишком большая высота для разборки!
-simulated.gui.assembly.exception.tooFast=Слишком высокая скорость для разборки!
-simulated.gui.hold_tip.hold_to_assemble=Удерживайте и потяните для сборки
-simulated.gui.hold_tip.hold_to_disassemble=Удерживайте и потяните для разборки
-simulated.ponder.physics_assembler_block_properties.header=Физическими свойствами блоков
-simulated.ponder.physics_assembler_block_properties.text_1=Блоки могут иметь разный вес...
-simulated.ponder.physics_assembler_block_properties.text_2=Лёгкий
-simulated.ponder.physics_assembler_block_properties.text_3=Очень тяжёлый
-simulated.ponder.physics_assembler_block_properties.text_4=...или другие особые свойства
-simulated.ponder.physics_assembler_block_properties.text_5=Скользкий
-simulated.ponder.physics_assembler_block_properties.text_6=Хрупкий
-simulated.ponder.physics_assembler_intro.header=Сборкой физических штуковин
-simulated.ponder.physics_assembler_intro.text_1=Физический сборщик собирает блоки в физические штуковины
-simulated.ponder.physics_assembler_intro.text_2=Используйте суперклей или мёдоклей, чтобы выделить группу блоков...
-simulated.ponder.physics_assembler_intro.text_3=...затем удерживайте ПКМ и потяните рычаг для сборки
-simulated.ponder.physics_assembler_intro.text_4=Учтите, что блоки вдоль диагональных рёбер также являются частью физической штуковины
-simulated.ponder.physics_assembler_intro.text_5=После сборки физический сборщик больше не нужен...
-simulated.ponder.physics_assembler_intro.text_6=...и любой другой физический сборщик может быть использован для разборки
-simulated.ponder.physics_assembler_simulated_contraptions.header=Взаимодействием с физическими штуковинами
-simulated.ponder.physics_assembler_simulated_contraptions.text_1=Физические штуковины обладают физикой и остаются полностью интерактивными после сборки
-simulated.ponder.physics_assembler_sub_level_splitting.header=Разделением и объединением физических штуковин
-simulated.ponder.physics_assembler_sub_level_splitting.text_1=Разделённые части физических штуковин будут открепляться друг от друга
-simulated.ponder.physics_assembler_sub_level_splitting.text_2=Можно использовать сгусток слизи для объединения двух физических штуковин
-simulated.prevent_disassembly=Предотвращена разборка с помощью непервичного физического сборщика
-simulated.subtitle.block.physics_assembler.assemble=Физическая штуковина оживает
-simulated.subtitle.block.physics_assembler.disassemble=Физическая штуковина замирает
-simulated.subtitle.block.physics_assembler.fail=Физический сборщик даёт осечку
-simulated.subtitle.block.physics_assembler.tick=Физический сборщик лязгает
-stat.simulated.interact_with_assembler=Взаимодействий со сборщиком
+
 subtitles.block.physics_assembler.assemble=Физическая штуковина оживает
 subtitles.block.physics_assembler.disassemble=Физическая штуковина замирает
 subtitles.block.physics_assembler.fail=Физический сборщик даёт осечку
 subtitles.block.physics_assembler.tick=Физический сборщик лязгает
+
+#advancement.simulated.applied_kinematics=Прикладная кинематика
+#advancement.simulated.applied_kinematics.desc=Получите физический сборщик — сердце каждой физической штуковины
+#block.simulated.physics_assembler=Физический сборщик
+
+#simulated.gui.assembly.exception.couldNotAlign=Невозможно выровнять физическую штуковину для разборки!
+#simulated.gui.assembly.exception.outOfWorld=Невозможно разобрать за пределами мира!
+#simulated.gui.assembly.exception.sameSubLevel=Невозможно разобрать на одни и те же части физическую штуковину!
+#simulated.gui.assembly.exception.tooFarFromGround=Слишком большая высота для разборки!
+#simulated.gui.assembly.exception.tooFast=Слишком высокая скорость для разборки!
+#simulated.gui.hold_tip.hold_to_assemble=Удерживайте и потяните для сборки
+#simulated.gui.hold_tip.hold_to_disassemble=Удерживайте и потяните для разборки
+
+#simulated.ponder.physics_assembler_block_properties.header=Физическими свойствами блоков
+#simulated.ponder.physics_assembler_block_properties.text_1=Блоки могут иметь разный вес...
+#simulated.ponder.physics_assembler_block_properties.text_2=Лёгкий
+#simulated.ponder.physics_assembler_block_properties.text_3=Очень тяжёлый
+#simulated.ponder.physics_assembler_block_properties.text_4=...или другие особые свойства
+#simulated.ponder.physics_assembler_block_properties.text_5=Скользкий
+#simulated.ponder.physics_assembler_block_properties.text_6=Хрупкий
+#simulated.ponder.physics_assembler_intro.header=Сборкой физических штуковин
+#simulated.ponder.physics_assembler_intro.text_1=Физический сборщик собирает блоки в физические штуковины
+#simulated.ponder.physics_assembler_intro.text_2=Используйте суперклей или мёдоклей, чтобы выделить группу блоков...
+#simulated.ponder.physics_assembler_intro.text_3=...затем удерживайте ПКМ и потяните рычаг для сборки
+#simulated.ponder.physics_assembler_intro.text_4=Учтите, что блоки вдоль диагональных рёбер также являются частью физической штуковины
+#simulated.ponder.physics_assembler_intro.text_5=После сборки физический сборщик больше не нужен...
+#simulated.ponder.physics_assembler_intro.text_6=...и любой другой физический сборщик может быть использован для разборки
+#simulated.ponder.physics_assembler_simulated_contraptions.header=Взаимодействием с физическими штуковинами
+#simulated.ponder.physics_assembler_simulated_contraptions.text_1=Физические штуковины обладают физикой и остаются полностью интерактивными после сборки
+#simulated.ponder.physics_assembler_sub_level_splitting.header=Разделением и объединением физических штуковин
+#simulated.ponder.physics_assembler_sub_level_splitting.text_1=Разделённые части физических штуковин будут открепляться друг от друга
+#simulated.ponder.physics_assembler_sub_level_splitting.text_2=Можно использовать сгусток слизи для объединения двух физических штуковин
+
+#simulated.prevent_disassembly=Предотвращена разборка с помощью непервичного физического сборщика
+
+#simulated.subtitle.block.physics_assembler.assemble=Физическая штуковина оживает
+#simulated.subtitle.block.physics_assembler.disassemble=Физическая штуковина замирает
+#simulated.subtitle.block.physics_assembler.fail=Физический сборщик даёт осечку
+#simulated.subtitle.block.physics_assembler.tick=Физический сборщик лязгает
+
+#stat.simulated.interact_with_assembler=Взаимодействий со сборщиком

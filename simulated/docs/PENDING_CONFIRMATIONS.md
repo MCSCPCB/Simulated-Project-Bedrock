@@ -22,10 +22,13 @@
    - Bedrock 难点：Script API 输入、JSON UI 和脚本事件的时序与 Java 自定义封包不同，尚未确定统一同步协议。
    - 当前处理：文件保留为空壳，不接入 manifest 脚本入口。
 
-5. **动态拉杆渲染**
-   - 原行为：`PhysicsAssemblerRenderer` 根据方块实体状态旋转拉杆 partial model。
-   - Bedrock 难点：方块 permutation 只能表达静态状态；动态骨骼动画、方块实体渲染或辅助实体各有性能和交互代价。
-   - 当前处理：`lever.json` 仅转换为可复用静态 geometry，未接入动画或运行时渲染。
+5. **动态拉杆状态驱动**
+   - 原行为：`PhysicsAssemblerRenderer` 根据方块实体状态连续旋转拉杆 partial model。
+   - 当前已确定并落地：`block.geo.json` 合并主体和 256 个预旋转拉杆骨骼；两个 16 值状态通过
+     `bone_visibility` 映射到 0..45 度的离散帧，单步约 0.17647 度。此做法不使用方块实体渲染，也不使用
+     `geometry.physics_assembler_stage_X`。
+   - 仍待脚本阶段：何时以及由哪个输入/运行时逻辑调用 `BlockPermutation.withState()` 写入两个帧状态；状态
+     更新频率仍受脚本和世界 tick 限制，不能由 `bone_visibility` 自身提升时间采样率。
 
 6. **Java Mixin、服务发现和 NeoForge 元数据**
    - 原行为：拦截引擎方法、暴露平台服务并声明模组加载信息。

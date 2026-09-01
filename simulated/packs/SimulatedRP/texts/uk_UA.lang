@@ -1,40 +1,47 @@
-advancement.simulated.applied_kinematics=Прикладна кінематика
-advancement.simulated.applied_kinematics.desc=Отримайте фізичний збирач, осердя кожної симульованої приладини
-block.simulated.physics_assembler=Фізичний збирач
 tile.simulated:physics_assembler.name=Фізичний збирач
-simulated.gui.assembly.exception.couldNotAlign=Не вдалося вирівняти симульовану приладину для розбирання!
-simulated.gui.assembly.exception.outOfWorld=Неможливо розібрати: за межами світу!
-simulated.gui.assembly.exception.sameSubLevel=Не можна розбирати на тій же симульованій приладині!
-simulated.gui.assembly.exception.tooFarFromGround=Занадто високо над землею, щоби розібрати!
-simulated.gui.assembly.exception.tooFast=Рухається занадто швидко, щоби розібрати!
-simulated.gui.hold_tip.hold_to_assemble=Утримуйте та перетягніть, щоби зібрати
-simulated.gui.hold_tip.hold_to_disassemble=Утримуйте та перетягніть, щоби розібрати
-simulated.ponder.physics_assembler_block_properties.header=Фізичні властивості блоків
-simulated.ponder.physics_assembler_block_properties.text_1=Деякі блоки можуть мати різну вагу…
-simulated.ponder.physics_assembler_block_properties.text_2=Легкий
-simulated.ponder.physics_assembler_block_properties.text_3=Надважкий
-simulated.ponder.physics_assembler_block_properties.text_4=…або інші особливі властивості
-simulated.ponder.physics_assembler_block_properties.text_5=Слизький
-simulated.ponder.physics_assembler_block_properties.text_6=Крихкий
-simulated.ponder.physics_assembler_intro.header=Збирання симульованих приладин
-simulated.ponder.physics_assembler_intro.text_1=Фізичний збирач збирає блоки в симульовані приладини
-simulated.ponder.physics_assembler_intro.text_2=Використайте суперклей або медовий клей, щоби виділити групу блоків…
-simulated.ponder.physics_assembler_intro.text_3=…потім, утримуючи ПКМ, опустіть важіль, щоби зібрати
-simulated.ponder.physics_assembler_intro.text_4=Зверніть увагу, що блоки вздовж діагональних ребер також ураховуються
-simulated.ponder.physics_assembler_intro.text_5=Після збирання початковий фізичний збирач більше не потрібен…
-simulated.ponder.physics_assembler_intro.text_6=…а для розбирання можна використати будь-який фізичний збирач
-simulated.ponder.physics_assembler_simulated_contraptions.header=Взаємодія із симульованими приладинами
-simulated.ponder.physics_assembler_simulated_contraptions.text_1=Симульовані приладини мають фізичні властивості та залишаються повністю інтерактивними після збирання
-simulated.ponder.physics_assembler_sub_level_splitting.header=Розділення та склеєння симульованих приладин
-simulated.ponder.physics_assembler_sub_level_splitting.text_1=Від’єднані ділянки симульованих приладин відокремлюються
-simulated.ponder.physics_assembler_sub_level_splitting.text_2=Слизову кульку можна використати для склеєння будь-яких двох симульованих приладин
-simulated.prevent_disassembly=Розбирання з неосновного фізичного збирача не дозволено
-simulated.subtitle.block.physics_assembler.assemble=Симульована приладина рухається
-simulated.subtitle.block.physics_assembler.disassemble=Симульована приладина зупиняється
-simulated.subtitle.block.physics_assembler.fail=Фізичний збирач не спрацьовує
-simulated.subtitle.block.physics_assembler.tick=Фізичний збирач клацає
-stat.simulated.interact_with_assembler=Взаємодій зі збирачем
+
 subtitles.block.physics_assembler.assemble=Симульована приладина рухається
 subtitles.block.physics_assembler.disassemble=Симульована приладина зупиняється
 subtitles.block.physics_assembler.fail=Фізичний збирач не спрацьовує
 subtitles.block.physics_assembler.tick=Фізичний збирач клацає
+
+#advancement.simulated.applied_kinematics=Прикладна кінематика
+#advancement.simulated.applied_kinematics.desc=Отримайте фізичний збирач, осердя кожної симульованої приладини
+#block.simulated.physics_assembler=Фізичний збирач
+
+#simulated.gui.assembly.exception.couldNotAlign=Не вдалося вирівняти симульовану приладину для розбирання!
+#simulated.gui.assembly.exception.outOfWorld=Неможливо розібрати: за межами світу!
+#simulated.gui.assembly.exception.sameSubLevel=Не можна розбирати на тій же симульованій приладині!
+#simulated.gui.assembly.exception.tooFarFromGround=Занадто високо над землею, щоби розібрати!
+#simulated.gui.assembly.exception.tooFast=Рухається занадто швидко, щоби розібрати!
+#simulated.gui.hold_tip.hold_to_assemble=Утримуйте та перетягніть, щоби зібрати
+#simulated.gui.hold_tip.hold_to_disassemble=Утримуйте та перетягніть, щоби розібрати
+
+#simulated.ponder.physics_assembler_block_properties.header=Фізичні властивості блоків
+#simulated.ponder.physics_assembler_block_properties.text_1=Деякі блоки можуть мати різну вагу…
+#simulated.ponder.physics_assembler_block_properties.text_2=Легкий
+#simulated.ponder.physics_assembler_block_properties.text_3=Надважкий
+#simulated.ponder.physics_assembler_block_properties.text_4=…або інші особливі властивості
+#simulated.ponder.physics_assembler_block_properties.text_5=Слизький
+#simulated.ponder.physics_assembler_block_properties.text_6=Крихкий
+#simulated.ponder.physics_assembler_intro.header=Збирання симульованих приладин
+#simulated.ponder.physics_assembler_intro.text_1=Фізичний збирач збирає блоки в симульовані приладини
+#simulated.ponder.physics_assembler_intro.text_2=Використайте суперклей або медовий клей, щоби виділити групу блоків…
+#simulated.ponder.physics_assembler_intro.text_3=…потім, утримуючи ПКМ, опустіть важіль, щоби зібрати
+#simulated.ponder.physics_assembler_intro.text_4=Зверніть увагу, що блоки вздовж діагональних ребер також ураховуються
+#simulated.ponder.physics_assembler_intro.text_5=Після збирання початковий фізичний збирач більше не потрібен…
+#simulated.ponder.physics_assembler_intro.text_6=…а для розбирання можна використати будь-який фізичний збирач
+#simulated.ponder.physics_assembler_simulated_contraptions.header=Взаємодія із симульованими приладинами
+#simulated.ponder.physics_assembler_simulated_contraptions.text_1=Симульовані приладини мають фізичні властивості та залишаються повністю інтерактивними після збирання
+#simulated.ponder.physics_assembler_sub_level_splitting.header=Розділення та склеєння симульованих приладин
+#simulated.ponder.physics_assembler_sub_level_splitting.text_1=Від’єднані ділянки симульованих приладин відокремлюються
+#simulated.ponder.physics_assembler_sub_level_splitting.text_2=Слизову кульку можна використати для склеєння будь-яких двох симульованих приладин
+
+#simulated.prevent_disassembly=Розбирання з неосновного фізичного збирача не дозволено
+
+#simulated.subtitle.block.physics_assembler.assemble=Симульована приладина рухається
+#simulated.subtitle.block.physics_assembler.disassemble=Симульована приладина зупиняється
+#simulated.subtitle.block.physics_assembler.fail=Фізичний збирач не спрацьовує
+#simulated.subtitle.block.physics_assembler.tick=Фізичний збирач клацає
+
+#stat.simulated.interact_with_assembler=Взаємодій зі збирачем

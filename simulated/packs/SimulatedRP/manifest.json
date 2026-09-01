@@ -5,7 +5,7 @@
     "description": "Resource pack container for the Physics Assembler.",
     "uuid": "31eeb6c9-1e43-4931-8bdc-55b32dddf2e4",
     "version": [1, 0, 0],
-    "min_engine_version": [1, 26, 40]
+    "min_engine_version": [1, 21, 50]
   },
   "modules": [
     {
