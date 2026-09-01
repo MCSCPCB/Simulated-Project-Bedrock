@@ -77,7 +77,7 @@
         "explosion_resistance": 3
       },
       "minecraft:flammable": true,
-      "minecraft:loot": "loot_tables/blocks/physics_assembler.json",
+      "minecraft:loot": "loot_tables/simulated/blocks/physics_assembler.json",
       "minecraft:tags": [
         "minecraft:is_pickaxe_item_destructible",
         "minecraft:is_axe_item_destructible",
