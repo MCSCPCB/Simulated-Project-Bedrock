@@ -185,7 +185,7 @@
         "$pressed_button_name": "button.submit_custom_form",
         "size": ["100%", "100%"],
         "alpha": 0,
-        "sound_name": "block.physics_assembler.shift",
+        "sound_name": "ui.button_release",
         "sound_volume": 0.7,
         "sound_pitch": 1.0
     },

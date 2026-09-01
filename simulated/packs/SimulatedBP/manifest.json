@@ -41,7 +41,7 @@
                 0,
                 0
             ],
-            "entry": "scripts/simulated/launcher.js"
+            "entry": "scripts/simulated/Simulated.js"
         }
     ],
     "dependencies": [

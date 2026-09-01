@@ -1,7 +1,8 @@
 import { initPhysicsAssemblerBlock } from "./content/blocks/physics_assembler/PhysicsAssemblerBlock.js";
-
-export function init(): void {
-    initPhysicsAssemblerBlock();
+function init() {
+  initPhysicsAssemblerBlock();
 }
-
 init();
+export {
+  init
+};
