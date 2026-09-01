@@ -1,4 +1,7 @@
 tile.simulated:physics_assembler.name=물리 조립기
+physics_assembler.title=물리 조립기
+physics_assembler.lever.text=레버 위치
+physics_assembler.confirm.text=확인
 
 subtitles.block.physics_assembler.assemble=모의 구조물이 움직임
 subtitles.block.physics_assembler.disassemble=모의 구조물이 멈춤

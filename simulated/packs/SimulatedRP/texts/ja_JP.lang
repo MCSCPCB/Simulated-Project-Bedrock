@@ -1,4 +1,7 @@
 tile.simulated:physics_assembler.name=物理アセンブラ
+physics_assembler.title=物理アセンブラ
+physics_assembler.lever.text=レバー位置
+physics_assembler.confirm.text=確認
 
 subtitles.block.physics_assembler.assemble=擬似からくりが動く
 subtitles.block.physics_assembler.disassemble=擬似からくりが止まる

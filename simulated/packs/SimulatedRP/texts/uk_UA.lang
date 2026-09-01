@@ -1,4 +1,7 @@
 tile.simulated:physics_assembler.name=Фізичний збирач
+physics_assembler.title=Фізичний збирач
+physics_assembler.lever.text=Положення важеля
+physics_assembler.confirm.text=Підтвердити
 
 subtitles.block.physics_assembler.assemble=Симульована приладина рухається
 subtitles.block.physics_assembler.disassemble=Симульована приладина зупиняється

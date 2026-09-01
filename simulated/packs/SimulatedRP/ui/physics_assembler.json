@@ -1,0 +1,250 @@
+{
+    "namespace": "physics_assembler",
+
+    "assembler_button_image": {
+        "type": "image",
+        "texture": "textures/ui/simulated/machines/assembler",
+        "uv": [14, 0],
+        "uv_size": [18, 14],
+        "keep_ratio": false
+    },
+
+    "slider_button_default@common.slider_button_state": {
+        "texture": "textures/ui/simulated/machines/assembler",
+        "uv": [14, 0],
+        "uv_size": [18, 14],
+        "size": ["21px", "16px"],
+        "keep_ratio": false
+    },
+    "slider_button_hover@physics_assembler.slider_button_default": {
+        "color": [1.0, 0.92, 0.7]
+    },
+    "slider_button_locked@physics_assembler.slider_button_default": {
+        "alpha": 0.65
+    },
+
+    "track_background": {
+        "type": "panel",
+        "size": ["16px", "78px"],
+        "anchor_from": "center",
+        "anchor_to": "center",
+        "controls": [
+            {
+                "track_start": {
+                    "type": "image",
+                    "texture": "textures/ui/simulated/machines/assembler",
+                    "uv": [0, 0],
+                    "uv_size": [14, 6],
+                    "size": ["16px", "6px"],
+                    "anchor_from": "top_middle",
+                    "anchor_to": "top_middle",
+                    "keep_ratio": false
+                }
+            },
+            {
+                "track_middle": {
+                    "type": "image",
+                    "texture": "textures/ui/simulated/machines/assembler",
+                    "uv": [0, 7],
+                    "uv_size": [14, 10],
+                    "size": ["16px", "100% - 11px"],
+                    "offset": [0, 6],
+                    "anchor_from": "top_middle",
+                    "anchor_to": "top_middle",
+                    "tiled": "y",
+                    "keep_ratio": false
+                }
+            },
+            {
+                "track_end": {
+                    "type": "image",
+                    "texture": "textures/ui/simulated/machines/assembler",
+                    "uv": [0, 18],
+                    "uv_size": [14, 5],
+                    "size": ["16px", "5px"],
+                    "anchor_from": "bottom_middle",
+                    "anchor_to": "bottom_middle",
+                    "keep_ratio": false
+                }
+            }
+        ]
+    },
+
+    "track_progress": {
+        "type": "image",
+        "texture": "textures/ui/simulated/machines/assembler",
+        "uv": [0, 7],
+        "uv_size": [14, 10],
+        "size": ["16px", "78px"],
+        "anchor_from": "center",
+        "anchor_to": "center",
+        "tiled": "y",
+        "keep_ratio": false
+    },
+
+    "slider_bar_default": {
+        "type": "panel",
+        "size": ["100%", "100%"],
+        "controls": [
+            {
+                "background@physics_assembler.track_background": {
+                    "layer": 1
+                }
+            },
+            {
+                "progress@physics_assembler.track_progress": {
+                    "layer": 3,
+                    "clip_direction": "up",
+                    "clip_pixelperfect": false
+                }
+            }
+        ]
+    },
+    "slider_bar_hover@physics_assembler.slider_bar_default": {
+        "visible": false
+    },
+
+    "slider_control": {
+        "type": "panel",
+        "size": ["16px", "78px"],
+        "controls": [
+            {
+                "slider@common.slider": {
+                    "size": ["16px", "78px"],
+                    "$slider_box_size": ["21px", "16px"],
+                    "$slider_direction": "vertical",
+                    "$slider_box_layout": "physics_assembler.slider_button_default",
+                    "$slider_box_hover_layout": "physics_assembler.slider_button_hover",
+                    "$slider_box_locked_layout": "physics_assembler.slider_button_locked",
+                    "$option_label|default": "",
+                    "$slider_tts_header": "#not_data_bound",
+                    "$slider_tts_header_binding_type": "none",
+                    "enabled": "$enabled",
+                    "$slider_enabled_binding_name": "$option_enabled_binding_name",
+                    "$slider_enabled_binding_type": "global",
+                    "variables": [
+                        {
+                            "requires": "(not $option_enabled_binding_name or not $enabled)",
+                            "$slider_enabled_binding_name": "#not_data_bound",
+                            "$slider_enabled_binding_type": "none"
+                        }
+                    ],
+                    "controls": [
+                        {
+                            "slider_box@common.slider_box": {
+                                "$slider_box_layout": "$slider_box_layout",
+                                "$slider_box_hover_layout": "$slider_box_hover_layout",
+                                "$slider_box_locked_layout": "$slider_box_locked_layout",
+                                "$slider_box_size": "$slider_box_size",
+                                "$slider_track_button": "$slider_name"
+                            }
+                        },
+                        {
+                            "slider_bar_default@physics_assembler.slider_bar_default": {}
+                        },
+                        {
+                            "slider_bar_hover@physics_assembler.slider_bar_hover": {}
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+
+    "physics_assembler_slider@server_form.custom_slider": {
+        "$control_name": "physics_assembler.slider_control",
+        "$option_label": "",
+        "$show_option_label": false,
+        "$option_generic_panel_size": ["16px", "78px"],
+        "size": ["16px", "78px"]
+    },
+
+    "generated_contents@server_form.generated_contents": {
+        "factory": {
+            "name": "buttons",
+            "control_ids": {
+                "label": "@server_form.custom_label",
+                "toggle": "@server_form.custom_toggle",
+                "slider": "@physics_assembler.physics_assembler_slider",
+                "step_slider": "@server_form.custom_step_slider",
+                "dropdown": "@server_form.custom_dropdown",
+                "input": "@server_form.custom_input"
+            }
+        }
+    },
+
+    "submit_button_panel@common_buttons.new_ui_button_panel": {
+        "$button_image": "physics_assembler.assembler_button_image",
+        "$button_image_size": ["100%", "100%"],
+        "$button_content_size": [0, 0],
+        "$border_visible": false
+    },
+    "submit_button@common_buttons.light_text_button": {
+        "$button_state_panel": "physics_assembler.submit_button_panel",
+        "$button_text": "",
+        "$button_text_binding_type": "none",
+        "$pressed_button_name": "button.submit_custom_form",
+        "size": ["21px", "16px"],
+        "sound_name": "block.physics_assembler.shift",
+        "sound_volume": 0.7,
+        "sound_pitch": 1.0
+    },
+
+    "physics_assembler_content": {
+        "type": "panel",
+        "size": ["16px", "98px"],
+        "anchor_from": "center",
+        "anchor_to": "center",
+        "controls": [
+            {
+                "submit_button@physics_assembler.submit_button": {
+                    "anchor_from": "top_middle",
+                    "anchor_to": "top_middle",
+                    "offset": [0, 0],
+                    "size": ["21px", "16px"],
+                    "bindings": [
+                        {
+                            "binding_name": "#submit_button_visible",
+                            "binding_name_override": "#visible"
+                        }
+                    ]
+                }
+            },
+            {
+                "generated_form@physics_assembler.generated_contents": {
+                    "anchor_from": "top_middle",
+                    "anchor_to": "top_middle",
+                    "offset": [0, 20],
+                    "size": ["16px", "78px"]
+                }
+            }
+        ]
+    },
+
+    "physics_assembler_panel": {
+        "type": "panel",
+        "size": ["100%", "100%"],
+        "anchor_from": "center",
+        "anchor_to": "center",
+        "layer": 2,
+        "bindings": [
+            {
+                "binding_name": "#title_text"
+            },
+            {
+                "binding_type": "view",
+                "source_property_name": "(not ((#title_text - 'simulated:physics_assembler.') = #title_text))",
+                "target_property_name": "#visible"
+            }
+        ],
+        "controls": [
+            {
+                "physics_assembler_content@physics_assembler.physics_assembler_content": {
+                    "anchor_from": "center",
+                    "anchor_to": "center",
+                    "offset": [24, -10]
+                }
+            }
+        ]
+    }
+}

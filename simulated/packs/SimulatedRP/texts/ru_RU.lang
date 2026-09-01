@@ -1,4 +1,7 @@
 tile.simulated:physics_assembler.name=Физический сборщик
+physics_assembler.title=Физический сборщик
+physics_assembler.lever.text=Положение рычага
+physics_assembler.confirm.text=Подтвердить
 
 subtitles.block.physics_assembler.assemble=Физическая штуковина оживает
 subtitles.block.physics_assembler.disassemble=Физическая штуковина замирает

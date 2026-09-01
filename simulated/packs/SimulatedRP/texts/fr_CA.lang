@@ -1,4 +1,7 @@
 tile.simulated:physics_assembler.name=Assembleur de physique
+physics_assembler.title=Assembleur de physique
+physics_assembler.lever.text=Position du levier
+physics_assembler.confirm.text=Confirmer
 
 subtitles.block.physics_assembler.assemble=Machine simulée se déplace
 subtitles.block.physics_assembler.disassemble=Machine simulée s'arrête
