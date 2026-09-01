@@ -6,7 +6,7 @@ const TICK_SOUND = "block.physics_assembler.tick";
 const SHIFT_SOUND = "block.physics_assembler.shift";
 const FRAME_MIN = 0;
 const FRAME_MAX = 255;
-const FRAMES_PER_TICK = 4;
+const FRAMES_PER_TICK = 60;
 const activeAnimations = /* @__PURE__ */ new Map();
 function clampFrame(value) {
   return Math.max(FRAME_MIN, Math.min(FRAME_MAX, Math.round(value)));

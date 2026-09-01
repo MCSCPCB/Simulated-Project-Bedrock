@@ -8,7 +8,8 @@ const TICK_SOUND = "block.physics_assembler.tick";
 const SHIFT_SOUND = "block.physics_assembler.shift";
 const FRAME_MIN = 0;
 const FRAME_MAX = 255;
-const FRAMES_PER_TICK = 4;
+// 60 frames per game tick completes a full 0..255.
+const FRAMES_PER_TICK = 60;
 
 const activeAnimations = new Map<string, number>();
 

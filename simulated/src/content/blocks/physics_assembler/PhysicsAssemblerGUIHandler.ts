@@ -18,7 +18,9 @@ export function showPhysicsAssemblerForm(player: Player, block: Block): void {
         .title(PHYSICS_ASSEMBLER_TITLE)
         .slider({ translate: "%physics_assembler.lever.text" }, FRAME_MIN, FRAME_MAX, {
             valueStep: 1,
-            defaultValue: getLeverFrame(block),
+            // The native vertical slider renders its minimum at the top; the
+            // original assembler renders frame 0 at the bottom.
+            defaultValue: FRAME_MAX - getLeverFrame(block),
         })
         .submitButton({ translate: "%physics_assembler.confirm.text" });
 
@@ -26,8 +28,9 @@ export function showPhysicsAssemblerForm(player: Player, block: Block): void {
         .then((response) => {
             if (response.canceled || !response.formValues) return;
 
-            const submitted = Number(response.formValues[0]);
-            if (!Number.isFinite(submitted)) return;
+            const displayedValue = Number(response.formValues[0]);
+            if (!Number.isFinite(displayedValue)) return;
+            const submitted = FRAME_MAX - displayedValue;
 
             const currentBlock = block.dimension.getBlock(block.location);
             if (!currentBlock || currentBlock.typeId !== PHYSICS_ASSEMBLER) return;
