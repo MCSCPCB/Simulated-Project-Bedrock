@@ -5,43 +5,43 @@
       "category": "block",
       "subtitle": "subtitles.block.physics_assembler.assemble",
       "sounds": [
-        "sounds/simulated/physics_assembler/assemble_1",
-        "sounds/simulated/physics_assembler/assemble_2",
-        "sounds/simulated/physics_assembler/assemble_3",
-        "sounds/simulated/physics_assembler/assemble_4",
-        "sounds/simulated/physics_assembler/assemble_5"
+        "sounds/simulated/common/machines/physics_assembler/assemble_1",
+        "sounds/simulated/common/machines/physics_assembler/assemble_2",
+        "sounds/simulated/common/machines/physics_assembler/assemble_3",
+        "sounds/simulated/common/machines/physics_assembler/assemble_4",
+        "sounds/simulated/common/machines/physics_assembler/assemble_5"
       ]
     },
     "block.physics_assembler.disassemble": {
       "category": "block",
       "subtitle": "subtitles.block.physics_assembler.disassemble",
       "sounds": [
-        "sounds/simulated/physics_assembler/disassemble"
+        "sounds/simulated/common/machines/physics_assembler/disassemble"
       ]
     },
     "block.physics_assembler.fail": {
       "category": "block",
       "subtitle": "subtitles.block.physics_assembler.fail",
       "sounds": [
-        "sounds/simulated/physics_assembler/fail_1",
-        "sounds/simulated/physics_assembler/fail_2",
-        "sounds/simulated/physics_assembler/fail_3"
+        "sounds/simulated/common/machines/physics_assembler/fail_1",
+        "sounds/simulated/common/machines/physics_assembler/fail_2",
+        "sounds/simulated/common/machines/physics_assembler/fail_3"
       ]
     },
     "block.physics_assembler.shift": {
       "category": "block",
       "sounds": [
-        "sounds/simulated/physics_assembler/shift"
+        "sounds/simulated/common/machines/physics_assembler/shift"
       ]
     },
     "block.physics_assembler.tick": {
       "category": "block",
       "subtitle": "subtitles.block.physics_assembler.tick",
       "sounds": [
-        "sounds/simulated/physics_assembler/tick_1",
-        "sounds/simulated/physics_assembler/tick_2",
-        "sounds/simulated/physics_assembler/tick_3",
-        "sounds/simulated/physics_assembler/tick_4"
+        "sounds/simulated/common/machines/physics_assembler/tick_1",
+        "sounds/simulated/common/machines/physics_assembler/tick_2",
+        "sounds/simulated/common/machines/physics_assembler/tick_3",
+        "sounds/simulated/common/machines/physics_assembler/tick_4"
       ]
     }
   }
