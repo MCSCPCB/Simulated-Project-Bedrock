@@ -1,18 +1,46 @@
 {
-  "format_version": 2,
-  "header": {
-    "name": "Simulated Physics Assembler Resources",
-    "description": "Resource pack container for the Physics Assembler.",
-    "uuid": "31eeb6c9-1e43-4931-8bdc-55b32dddf2e4",
-    "version": [1, 0, 0],
-    "min_engine_version": [1, 21, 50]
-  },
-  "modules": [
-    {
-      "description": "Physics Assembler resource data",
-      "type": "resources",
-      "uuid": "48e2bdf4-6fe3-403e-9d02-a1e4b1e2c748",
-      "version": [1, 0, 0]
-    }
-  ]
+    "format_version": 2,
+    "metadata": {
+        "authors": [
+            "MINECRAFT-SCPCB"
+        ],
+        "product_type": "addon"
+    },
+    "header": {
+        "pack_scope": "world",
+        "name": "pack.name",
+        "description": "pack.description",
+        "uuid": "31eeb6c9-1e43-4931-8bdc-55b32dddf2e4",
+        "version": [
+            1,
+            0,
+            0
+        ],
+        "min_engine_version": [
+            1,
+            21,
+            50
+        ]
+    },
+    "modules": [
+        {
+            "type": "resources",
+            "uuid": "48e2bdf4-6fe3-403e-9d02-a1e4b1e2c748",
+            "version": [
+                1,
+                0,
+                0
+            ]
+        }
+    ],
+    "dependencies": [
+        {
+            "uuid": "8d58f9b5-4e65-4e5e-9f8d-5a6f9f8c1e21",
+            "version": [
+                1,
+                0,
+                0
+            ]
+        }
+    ]
 }
