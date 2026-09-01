@@ -106,11 +106,11 @@
 
     "slider_control": {
         "type": "panel",
-        "size": ["16px", "78px"],
+        "size": ["16px", "52px"],
         "controls": [
             {
                 "slider@common.slider": {
-                    "size": ["16px", "78px"],
+                    "size": ["16px", "52px"],
                     "$slider_box_size": ["21px", "16px"],
                     "$slider_direction": "vertical",
                     "$slider_box_layout": "physics_assembler.slider_button_default",
@@ -155,8 +155,8 @@
         "$control_name": "physics_assembler.slider_control",
         "$option_label": "",
         "$show_option_label": false,
-        "$option_generic_panel_size": ["16px", "78px"],
-        "size": ["16px", "78px"]
+        "$option_generic_panel_size": ["16px", "52px"],
+        "size": ["16px", "52px"]
     },
 
     "generated_contents@server_form.generated_contents": {
@@ -192,7 +192,7 @@
 
     "physics_assembler_content": {
         "type": "panel",
-        "size": ["16px", "98px"],
+        "size": ["16px", "72px"],
         "anchor_from": "center",
         "anchor_to": "center",
         "controls": [
@@ -215,7 +215,7 @@
                     "anchor_from": "top_middle",
                     "anchor_to": "top_middle",
                     "offset": [0, 20],
-                    "size": ["16px", "78px"]
+                    "size": ["16px", "52px"]
                 }
             }
         ]
