@@ -103,6 +103,34 @@
         "visible": false
     },
 
+    "static_hud_crosshair": {
+        "type": "image",
+        "texture": "textures/ui/cross_hair",
+        "size": ["16px", "16px"],
+        "anchor_from": "center",
+        "anchor_to": "center",
+        "layer": 0,
+        "$show_desktop": true,
+        "visible": "$show_desktop",
+        "variables": [
+            {
+                "requires": "$touch",
+                "$show_desktop": false
+            }
+        ]
+    },
+
+    "static_hud": {
+        "type": "panel",
+        "size": ["100%", "100%"],
+        "anchor_from": "center",
+        "anchor_to": "center",
+        "layer": 0,
+        "controls": [
+            {"crosshair@physics_assembler.static_hud_crosshair": {}}
+        ]
+    },
+
     "slider_control": {
         "type": "panel",
         "size": ["16px", "55px"],
@@ -235,6 +263,13 @@
                             "binding_name_override": "#visible"
                         }
                     ]
+                }
+            },
+            {
+                "static_hud@physics_assembler.static_hud": {
+                    "anchor_from": "center",
+                    "anchor_to": "center",
+                    "layer": 0
                 }
             },
             {
