@@ -277,7 +277,7 @@
                     "color": [1, 1, 1],
                     "shadow": true,
                     "layer": 31,
-                    "text": "simulated.gui.hold_tip.hold_to_assemble",
+                    "text": "simulated.gui.hold_tip.hold_and_click_to_assemble",
                     "localize": true,
                     "bindings": [
                         {
@@ -300,7 +300,7 @@
                     "color": [1, 1, 1],
                     "shadow": true,
                     "layer": 31,
-                    "text": "simulated.gui.hold_tip.hold_to_disassemble",
+                    "text": "simulated.gui.hold_tip.hold_and_click_to_disassemble",
                     "localize": true,
                     "bindings": [
                         {
