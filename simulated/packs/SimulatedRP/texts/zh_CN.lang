@@ -10,8 +10,11 @@ subtitles.block.physics_assembler.tick=物理组装器：咔哒
 #simulated.gui.assembly.exception.sameSubLevel=无法拆解到同一个物理结构上！
 #simulated.gui.assembly.exception.tooFarFromGround=距离地面过远，无法拆卸！
 #simulated.gui.assembly.exception.tooFast=移动速度过快，无法拆卸！
-simulated.gui.hold_tip.hold_to_assemble=按住并拖拽以组装
-simulated.gui.hold_tip.hold_to_disassemble=按住并拖拽以拆卸
+#simulated.gui.hold_tip.hold_to_assemble=按住并拖拽以组装
+#simulated.gui.hold_tip.hold_to_disassemble=按住并拖拽以拆卸
+
+simulated.gui.hold_tip.hold_to_assemble=按住并拖拽，然后点击空白以组装
+simulated.gui.hold_tip.hold_to_disassemble=按住并拖拽，然后点击空白以拆卸
 
 #advancement.simulated.applied_kinematics=应用动力
 #advancement.simulated.applied_kinematics.desc=获得物理结构的核心组件——物理组装器
