@@ -45,7 +45,7 @@ function maxRaycastDistance(): number {
     );
 }
 
-function toSubtitlePayload(text: HoldTipText, prefix: string): RawMessage {
+function toActionbarPayload(text: HoldTipText, prefix: string): RawMessage {
     return {
         rawtext: [
             { text: prefix },
@@ -54,19 +54,13 @@ function toSubtitlePayload(text: HoldTipText, prefix: string): RawMessage {
     };
 }
 
-function setTipSubtitle(player: Player, text: HoldTipText, prefix: string): boolean {
+function setTipActionbar(player: Player, text: HoldTipText, prefix: string): boolean {
     try {
-        const payload = toSubtitlePayload(text, prefix);
-        player.onScreenDisplay.setTitle("", {
-            fadeInDuration: 0,
-            stayDuration: 1000000,
-            fadeOutDuration: 0,
-            subtitle: payload,
-        });
-        player.onScreenDisplay.updateSubtitle(payload);
+        const payload = toActionbarPayload(text, prefix);
+        player.onScreenDisplay.setActionBar(payload);
         return true;
     } catch (error) {
-        console.error("[simulated] hold tip subtitle display failed", error);
+        console.error("[simulated] hold tip actionbar display failed", error);
         return false;
     }
 }
@@ -86,9 +80,9 @@ function canDisplayHoldTip(player: Player): boolean {
 function clearTip(player: Player): void {
     if (!activeTips.has(player.id)) return;
     try {
-        if (player.isValid) player.onScreenDisplay.updateSubtitle("");
+        if (player.isValid) player.onScreenDisplay.setActionBar("");
     } catch (error) {
-        console.error("[simulated] hold tip subtitle clear failed", error);
+        console.error("[simulated] hold tip actionbar clear failed", error);
     }
     activeTips.delete(player.id);
 }
@@ -142,7 +136,7 @@ function updatePlayer(player: Player): void {
         if (!active) return;
 
         if (active.fadeUntilTick === undefined) {
-            if (setTipSubtitle(player, active.text, HOLD_TIP_FADE_PREFIX)) {
+            if (setTipActionbar(player, active.text, HOLD_TIP_FADE_PREFIX)) {
                 active.fadeUntilTick = currentTick + FADE_OUT_TICKS;
             }
         } else if (currentTick >= active.fadeUntilTick) {
@@ -153,7 +147,7 @@ function updatePlayer(player: Player): void {
 
     const key = `${resolved.definition.id}:${resolved.result.key}`;
     if (!active) {
-        if (setTipSubtitle(player, resolved.result.text, HOLD_TIP_PREFIX)) {
+        if (setTipActionbar(player, resolved.result.text, HOLD_TIP_PREFIX)) {
             activeTips.set(player.id, {
                 key,
                 text: resolved.result.text,
@@ -166,7 +160,7 @@ function updatePlayer(player: Player): void {
     if (active.key !== key) {
         // A changed tip is already visible in the original HUD; do not restart
         // its fade-in merely because the text switched between assemble modes.
-        if (setTipSubtitle(player, resolved.result.text, HOLD_TIP_STEADY_PREFIX)) {
+        if (setTipActionbar(player, resolved.result.text, HOLD_TIP_STEADY_PREFIX)) {
             active.key = key;
             active.text = resolved.result.text;
             active.lastSetTick = currentTick;
@@ -176,7 +170,7 @@ function updatePlayer(player: Player): void {
     }
 
     if (active.fadeUntilTick !== undefined) {
-        if (setTipSubtitle(player, resolved.result.text, HOLD_TIP_PREFIX)) {
+        if (setTipActionbar(player, resolved.result.text, HOLD_TIP_PREFIX)) {
             active.text = resolved.result.text;
             active.lastSetTick = currentTick;
             active.fadeUntilTick = undefined;
@@ -185,7 +179,7 @@ function updatePlayer(player: Player): void {
     }
 
     if (currentTick - active.lastSetTick >= REFRESH_INTERVAL_TICKS) {
-        if (setTipSubtitle(player, active.text, HOLD_TIP_STEADY_PREFIX)) {
+        if (setTipActionbar(player, active.text, HOLD_TIP_STEADY_PREFIX)) {
             active.lastSetTick = currentTick;
         }
     }
