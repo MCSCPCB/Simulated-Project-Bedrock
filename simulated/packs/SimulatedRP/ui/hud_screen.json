@@ -70,7 +70,7 @@
         "variables": [
             {
                 "requires": "(not (($text - 'simulated.hold_tip:') = $text)) or not (($text - 'simulated.hold_tip.steady:') = $text) or not (($text - 'simulated.hold_tip.fade:') = $text)",
-                "$texture": "textures/ui/empty",
+                "$texture": "textures/ui/simulated/empty",
                 "$alpha": 1,
                 "$message_panel": "hud.simulated_hold_tip_actionbar_message",
                 "$anchor_from": "bottom_middle",
