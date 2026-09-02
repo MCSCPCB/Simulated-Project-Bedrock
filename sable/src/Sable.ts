@@ -1,1 +1,13 @@
-// Placeholder for the corresponding Sable projection responsibility.
+export { SubLevelRenderer } from "./sublevel/render/SubLevelRenderer.js";
+export {
+  BLOCK_CARRIER_CAPACITY,
+  BLOCK_CARRIER_ENTITY_TYPE_ID,
+  BLOCK_SLOTS_PER_ENTITY
+} from "./sublevel/render/SubLevelRenderData.js";
+export type {
+  SubLevel,
+  SubLevelBlock,
+  SubLevelBlockCollisionBox,
+  SubLevelRenderBody
+} from "./sublevel/SubLevel.js";
+export type { SubLevelRenderData } from "./sublevel/render/SubLevelRenderData.js";
