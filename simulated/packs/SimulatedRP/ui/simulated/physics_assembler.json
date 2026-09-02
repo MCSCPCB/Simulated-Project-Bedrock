@@ -235,6 +235,69 @@
         ]
     },
 
+    "form_hold_tip_fade_in": {
+        "anim_type": "alpha",
+        "easing": "linear",
+        "duration": 0.25,
+        "from": 0,
+        "to": 1
+    },
+
+    "form_hold_tip_message": {
+        "type": "panel",
+        "size": ["100%", "100%"],
+        "controls": [
+            {
+                "assemble_message": {
+                    "type": "label",
+                    "anchor_from": "bottom_middle",
+                    "anchor_to": "bottom_middle",
+                    "offset": [0, -87],
+                    "color": [1, 1, 1],
+                    "shadow": true,
+                    "layer": 31,
+                    "text": "simulated.gui.hold_tip.hold_to_assemble",
+                    "localize": true,
+                    "alpha": "@physics_assembler.form_hold_tip_fade_in",
+                    "bindings": [
+                        {
+                            "binding_name": "#title_text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#title_text - 'disassemble') = #title_text)",
+                            "target_property_name": "#visible"
+                        }
+                    ]
+                }
+            },
+            {
+                "disassemble_message": {
+                    "type": "label",
+                    "anchor_from": "bottom_middle",
+                    "anchor_to": "bottom_middle",
+                    "offset": [0, -87],
+                    "color": [1, 1, 1],
+                    "shadow": true,
+                    "layer": 31,
+                    "text": "simulated.gui.hold_tip.hold_to_disassemble",
+                    "localize": true,
+                    "alpha": "@physics_assembler.form_hold_tip_fade_in",
+                    "bindings": [
+                        {
+                            "binding_name": "#title_text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "(not ((#title_text - 'disassemble') = #title_text))",
+                            "target_property_name": "#visible"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+
     "physics_assembler_panel": {
         "type": "panel",
         "size": ["100%", "100%"],
@@ -278,6 +341,13 @@
                     "anchor_to": "center",
                     "layer": 2,
                     "offset": [24, -10]
+                }
+            },
+            {
+                "form_hold_tip@physics_assembler.form_hold_tip_message": {
+                    "anchor_from": "bottom_middle",
+                    "anchor_to": "bottom_middle",
+                    "layer": 31
                 }
             }
         ]

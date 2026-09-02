@@ -1,14 +1,19 @@
 import { ModalFormData } from "@minecraft/server-ui";
-import { animateLever, getLeverFrame } from "./PhysicsAssemblerBlockEntity.js";
+import {
+  animateLever,
+  getLeverFrame,
+  getPhysicsAssemblerHoldTip
+} from "./PhysicsAssemblerBlockEntity.js";
 const PHYSICS_ASSEMBLER = "simulated:physics_assembler";
-const PHYSICS_ASSEMBLER_TITLE = "simulated:physics_assembler.title";
+const PHYSICS_ASSEMBLER_TITLE_PREFIX = "simulated:physics_assembler.";
 const FRAME_MIN = 0;
 const FRAME_MAX = 255;
 const openForms = /* @__PURE__ */ new Set();
 function showPhysicsAssemblerForm(player, block) {
   if (!player?.isValid || !block || block.typeId !== PHYSICS_ASSEMBLER || openForms.has(player.id)) return;
   openForms.add(player.id);
-  const form = new ModalFormData().title(PHYSICS_ASSEMBLER_TITLE).slider({ translate: "%physics_assembler.lever.text" }, FRAME_MIN, FRAME_MAX, {
+  const holdTipMode = getPhysicsAssemblerHoldTip(block).key;
+  const form = new ModalFormData().title(`${PHYSICS_ASSEMBLER_TITLE_PREFIX}physics_assembler.title.${holdTipMode}`).slider({ translate: "%physics_assembler.lever.text" }, FRAME_MIN, FRAME_MAX, {
     valueStep: 1,
     // The native vertical slider renders its minimum at the top; the
     // original assembler renders frame 0 at the bottom.
