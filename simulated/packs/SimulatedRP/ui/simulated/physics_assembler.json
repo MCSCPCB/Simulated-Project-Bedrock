@@ -240,12 +240,29 @@
         "easing": "linear",
         "duration": 0.25,
         "from": 0,
-        "to": 1
+        "to": 1,
+        "play_event": "screen.entrance_pop",
+        "end_event": "screen.entrance_end"
+    },
+
+    "form_hold_tip_fade_out": {
+        "anim_type": "alpha",
+        "easing": "linear",
+        "duration": 0.25,
+        "from": 1,
+        "to": 0,
+        "play_event": "screen.exit_pop",
+        "end_event": "screen.exit_end"
     },
 
     "form_hold_tip_message": {
         "type": "panel",
         "size": ["100%", "100%"],
+        "anims": [
+            "@physics_assembler.form_hold_tip_fade_in",
+            "@physics_assembler.form_hold_tip_fade_out"
+        ],
+        "propagate_alpha": true,
         "controls": [
             {
                 "assemble_message": {
@@ -258,7 +275,6 @@
                     "layer": 31,
                     "text": "simulated.gui.hold_tip.hold_to_assemble",
                     "localize": true,
-                    "alpha": "@physics_assembler.form_hold_tip_fade_in",
                     "bindings": [
                         {
                             "binding_name": "#title_text"
@@ -282,7 +298,6 @@
                     "layer": 31,
                     "text": "simulated.gui.hold_tip.hold_to_disassemble",
                     "localize": true,
-                    "alpha": "@physics_assembler.form_hold_tip_fade_in",
                     "bindings": [
                         {
                             "binding_name": "#title_text"
