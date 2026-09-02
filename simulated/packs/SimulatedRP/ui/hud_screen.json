@@ -1,0 +1,195 @@
+{
+    "namespace": "hud",
+
+    "anim_simulated_hold_tip_fade_in": {
+        "anim_type": "alpha",
+        "easing": "linear",
+        "duration": 0.25,
+        "from": 0,
+        "to": 1
+    },
+
+    "anim_simulated_hold_tip_fade_out": {
+        "anim_type": "alpha",
+        "easing": "linear",
+        "duration": 0.25,
+        "from": 1,
+        "to": 0
+    },
+
+    "simulated_hold_tip_fade_in": {
+        "type": "label",
+        "anchor_from": "bottom_middle",
+        "anchor_to": "bottom_middle",
+        "offset": [0, -87],
+        "size": ["100%c", "default"],
+        "color": [1, 1, 1],
+        "shadow": true,
+        "layer": 31,
+        "alpha": "@hud.anim_simulated_hold_tip_fade_in",
+        "text": "#text",
+        "localize": false,
+        "$update_string": "simulated.hold_tip:",
+        "bindings": [
+            {
+                "binding_type": "view",
+                "source_control_name": "data_control",
+                "source_property_name": "#visible",
+                "target_property_name": "#visible"
+            },
+            {
+                "binding_type": "view",
+                "source_control_name": "data_control",
+                "source_property_name": "(#preserved_text - $update_string)",
+                "target_property_name": "#text"
+            }
+        ],
+        "controls": [
+            {
+                "data_control": {
+                    "type": "panel",
+                    "size": [0, 0],
+                    "bindings": [
+                        {
+                            "binding_name": "#hud_subtitle_text_string"
+                        },
+                        {
+                            "binding_name": "#hud_subtitle_text_string",
+                            "binding_name_override": "#preserved_text",
+                            "binding_condition": "visibility_changed"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "(not (#hud_subtitle_text_string = #preserved_text) and not ((#hud_subtitle_text_string - $update_string) = #hud_subtitle_text_string))",
+                            "target_property_name": "#visible"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+
+    "simulated_hold_tip_steady": {
+        "type": "label",
+        "anchor_from": "bottom_middle",
+        "anchor_to": "bottom_middle",
+        "offset": [0, -87],
+        "size": ["100%c", "default"],
+        "color": [1, 1, 1],
+        "shadow": true,
+        "layer": 31,
+        "alpha": 1,
+        "text": "#text",
+        "localize": false,
+        "$update_string": "simulated.hold_tip.steady:",
+        "bindings": [
+            {
+                "binding_type": "view",
+                "source_control_name": "data_control",
+                "source_property_name": "#visible",
+                "target_property_name": "#visible"
+            },
+            {
+                "binding_type": "view",
+                "source_control_name": "data_control",
+                "source_property_name": "(#preserved_text - $update_string)",
+                "target_property_name": "#text"
+            }
+        ],
+        "controls": [
+            {
+                "data_control": {
+                    "type": "panel",
+                    "size": [0, 0],
+                    "bindings": [
+                        {
+                            "binding_name": "#hud_subtitle_text_string"
+                        },
+                        {
+                            "binding_name": "#hud_subtitle_text_string",
+                            "binding_name_override": "#preserved_text",
+                            "binding_condition": "visibility_changed"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "(not (#hud_subtitle_text_string = #preserved_text) and not ((#hud_subtitle_text_string - $update_string) = #hud_subtitle_text_string))",
+                            "target_property_name": "#visible"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+
+    "simulated_hold_tip_fade_out": {
+        "type": "label",
+        "anchor_from": "bottom_middle",
+        "anchor_to": "bottom_middle",
+        "offset": [0, -87],
+        "size": ["100%c", "default"],
+        "color": [1, 1, 1],
+        "shadow": true,
+        "layer": 31,
+        "alpha": "@hud.anim_simulated_hold_tip_fade_out",
+        "text": "#text",
+        "localize": false,
+        "$update_string": "simulated.hold_tip.fade:",
+        "bindings": [
+            {
+                "binding_type": "view",
+                "source_control_name": "data_control",
+                "source_property_name": "#visible",
+                "target_property_name": "#visible"
+            },
+            {
+                "binding_type": "view",
+                "source_control_name": "data_control",
+                "source_property_name": "(#preserved_text - $update_string)",
+                "target_property_name": "#text"
+            }
+        ],
+        "controls": [
+            {
+                "data_control": {
+                    "type": "panel",
+                    "size": [0, 0],
+                    "bindings": [
+                        {
+                            "binding_name": "#hud_subtitle_text_string"
+                        },
+                        {
+                            "binding_name": "#hud_subtitle_text_string",
+                            "binding_name_override": "#preserved_text",
+                            "binding_condition": "visibility_changed"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "(not (#hud_subtitle_text_string = #preserved_text) and not ((#hud_subtitle_text_string - $update_string) = #hud_subtitle_text_string))",
+                            "target_property_name": "#visible"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+
+    "root_panel": {
+        "modifications": [
+            {
+                "array_name": "controls",
+                "operation": "insert_back",
+                "value": [
+                    {
+                        "simulated_hold_tip_fade_in@hud.simulated_hold_tip_fade_in": {}
+                    },
+                    {
+                        "simulated_hold_tip_steady@hud.simulated_hold_tip_steady": {}
+                    },
+                    {
+                        "simulated_hold_tip_fade_out@hud.simulated_hold_tip_fade_out": {}
+                    }
+                ]
+            }
+        ]
+    }
+}

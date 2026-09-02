@@ -6,8 +6,11 @@ const TICK_SOUND = "block.physics_assembler.tick";
 const SHIFT_SOUND = "block.physics_assembler.shift";
 const FRAME_MIN = 0;
 const FRAME_MAX = 255;
+const ASSEMBLE_TEXT = "simulated.gui.hold_tip.hold_to_assemble";
+const DISASSEMBLE_TEXT = "simulated.gui.hold_tip.hold_to_disassemble";
 const FRAMES_PER_TICK = 60;
 const activeAnimations = /* @__PURE__ */ new Map();
+const stableHoldTipModes = /* @__PURE__ */ new Map();
 function clampFrame(value) {
   return Math.max(FRAME_MIN, Math.min(FRAME_MAX, Math.round(value)));
 }
@@ -15,6 +18,34 @@ function getLeverFrame(block) {
   const major = Number(block.permutation.getState(LEVER_FRAME_MAJOR) ?? 0);
   const minor = Number(block.permutation.getState(LEVER_FRAME_MINOR) ?? 0);
   return clampFrame(major * 16 + minor);
+}
+function holdTipBlockKey(block) {
+  const { x, y, z } = block.location;
+  return `${block.dimension.id}:${x},${y},${z}`;
+}
+function holdTipModeForBlock(block) {
+  const frame = getLeverFrame(block);
+  const key = holdTipBlockKey(block);
+  if (frame <= FRAME_MIN) {
+    stableHoldTipModes.set(key, "assemble");
+    return "assemble";
+  }
+  if (frame >= FRAME_MAX) {
+    stableHoldTipModes.set(key, "disassemble");
+    return "disassemble";
+  }
+  const stableMode = stableHoldTipModes.get(key);
+  if (stableMode) return stableMode;
+  return frame < FRAME_MAX / 2 ? "assemble" : "disassemble";
+}
+function getPhysicsAssemblerHoldTip(block) {
+  const mode = holdTipModeForBlock(block);
+  return {
+    key: mode,
+    text: {
+      translate: mode === "assemble" ? ASSEMBLE_TEXT : DISASSEMBLE_TEXT
+    }
+  };
 }
 function setBlockFrame(block, frame) {
   const clamped = clampFrame(frame);
@@ -85,5 +116,6 @@ function animateLever(player, block, targetFrame) {
 }
 export {
   animateLever,
-  getLeverFrame
+  getLeverFrame,
+  getPhysicsAssemblerHoldTip
 };
