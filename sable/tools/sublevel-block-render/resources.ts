@@ -23,9 +23,36 @@ import {
 
 type JsonObject = Record<string, unknown>;
 
-// Deterministic 8x2 fixed foliage colormap (uniform samples address exact texels).
-const FOLIAGE_FIXED_COLORMAP_TGA_BASE64 =
-  "AAACAAAAAAAAAAAACAACACAoYdu2/2Hbtv9h27b/Ydu2/3aNh/92jYf/do2H/3aNh/9h27b/Ydu2/2Hbtv9h27b/do2H/3aNh/92jYf/do2H/w==";
+// One row of 32 palette cells, 8 pixels each: the quantized tint coordinates
+// land inside their cell with bilinear filtering, like TreePhysics' fixed map.
+const FIXED_COLORMAP_WIDTH = 256;
+const FIXED_COLORMAP_HEIGHT = 8;
+const FIXED_COLORMAP_CELL = 8;
+
+function fixedColormapTga(palette: readonly string[]): Buffer {
+  const header = Buffer.alloc(18);
+  header[2] = 2;
+  header.writeUInt16LE(FIXED_COLORMAP_WIDTH, 12);
+  header.writeUInt16LE(FIXED_COLORMAP_HEIGHT, 14);
+  header[16] = 32;
+  header[17] = 0x28;
+  const pixels = Buffer.alloc(FIXED_COLORMAP_WIDTH * FIXED_COLORMAP_HEIGHT * 4, 0xff);
+  for (let cell = 0; cell < palette.length; cell++) {
+    const color = palette[cell];
+    if (!color) continue;
+    const value = Number.parseInt(color.slice(1), 16);
+    for (let y = 0; y < FIXED_COLORMAP_HEIGHT; y++) {
+      for (let x = cell * FIXED_COLORMAP_CELL; x < (cell + 1) * FIXED_COLORMAP_CELL; x++) {
+        const offset = (y * FIXED_COLORMAP_WIDTH + x) * 4;
+        pixels[offset] = value % 256;
+        pixels[offset + 1] = Math.floor(value / 256) % 256;
+        pixels[offset + 2] = Math.floor(value / 65536);
+        pixels[offset + 3] = 0xff;
+      }
+    }
+  }
+  return Buffer.concat([header, pixels]);
+}
 
 const REGISTRY_VIRTUAL_SPECIFIER = "sable:sublevel-block-render-registry";
 const REGISTRY_MODULE_PATH = "SableBP/scripts/sable/generated/sublevel-block-render-registry.js";
@@ -69,7 +96,7 @@ function entityMaterials(): JsonObject {
 
 function jsonText(value: JsonObject): string {
   const rawNumberPattern = new RegExp(`"${rawJsonNumber(0).slice(0, -3)}(-?(?:\\d+(?:\\.\\d+)?))"`, "g");
-  return `${JSON.stringify(value, null, 2).replace(rawNumberPattern, "$1")}\n`;
+  return JSON.stringify(value).replace(rawNumberPattern, "$1");
 }
 
 async function collectScriptTargets(
@@ -122,6 +149,7 @@ export async function writeSablePacks(
   srcRoot: string,
   models: readonly CompiledModel[],
   pools: readonly CompiledPool[],
+  fixedTintPalette: readonly string[],
   runtimeRegistry: Record<string, unknown>
 ): Promise<void> {
   const targets = new Map<string, string | Buffer>();
@@ -199,10 +227,7 @@ export async function writeSablePacks(
   }
 
   targets.set("SableRP/materials/entity.material", jsonText(entityMaterials()));
-  targets.set(
-    "SableRP/textures/colormap/foliage_fixed.tga",
-    Buffer.from(FOLIAGE_FIXED_COLORMAP_TGA_BASE64, "base64")
-  );
+  targets.set("SableRP/textures/colormap/foliage_fixed.tga", fixedColormapTga(fixedTintPalette));
 
   await collectScriptTargets(srcRoot, runtimeRegistry, targets);
 

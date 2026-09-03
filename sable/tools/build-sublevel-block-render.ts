@@ -34,7 +34,7 @@ function missingModel(): CompiledModel {
 
 const compiled = await readAndCompileRegistry(registryPath);
 const models = [missingModel(), ...compiled.models];
-await writeSablePacks(packsPath, srcPath, models, compiled.pools, toRuntimeRegistry(compiled.compiled));
+await writeSablePacks(packsPath, srcPath, models, compiled.pools, compiled.fixedTintPalette, toRuntimeRegistry(compiled.compiled));
 const declarationPath = join(root, "src", "generated", "sublevel-block-render-registry.d.ts");
 await mkdir(dirname(declarationPath), { recursive: true });
 if (!(await readFile(declarationPath, "utf8").catch(() => ""))) {

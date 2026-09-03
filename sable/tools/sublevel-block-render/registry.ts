@@ -92,9 +92,13 @@ export interface CompiledModel {
   readonly sparseEntityTypeId: string;
   readonly material: "opaque" | "alpha_test" | "alpha_test_tint" | "opaque_tint";
   readonly model: Record<string, unknown>;
-  readonly tint?: { readonly method: "foliage" | "fixed"; readonly color?: string };
+  readonly tint?: { readonly method: "foliage" | "fixed"; readonly color?: string; readonly palette?: number };
   pool?: CompiledModelPool;
 }
+
+// The fixed tint colormap holds one row of 32 palette cells; every distinct
+// fixed color occupies one cell addressed by the quantized tint coordinates.
+export const FIXED_TINT_PALETTE_CAPACITY = 32;
 
 export interface CompiledPool {
   readonly name: string;
@@ -126,6 +130,7 @@ export async function readAndCompileRegistry(file: string): Promise<{
   readonly compiled: CompiledRegistry;
   readonly models: readonly CompiledModel[];
   readonly pools: readonly CompiledPool[];
+  readonly fixedTintPalette: readonly string[];
 }> {
   const raw = JSON.parse(await readFile(file, "utf8")) as RawRegistry;
   const compiled = compileRegistry(raw);
@@ -136,7 +141,11 @@ export async function readAndCompileRegistry(file: string): Promise<{
     ]).map(model => [model.key, model] as const)
   ).values()];
   const pools = partitionPools(models);
-  return { raw, compiled, models, pools };
+  const fixedTintPalette: string[] = [];
+  for (const model of models) {
+    if (model.tint?.method === "fixed") fixedTintPalette[model.tint.palette!] = model.tint.color!;
+  }
+  return { compiled, fixedTintPalette, models, pools, raw };
 }
 
 /**
@@ -238,6 +247,7 @@ export function compileRegistry(raw: RawRegistry): CompiledRegistry {
   }
   const modelsByKey = new Map<string, CompiledModel>();
   const usedNames = new Set<string>();
+  const paletteByColor = new Map<string, number>();
   const result: Record<string, CompiledRegistryEntry> = {};
   for (const [blockId, entry] of Object.entries(raw.blocks)) {
     validateBlockId(blockId);
@@ -257,7 +267,7 @@ export function compileRegistry(raw: RawRegistry): CompiledRegistry {
     const directory = `${entry.category}/${blockName}`;
     const poolKey = entry.domain ?? entry.category;
     const obtain = (definition: RawRenderDefinition, path: string, suffix: string): CompiledModel => (
-      obtainModel(modelsByKey, usedNames, entry.materials, definition, path, blockName, directory, poolKey, suffix)
+      obtainModel(modelsByKey, usedNames, paletteByColor, entry.materials, definition, path, blockName, directory, poolKey, suffix)
     );
     // The default resolves first so the plain block name lands on the default model.
     const defaultModel = obtain(entry.default, `${blockId}.default`, "");
@@ -277,6 +287,7 @@ export function compileRegistry(raw: RawRegistry): CompiledRegistry {
 function obtainModel(
   modelsByKey: Map<string, CompiledModel>,
   usedNames: Set<string>,
+  paletteByColor: Map<string, number>,
   material: string,
   definition: RawRenderDefinition,
   path: string,
@@ -292,7 +303,7 @@ function obtainModel(
   const type = model.type;
   if (typeof type !== "string" || !MODEL_TYPES.has(type)) throw new Error(`${path}: unsupported model.type.`);
   validateModel(model, path);
-  const tint = validateTint(material, definition.tint, path);
+  const tint = validateTint(material, definition.tint, path, paletteByColor);
   const key = hashModel(material, model, tint);
   const existing = modelsByKey.get(key);
   if (existing) return existing;
@@ -408,14 +419,24 @@ function validateModel(model: Record<string, unknown>, path: string): void {
 function validateTint(
   material: string,
   tint: RawRenderDefinition["tint"],
-  path: string
+  path: string,
+  paletteByColor: Map<string, number>
 ): CompiledModel["tint"] {
   if (TINT_MATERIALS.has(material) && !tint) throw new Error(`${path}: tint materials require tint.`);
   if (!tint) return undefined;
   if (!TINT_MATERIALS.has(material)) throw new Error(`${path}: tint is only valid for tint materials.`);
   if (tint.method === "foliage") return { method: "foliage" };
   if (tint.method === "fixed" && typeof tint.color === "string" && /^#[0-9a-fA-F]{6}$/.test(tint.color)) {
-    return { color: tint.color.toUpperCase(), method: "fixed" };
+    const color = tint.color.toUpperCase();
+    let palette = paletteByColor.get(color);
+    if (palette === undefined) {
+      palette = paletteByColor.size;
+      if (palette >= FIXED_TINT_PALETTE_CAPACITY) {
+        throw new Error(`${path}: the fixed tint palette holds at most ${FIXED_TINT_PALETTE_CAPACITY} distinct colors.`);
+      }
+      paletteByColor.set(color, palette);
+    }
+    return { color, method: "fixed", palette };
   }
   throw new Error(`${path}: tint must use foliage or a six-digit fixed color.`);
 }

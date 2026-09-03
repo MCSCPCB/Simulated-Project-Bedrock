@@ -319,7 +319,7 @@ function preAnimation(model: CompiledModel, format: "dense" | "sparse"): string[
     "v.layout_depth = 1 + math.floor(q.property('sable:origin_y') / 131072);",
     "v.layout_plane = v.layout_width * v.layout_depth;"
   ];
-  if (hasFoliageTint(model)) result.push(...tintDecodeMolang());
+  if (isTintMaterial(model)) result.push(...tintDecodeMolang());
   result.push(...wordReadMolang());
   for (let slot = 0; slot < slotCountOf(format); slot++) {
     result.push(`v.c${slot} = ${decodeExpression(format, slot, bits)};`);
@@ -353,17 +353,15 @@ export function createFancyClientEntity(model: CompiledModel, format: "dense" | 
     animate.push("state");
   }
   const materials: JsonObject = {
-    default: model.material === "opaque"
-      ? "opaque_block"
-      : model.material === "alpha_test" ? "alpha_block" : "alpha_block_color"
+    default: model.material === "opaque" ? "opaque_block" : "alpha_block_color"
   };
-  if (hasFoliageTint(model)) materials.tint_multiply = "tint_multiply";
+  if (isTintMaterial(model)) materials.tint_multiply = "tint_multiply";
   const textures: JsonObject = {};
   for (const channel of channels) textures[channel.name] = channel.texture;
   const geometry: JsonObject = {};
   for (const channel of channels) geometry[channel.name] = `geometry.${key}.${channel.name}`;
   const renderControllers: unknown[] = channels.map(channel => `controller.render.${key}.${channel.name}`);
-  if (hasFoliageTint(model)) {
+  if (isTintMaterial(model)) {
     Object.assign(textures, COLORMAP_TEXTURES);
     if (format === "dense") {
       geometry.colormap_x = `geometry.${key}.colormap_x`;
@@ -388,7 +386,7 @@ export function createFancyClientEntity(model: CompiledModel, format: "dense" | 
         render_controllers: renderControllers,
         animations,
         scripts: {
-          initialize: ["v.pose_initialized = 0;"],
+          initialize: ["v.pose_initialized = 0;", "v.pose_ready = 0;"],
           animate,
           pre_animation: preAnimation(model, format)
         }
@@ -518,7 +516,7 @@ export function createFancyGeometry(model: CompiledModel, format: "dense" | "spa
   const geometries: JsonObject[] = modelChannels(model).map(channel => (
     channelGeometry(model, format, key, channel)
   ));
-  if (hasFoliageTint(model) && format === "dense") {
+  if (isTintMaterial(model) && format === "dense") {
     geometries.push(colormapGeometry(model, key, "x"), colormapGeometry(model, key, "z"));
   }
   return { format_version: "1.16.0", "minecraft:geometry": geometries };
@@ -574,15 +572,12 @@ function slotVisibility(
   return visibility;
 }
 
-function fixedTintColor(): JsonObject {
-  return {
-    color: {
-      r: "math.floor(v.tint / 65536) / 255",
-      g: "math.mod(math.floor(v.tint / 256), 256) / 255",
-      b: "math.mod(v.tint, 256) / 255",
-      a: 1
-    }
-  };
+// Mirrors TreePhysics: leaf-style cutout blocks render without the shared
+// 0.88 light multiplier, every other fragment controller keeps it.
+function lightColorMultiplier(model: CompiledModel): JsonObject {
+  return model.model.type === "full_block" && model.material !== "opaque"
+    ? {}
+    : { light_color_multiplier: 0.88 };
 }
 
 function denseColormapController(
@@ -645,16 +640,15 @@ export function createFancyRenderController(model: CompiledModel, format: "dense
   for (const channel of channels) {
     controllers[`controller.render.${key}.${channel.name}`] = {
       geometry: `Geometry.${channel.name}`,
-      light_color_multiplier: 0.88,
+      ...lightColorMultiplier(model),
       materials: [{ "*": "Material.default" }],
       textures: [`Texture.${channel.name}`],
-      part_visibility: slotVisibility(model, format, channel),
-      ...(hasFixedTint(model) ? fixedTintColor() : {})
+      part_visibility: slotVisibility(model, format, channel)
     };
   }
-  if (hasFoliageTint(model)) {
+  if (isTintMaterial(model)) {
     if (channels.length !== 1) {
-      throw new Error(`Model ${model.key} uses a foliage tint with multiple texture channels.`);
+      throw new Error(`Model ${model.key} uses a tint material with multiple texture channels.`);
     }
     if (format === "dense") {
       controllers[`controller.render.${key}.tint_multiply`] = denseColormapController(
@@ -706,9 +700,16 @@ function poolFoliageMembers(pool: CompiledPool): number[] {
   return pool.members.flatMap((member, family) => hasFoliageTint(member) ? [family] : []);
 }
 
-function poolMaterialKind(member: CompiledModel): "opaque" | "alpha" | "color" {
-  if (member.material === "opaque") return "opaque";
-  return member.material === "alpha_test" ? "alpha" : "color";
+function poolFixedMembers(pool: CompiledPool): number[] {
+  return pool.members.flatMap((member, family) => hasFixedTint(member) ? [family] : []);
+}
+
+function poolTintMembers(pool: CompiledPool): number[] {
+  return pool.members.flatMap((member, family) => isTintMaterial(member) ? [family] : []);
+}
+
+function poolMaterialKind(member: CompiledModel): "opaque" | "color" {
+  return member.material === "opaque" ? "opaque" : "color";
 }
 
 function poolSlotCondition(slot: number, family: number): string {
@@ -719,6 +720,7 @@ export function createPoolClientEntity(pool: CompiledPool): JsonObject {
   const key = poolKeyName(pool);
   const places = poolPlaces(pool);
   const foliage = poolFoliageMembers(pool);
+  const fixed = poolFixedMembers(pool);
   const materials: JsonObject = {};
   const textures: JsonObject = {};
   const geometry: JsonObject = {};
@@ -726,22 +728,27 @@ export function createPoolClientEntity(pool: CompiledPool): JsonObject {
   pool.members.forEach((member, family) => {
     materials[poolMaterialKind(member)] = member.material === "opaque"
       ? "opaque_block"
-      : member.material === "alpha_test" ? "alpha_block" : "alpha_block_color";
+      : "alpha_block_color";
     for (const channel of modelChannels(member)) {
       textures[`m${family}_${channel.name}`] = channel.texture;
       geometry[`m${family}_${channel.name}`] = `geometry.${key}.m${family}_${channel.name}`;
       renderControllers.push(`controller.render.${key}.m${family}_${channel.name}`);
     }
   });
-  if (foliage.length > 0) {
+  if (foliage.length > 0 || fixed.length > 0) {
     materials.tint_multiply = "tint_multiply";
     Object.assign(textures, COLORMAP_TEXTURES);
     geometry.tint = `geometry.${key}.tint`;
+  }
+  if (foliage.length > 0) {
     for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
       renderControllers.push({
         [`controller.render.${key}.tint_multiply_${slot}`]: `v.tint_kind >= 1 && v.o${slot} > 0`
       });
     }
+  }
+  for (const family of fixed) {
+    renderControllers.push(`controller.render.${key}.tint_multiply_m${family}`);
   }
   const preAnimation = [...poseMolang()];
   if (foliage.length > 0) preAnimation.push(...tintDecodeMolang());
@@ -768,7 +775,7 @@ export function createPoolClientEntity(pool: CompiledPool): JsonObject {
         render_controllers: renderControllers,
         animations: { transform: `animation.${key}.transform` },
         scripts: {
-          initialize: ["v.pose_initialized = 0;"],
+          initialize: ["v.pose_initialized = 0;", "v.pose_ready = 0;"],
           animate: ["transform"],
           pre_animation: preAnimation
         }
@@ -815,12 +822,12 @@ export function createPoolGeometry(pool: CompiledPool): JsonObject {
       });
     }
   });
-  const foliage = poolFoliageMembers(pool);
-  if (foliage.length > 0) {
+  const tintMembers = poolTintMembers(pool);
+  if (tintMembers.length > 0) {
     const bones: JsonObject[] = [...rootBoneChain()];
     for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
       bones.push({ name: `slot_${slot}`, parent: "model_offset", pivot: [0, -16, 0] });
-      for (const family of foliage) {
+      for (const family of tintMembers) {
         bones.push({
           name: `tint_m${family}_${slot}`,
           parent: `slot_${slot}`,
@@ -898,11 +905,10 @@ export function createPoolRenderController(pool: CompiledPool): JsonObject {
       }
       controllers[`controller.render.${key}.m${family}_${channel.name}`] = {
         geometry: `Geometry.m${family}_${channel.name}`,
-        light_color_multiplier: 0.88,
+        ...lightColorMultiplier(member),
         materials: [{ "*": `Material.${poolMaterialKind(member)}` }],
         textures: [`Texture.m${family}_${channel.name}`],
-        part_visibility: visibility,
-        ...(hasFixedTint(member) ? bakedFixedColor(member) : {})
+        part_visibility: visibility
       };
     }
   });
@@ -931,19 +937,26 @@ export function createPoolRenderController(pool: CompiledPool): JsonObject {
       ]
     };
   }
-  return { format_version: "1.10.0", render_controllers: controllers };
-}
-
-function bakedFixedColor(member: CompiledModel): JsonObject {
-  const value = Number.parseInt(member.tint!.color!.slice(1), 16);
-  return {
-    color: {
-      r: Math.floor(value / 65536) / 255,
-      g: Math.floor(value / 256) % 256 / 255,
-      b: value % 256 / 255,
-      a: 1
+  for (const family of poolFixedMembers(pool)) {
+    // A fixed member always multiplies the same palette cell, so one constant
+    // sample covers every slot of that member.
+    const palette = (pool.members[family]!.tint as { palette: number }).palette;
+    const visibility: JsonObject[] = [{ "*": false }];
+    for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
+      visibility.push({ [`tint_m${family}_${slot}`]: poolSlotCondition(slot, family) });
     }
-  };
+    controllers[`controller.render.${key}.tint_multiply_m${family}`] = {
+      geometry: "Geometry.tint",
+      materials: [{ "*": "Material.tint_multiply" }],
+      textures: ["Texture.colormap_foliage_fixed"],
+      uv_anim: {
+        offset: [(0.5 + palette * 255 / 31) / 256, 0.5 / 256],
+        scale: [0, 0]
+      },
+      part_visibility: visibility
+    };
+  }
+  return { format_version: "1.10.0", render_controllers: controllers };
 }
 
 export function createVanillaClientEntity(): JsonObject {

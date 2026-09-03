@@ -74,7 +74,7 @@ export type FancySubLevelModelDescription =
 
 export type FancySubLevelTint =
   | { readonly method: "foliage" }
-  | { readonly method: "fixed"; readonly color: string };
+  | { readonly method: "fixed"; readonly color: string; readonly palette: number };
 
 export interface FancySubLevelModelStateDimension {
   readonly name: string;

@@ -1,4 +1,5 @@
 const FOLIAGE_COLORMAP_DEFAULT = 1;
+const FOLIAGE_COLORMAP_FIXED = 6;
 const TINT_COORDINATE_BASE = 32;
 const TINT_KIND_PLACE = TINT_COORDINATE_BASE ** 4;
 const TINT_AXIS_Z_PLACE = 8 * TINT_KIND_PLACE;
@@ -14,8 +15,11 @@ const DEFAULT_SUBLEVEL_FOLIAGE_TINT = Object.freeze({
 });
 function packFancySubLevelTint(packed, foliage = DEFAULT_SUBLEVEL_FOLIAGE_TINT) {
   const tint = packed.tint;
-  if (!tint) return 16777215;
-  if (tint.method === "fixed") return parseFixedColor(tint.color);
+  if (!tint) return 0;
+  if (tint.method === "fixed") {
+    const cell = Math.max(0, Math.min(TINT_COORDINATE_BASE - 1, Math.floor(tint.palette)));
+    return cell + cell * TINT_COORDINATE_BASE ** 2 + FOLIAGE_COLORMAP_FIXED * TINT_KIND_PLACE;
+  }
   if (isUniformField(foliage)) {
     return textureCoordinate(foliage.uAtLocalOrigin) + textureCoordinate(foliage.vAtLocalOrigin) * TINT_TEXTURE_SIZE + TINT_UNIFORM_STATE * TINT_KIND_PLACE;
   }
@@ -30,10 +34,6 @@ function packFancySubLevelTint(packed, foliage = DEFAULT_SUBLEVEL_FOLIAGE_TINT) 
   const v0 = quantize(sampleV(foliage, minimumZ));
   const v1 = quantize(sampleV(foliage, maximumZ));
   return u0 + v0 * TINT_COORDINATE_BASE + u1 * TINT_COORDINATE_BASE ** 2 + v1 * TINT_COORDINATE_BASE ** 3 + clampMapKind(foliage.mapKind) * TINT_KIND_PLACE + (foliage.gradientAxis === "z" ? TINT_AXIS_Z_PLACE : 0);
-}
-function parseFixedColor(color) {
-  const value = Number.parseInt(color.slice(1), 16);
-  return Number.isInteger(value) ? value : 16777215;
 }
 function sampleU(field, x) {
   return clamp(field.uAtLocalOrigin + field.uPerLocalX * x);
