@@ -433,7 +433,9 @@
       "loop": true
     },
     "animation.sable_model_chest_sparse.state": {
-      "bones": {},
+      "bones": {
+        "root": {}
+      },
       "loop": true
     }
   }

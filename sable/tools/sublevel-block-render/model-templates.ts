@@ -42,8 +42,22 @@ const COLORMAP_TEXTURES: Readonly<Record<string, string>> = {
 
 const COLORMAP_TEXTURE_ARRAY = Object.keys(COLORMAP_TEXTURES).map(name => `Texture.${name}`);
 
+const RAW_JSON_NUMBER_PREFIX = "__sable_raw_json_number__:";
+
+export function rawJsonNumber(value: number): string {
+  return `${RAW_JSON_NUMBER_PREFIX}${Number.isInteger(value) ? `${value}.0` : value}`;
+}
+
 function property(type: "float" | "int", range: readonly [number, number], defaultValue = 0): JsonObject {
-  return { client_sync: true, default: defaultValue, range, type };
+  if (type === "float") {
+    return {
+      type,
+      range: range.map(rawJsonNumber),
+      client_sync: true,
+      default: "0"
+    };
+  }
+  return { type, range, client_sync: true, default: defaultValue };
 }
 
 function commonComponents(family: string, rideable = false): JsonObject {
@@ -541,7 +555,7 @@ export function createFancyAnimation(model: CompiledModel, format: "dense" | "sp
     [`animation.${key}.transform`]: { bones, loop: true }
   };
   if (model.model.type === "chest") {
-    animations[`animation.${key}.state`] = { bones: {}, loop: true };
+    animations[`animation.${key}.state`] = { bones: { root: {} }, loop: true };
   }
   return { format_version: "1.8.0", animations };
 }

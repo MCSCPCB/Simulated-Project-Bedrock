@@ -17,7 +17,8 @@ import {
   createVanillaClientEntity,
   createVanillaEntity,
   createVanillaGeometry,
-  createVanillaRenderController
+  createVanillaRenderController,
+  rawJsonNumber
 } from "./model-templates.ts";
 
 type JsonObject = Record<string, unknown>;
@@ -67,7 +68,8 @@ function entityMaterials(): JsonObject {
 }
 
 function jsonText(value: JsonObject): string {
-  return `${JSON.stringify(value, null, 2)}\n`;
+  const rawNumberPattern = new RegExp(`"${rawJsonNumber(0).slice(0, -3)}(-?(?:\\d+(?:\\.\\d+)?))"`, "g");
+  return `${JSON.stringify(value, null, 2).replace(rawNumberPattern, "$1")}\n`;
 }
 
 async function collectScriptTargets(

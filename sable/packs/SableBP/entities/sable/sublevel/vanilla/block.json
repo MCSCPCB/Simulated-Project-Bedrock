@@ -7,157 +7,157 @@
       "is_summonable": true,
       "properties": {
         "sable:scale": {
-          "client_sync": true,
-          "default": 0,
+          "type": "float",
           "range": [
-            0,
-            16
+            0.0,
+            16.0
           ],
-          "type": "float"
+          "client_sync": true,
+          "default": "0"
         },
         "sable:pitch": {
-          "client_sync": true,
-          "default": 0,
+          "type": "float",
           "range": [
-            -400,
-            400
+            -400.0,
+            400.0
           ],
-          "type": "float"
+          "client_sync": true,
+          "default": "0"
         },
         "sable:yaw": {
-          "client_sync": true,
-          "default": 0,
+          "type": "float",
           "range": [
-            -400,
-            400
+            -400.0,
+            400.0
           ],
-          "type": "float"
+          "client_sync": true,
+          "default": "0"
         },
         "sable:roll": {
-          "client_sync": true,
-          "default": 0,
+          "type": "float",
           "range": [
-            -400,
-            400
+            -400.0,
+            400.0
           ],
-          "type": "float"
+          "client_sync": true,
+          "default": "0"
         },
         "sable:local_pitch": {
-          "client_sync": true,
-          "default": 0,
+          "type": "float",
           "range": [
-            -512,
-            512
+            -512.0,
+            512.0
           ],
-          "type": "float"
+          "client_sync": true,
+          "default": "0"
         },
         "sable:local_yaw": {
-          "client_sync": true,
-          "default": 0,
+          "type": "float",
           "range": [
-            -512,
-            512
+            -512.0,
+            512.0
           ],
-          "type": "float"
+          "client_sync": true,
+          "default": "0"
         },
         "sable:local_roll": {
-          "client_sync": true,
-          "default": 0,
+          "type": "float",
           "range": [
-            -512,
-            512
+            -512.0,
+            512.0
           ],
-          "type": "float"
+          "client_sync": true,
+          "default": "0"
         },
         "sable:left_local_pitch": {
-          "client_sync": true,
-          "default": 0,
+          "type": "float",
           "range": [
-            -512,
-            512
+            -512.0,
+            512.0
           ],
-          "type": "float"
+          "client_sync": true,
+          "default": "0"
         },
         "sable:left_local_yaw": {
-          "client_sync": true,
-          "default": 0,
+          "type": "float",
           "range": [
-            -512,
-            512
+            -512.0,
+            512.0
           ],
-          "type": "float"
+          "client_sync": true,
+          "default": "0"
         },
         "sable:left_local_roll": {
-          "client_sync": true,
-          "default": 0,
+          "type": "float",
           "range": [
-            -512,
-            512
+            -512.0,
+            512.0
           ],
-          "type": "float"
+          "client_sync": true,
+          "default": "0"
         },
         "sable:local_x": {
-          "client_sync": true,
-          "default": 0,
+          "type": "float",
           "range": [
-            -512,
-            512
+            -512.0,
+            512.0
           ],
-          "type": "float"
+          "client_sync": true,
+          "default": "0"
         },
         "sable:local_y": {
-          "client_sync": true,
-          "default": 0,
+          "type": "float",
           "range": [
-            -512,
-            512
+            -512.0,
+            512.0
           ],
-          "type": "float"
+          "client_sync": true,
+          "default": "0"
         },
         "sable:local_z": {
-          "client_sync": true,
-          "default": 0,
+          "type": "float",
           "range": [
-            -512,
-            512
+            -512.0,
+            512.0
           ],
-          "type": "float"
+          "client_sync": true,
+          "default": "0"
         },
         "sable:left_local_x": {
-          "client_sync": true,
-          "default": 0,
+          "type": "float",
           "range": [
-            -512,
-            512
+            -512.0,
+            512.0
           ],
-          "type": "float"
+          "client_sync": true,
+          "default": "0"
         },
         "sable:left_local_y": {
-          "client_sync": true,
-          "default": 0,
+          "type": "float",
           "range": [
-            -512,
-            512
+            -512.0,
+            512.0
           ],
-          "type": "float"
+          "client_sync": true,
+          "default": "0"
         },
         "sable:left_local_z": {
-          "client_sync": true,
-          "default": 0,
+          "type": "float",
           "range": [
-            -512,
-            512
+            -512.0,
+            512.0
           ],
-          "type": "float"
+          "client_sync": true,
+          "default": "0"
         },
         "sable:left_item_offset": {
-          "client_sync": true,
-          "default": 0,
+          "type": "float",
           "range": [
-            -3,
-            3
+            -3.0,
+            3.0
           ],
-          "type": "float"
+          "client_sync": true,
+          "default": "0"
         }
       }
     },

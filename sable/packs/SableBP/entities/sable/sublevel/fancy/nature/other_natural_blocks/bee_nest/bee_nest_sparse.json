@@ -8,292 +8,292 @@
       "runtime_identifier": "minecraft:arrow",
       "properties": {
         "sable:pitch": {
-          "client_sync": true,
-          "default": 0,
+          "type": "float",
           "range": [
-            -400,
-            400
+            -400.0,
+            400.0
           ],
-          "type": "float"
+          "client_sync": true,
+          "default": "0"
         },
         "sable:yaw": {
-          "client_sync": true,
-          "default": 0,
+          "type": "float",
           "range": [
-            -400,
-            400
+            -400.0,
+            400.0
           ],
-          "type": "float"
+          "client_sync": true,
+          "default": "0"
         },
         "sable:roll": {
-          "client_sync": true,
-          "default": 0,
+          "type": "float",
           "range": [
-            -400,
-            400
+            -400.0,
+            400.0
           ],
-          "type": "float"
+          "client_sync": true,
+          "default": "0"
         },
         "sable:origin_xz": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             4194303
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:origin_y": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             4194303
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:tint": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s0": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s1": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s2": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s3": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s4": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s5": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s6": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s7": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s8": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s9": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s10": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s11": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s12": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s13": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s14": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s15": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s16": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s17": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s18": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s19": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s20": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s21": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s22": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s23": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s24": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         },
         "sable:s25": {
-          "client_sync": true,
-          "default": 0,
+          "type": "int",
           "range": [
             0,
             16777215
           ],
-          "type": "int"
+          "client_sync": true,
+          "default": 0
         }
       }
     },

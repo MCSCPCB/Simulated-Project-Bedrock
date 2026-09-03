@@ -3718,7 +3718,9 @@
       "loop": true
     },
     "animation.sable_model_chest_north_dense.state": {
-      "bones": {},
+      "bones": {
+        "root": {}
+      },
       "loop": true
     }
   }
