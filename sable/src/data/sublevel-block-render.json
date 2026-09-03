@@ -2029,12 +2029,12 @@
       "materials": "opaque",
       "category": "building/logs_and_wood",
       "states": [
-        "minecraft:old_log_type",
+        "minecraft:new_log_type",
         "minecraft:pillar_axis"
       ],
       "variants": [
         {
-          "condition": "q.block_state('minecraft:old_log_type') == 'acacia' && q.block_state('minecraft:pillar_axis') == 'y'",
+          "condition": "q.block_state('minecraft:new_log_type') == 'acacia' && q.block_state('minecraft:pillar_axis') == 'y'",
           "model": {
             "type": "pillar",
             "textures": {
@@ -2045,7 +2045,7 @@
           }
         },
         {
-          "condition": "q.block_state('minecraft:old_log_type') == 'acacia' && q.block_state('minecraft:pillar_axis') == 'x'",
+          "condition": "q.block_state('minecraft:new_log_type') == 'acacia' && q.block_state('minecraft:pillar_axis') == 'x'",
           "model": {
             "type": "pillar",
             "textures": {
@@ -2056,7 +2056,7 @@
           }
         },
         {
-          "condition": "q.block_state('minecraft:old_log_type') == 'acacia' && q.block_state('minecraft:pillar_axis') == 'z'",
+          "condition": "q.block_state('minecraft:new_log_type') == 'acacia' && q.block_state('minecraft:pillar_axis') == 'z'",
           "model": {
             "type": "pillar",
             "textures": {
@@ -2067,7 +2067,7 @@
           }
         },
         {
-          "condition": "q.block_state('minecraft:old_log_type') == 'dark_oak' && q.block_state('minecraft:pillar_axis') == 'y'",
+          "condition": "q.block_state('minecraft:new_log_type') == 'dark_oak' && q.block_state('minecraft:pillar_axis') == 'y'",
           "model": {
             "type": "pillar",
             "textures": {
@@ -2078,7 +2078,7 @@
           }
         },
         {
-          "condition": "q.block_state('minecraft:old_log_type') == 'dark_oak' && q.block_state('minecraft:pillar_axis') == 'x'",
+          "condition": "q.block_state('minecraft:new_log_type') == 'dark_oak' && q.block_state('minecraft:pillar_axis') == 'x'",
           "model": {
             "type": "pillar",
             "textures": {
@@ -2089,7 +2089,7 @@
           }
         },
         {
-          "condition": "q.block_state('minecraft:old_log_type') == 'dark_oak' && q.block_state('minecraft:pillar_axis') == 'z'",
+          "condition": "q.block_state('minecraft:new_log_type') == 'dark_oak' && q.block_state('minecraft:pillar_axis') == 'z'",
           "model": {
             "type": "pillar",
             "textures": {
@@ -2325,6 +2325,25 @@
       }
     },
     "minecraft:flowering_azalea_leaves": {
+      "materials": "alpha_test",
+      "category": "nature/leaves",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/azalea_leaves_flowers",
+            "down": "textures/blocks/azalea_leaves_flowers",
+            "north": "textures/blocks/azalea_leaves_flowers",
+            "south": "textures/blocks/azalea_leaves_flowers",
+            "east": "textures/blocks/azalea_leaves_flowers",
+            "west": "textures/blocks/azalea_leaves_flowers"
+          }
+        }
+      }
+    },
+    "minecraft:azalea_leaves_flowered": {
       "materials": "alpha_test",
       "category": "nature/leaves",
       "states": [],

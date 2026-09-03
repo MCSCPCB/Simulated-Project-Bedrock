@@ -1,4 +1,5 @@
 import { SubLevelRenderer } from "./sublevel/render/SubLevelRenderer.js";
+import { captureSubLevelBlock, captureSubLevelBlocks } from "./api/SubLevelAssemblyHelper.js";
 import { captureSubLevelFoliageTint } from "./render/dynamic_biome/DynamicBiomeTintSampler.js";
 import {
   BLOCK_CARRIER_CAPACITY,
@@ -10,5 +11,7 @@ export {
   BLOCK_CARRIER_ENTITY_TYPE_ID,
   BLOCK_SLOTS_PER_ENTITY,
   SubLevelRenderer,
+  captureSubLevelBlock,
+  captureSubLevelBlocks,
   captureSubLevelFoliageTint
 };

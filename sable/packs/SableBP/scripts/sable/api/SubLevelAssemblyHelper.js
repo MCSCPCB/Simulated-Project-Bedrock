@@ -1,9 +1,4 @@
-import type { Block, Vector3 } from "@minecraft/server";
-import type { SubLevelBlock, SubLevelBlockMapColor } from "../sublevel/SubLevel.js";
-
-// The legacy multi-variant blocks have no obtainable item form; the hand-held
-// route displays their modern counterpart instead.
-const LEGACY_LOG_ITEMS: Readonly<Record<string, string>> = {
+const LEGACY_LOG_ITEMS = {
   acacia: "minecraft:acacia_log",
   birch: "minecraft:birch_log",
   dark_oak: "minecraft:dark_oak_log",
@@ -11,8 +6,7 @@ const LEGACY_LOG_ITEMS: Readonly<Record<string, string>> = {
   oak: "minecraft:oak_log",
   spruce: "minecraft:spruce_log"
 };
-
-const LEGACY_LEAF_ITEMS: Readonly<Record<string, string>> = {
+const LEGACY_LEAF_ITEMS = {
   acacia: "minecraft:acacia_leaves",
   birch: "minecraft:birch_leaves",
   dark_oak: "minecraft:dark_oak_leaves",
@@ -20,21 +14,11 @@ const LEGACY_LEAF_ITEMS: Readonly<Record<string, string>> = {
   oak: "minecraft:oak_leaves",
   spruce: "minecraft:spruce_leaves"
 };
-
-/**
- * Captures one world block into the sub-level block form the render routes
- * consume: full permutation states, the hand-held item mapping, the
- * state-driven hand-held rotation and the custom-block map color. `origin` is
- * the world position of the sub-level's local origin. Physics fields are the
- * caller's concern and stay unset.
- */
-export function captureSubLevelBlock(block: Block, origin: Vector3): SubLevelBlock {
+function captureSubLevelBlock(block, origin) {
   const permutation = block.permutation;
   const typeId = permutation.type.id;
   const states = permutation.getAllStates();
-  const captured: {
-    -readonly [Key in keyof SubLevelBlock]: SubLevelBlock[Key];
-  } = {
+  const captured = {
     localLocation: {
       x: block.location.x - origin.x,
       y: block.location.y - origin.y,
@@ -53,21 +37,15 @@ export function captureSubLevelBlock(block: Block, origin: Vector3): SubLevelBlo
   }
   return captured;
 }
-
-/** Captures a block collection, skipping air and liquid placeholders. */
-export function captureSubLevelBlocks(blocks: readonly Block[], origin: Vector3): SubLevelBlock[] {
-  const result: SubLevelBlock[] = [];
+function captureSubLevelBlocks(blocks, origin) {
+  const result = [];
   for (const block of blocks) {
     if (block.isAir || block.isLiquid) continue;
     result.push(captureSubLevelBlock(block, origin));
   }
   return result;
 }
-
-function heldItemTypeId(
-  typeId: string,
-  states: Readonly<Record<string, boolean | number | string>>
-): string {
+function heldItemTypeId(typeId, states) {
   if (typeId === "minecraft:log") {
     return LEGACY_LOG_ITEMS[String(states.old_log_type ?? "oak")] ?? typeId;
   }
@@ -82,27 +60,27 @@ function heldItemTypeId(
   }
   return typeId;
 }
-
-function heldBlockRotation(
-  states: Readonly<Record<string, boolean | number | string>>
-): Vector3 | undefined {
+function heldBlockRotation(states) {
   const axis = states.pillar_axis ?? states["minecraft:pillar_axis"];
   if (axis === "x") return { x: 0, y: 0, z: 90 };
   if (axis === "z") return { x: 90, y: 0, z: 0 };
   const blockFace = states["minecraft:block_face"] ?? states.block_face;
   if (blockFace === "east" || blockFace === "west") return { x: 0, y: 0, z: 90 };
   if (blockFace === "north" || blockFace === "south") return { x: 90, y: 0, z: 0 };
-  return undefined;
+  return void 0;
 }
-
-function captureMapColor(block: Block, typeId: string): SubLevelBlockMapColor | undefined {
+function captureMapColor(block, typeId) {
   const component = block.getComponent("minecraft:map_color");
-  if (!component) return undefined;
+  if (!component) return void 0;
   const { blue, green, red } = component.tintedColor;
-  for (const [channel, value] of [["red", red], ["green", green], ["blue", blue]] as const) {
+  for (const [channel, value] of [["red", red], ["green", green], ["blue", blue]]) {
     if (!Number.isFinite(value) || value < 0 || value > 1) {
       throw new RangeError(`Invalid ${channel} map-color channel for ${typeId}: ${value}.`);
     }
   }
   return { blue, green, red };
 }
+export {
+  captureSubLevelBlock,
+  captureSubLevelBlocks
+};
