@@ -2,14 +2,13 @@ import { ItemTypes, system } from "@minecraft/server";
 import type { SubLevel, SubLevelBlock } from "../SubLevel.js";
 import type { SubLevelRenderData } from "./SubLevelRenderData.js";
 import type { SubLevelRenderDispatcher } from "./dispatcher/SubLevelRenderDispatcher.js";
-import { VanillaSubLevelRenderDispatcher } from "./dispatcher/VanillaSubLevelRenderDispatcher.js";
+import { FancySubLevelRenderDispatcher } from "./dispatcher/FancySubLevelRenderDispatcher.js";
 
-/** Entry point for the currently available sub-level projection renderer. */
 export class SubLevelRenderer {
   static #dispatcher: SubLevelRenderDispatcher | undefined;
 
   static getDispatcher(): SubLevelRenderDispatcher {
-    this.#dispatcher ??= new VanillaSubLevelRenderDispatcher();
+    this.#dispatcher ??= new FancySubLevelRenderDispatcher();
     return this.#dispatcher;
   }
 
@@ -19,15 +18,17 @@ export class SubLevelRenderer {
       renderData = this.getDispatcher().createRenderData(subLevel);
       renderData.sync(true);
       if (renderData.initialPoseDeferred) {
-        const deferredRenderData = renderData;
+        const deferred = renderData;
         system.run(() => {
           if (!subLevel.body.isValid) return;
-          deferredRenderData.sync(true);
-          deferredRenderData.releaseInitialPose();
+          deferred.sync(true);
+          deferred.releaseInitialPose();
         });
       }
-      for (const entityId of renderData.entityIds) {
-        subLevel.onVisualEntityAdded?.(entityId);
+      if (!renderData.emitsEntityAddedCallbacks) {
+        for (const entityId of renderData.entityIds) {
+          subLevel.onRenderEntityAdded?.(entityId);
+        }
       }
       return renderData;
     } catch (error) {
@@ -37,16 +38,13 @@ export class SubLevelRenderer {
   }
 }
 
-/** Refuse item rendering when any captured block has no registered visual item. */
-export function assertBlockVisualItems(blocks: readonly SubLevelBlock[]): void {
+export function assertBlockRenderItems(blocks: readonly SubLevelBlock[]): void {
   const missing = new Set<string>();
   for (const block of blocks) {
     const itemTypeId = block.itemTypeId ?? block.typeId;
     if (!ItemTypes.get(itemTypeId)) missing.add(itemTypeId);
   }
   if (missing.size > 0) {
-    throw new Error(
-      `Block visual items are not registered: ${[...missing].sort().join(", ")}.`
-    );
+    throw new Error(`Block render items are not registered: ${[...missing].sort().join(", ")}.`);
   }
 }

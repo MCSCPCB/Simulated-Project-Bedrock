@@ -8,6 +8,9 @@ export type {
   SubLevel,
   SubLevelBlock,
   SubLevelBlockCollisionBox,
+  SubLevelBlockMapColor,
+  SubLevelBlockStates,
+  SubLevelFoliageTint,
   SubLevelRenderBody
 } from "./sublevel/SubLevel.js";
 export type { SubLevelRenderData } from "./sublevel/render/SubLevelRenderData.js";

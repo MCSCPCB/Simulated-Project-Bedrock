@@ -1,0 +1,3069 @@
+{
+  "format_version": "1.0.0",
+  "blocks": {
+    "minecraft:oak_log": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:pillar_axis"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_oak_top",
+              "down": "textures/blocks/log_oak_top",
+              "north": "textures/blocks/log_oak",
+              "south": "textures/blocks/log_oak",
+              "east": "textures/blocks/log_oak",
+              "west": "textures/blocks/log_oak"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_oak",
+              "down": "textures/blocks/log_oak",
+              "north": "textures/blocks/log_oak",
+              "south": "textures/blocks/log_oak",
+              "east": "textures/blocks/log_oak_top",
+              "west": "textures/blocks/log_oak_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_oak",
+              "down": "textures/blocks/log_oak",
+              "north": "textures/blocks/log_oak_top",
+              "south": "textures/blocks/log_oak_top",
+              "east": "textures/blocks/log_oak",
+              "west": "textures/blocks/log_oak"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/log_oak_top",
+            "down": "textures/blocks/log_oak_top",
+            "north": "textures/blocks/log_oak",
+            "south": "textures/blocks/log_oak",
+            "east": "textures/blocks/log_oak",
+            "west": "textures/blocks/log_oak"
+          }
+        }
+      }
+    },
+    "minecraft:spruce_log": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:pillar_axis"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_spruce_top",
+              "down": "textures/blocks/log_spruce_top",
+              "north": "textures/blocks/log_spruce",
+              "south": "textures/blocks/log_spruce",
+              "east": "textures/blocks/log_spruce",
+              "west": "textures/blocks/log_spruce"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_spruce",
+              "down": "textures/blocks/log_spruce",
+              "north": "textures/blocks/log_spruce",
+              "south": "textures/blocks/log_spruce",
+              "east": "textures/blocks/log_spruce_top",
+              "west": "textures/blocks/log_spruce_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_spruce",
+              "down": "textures/blocks/log_spruce",
+              "north": "textures/blocks/log_spruce_top",
+              "south": "textures/blocks/log_spruce_top",
+              "east": "textures/blocks/log_spruce",
+              "west": "textures/blocks/log_spruce"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/log_spruce_top",
+            "down": "textures/blocks/log_spruce_top",
+            "north": "textures/blocks/log_spruce",
+            "south": "textures/blocks/log_spruce",
+            "east": "textures/blocks/log_spruce",
+            "west": "textures/blocks/log_spruce"
+          }
+        }
+      }
+    },
+    "minecraft:birch_log": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:pillar_axis"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_birch_top",
+              "down": "textures/blocks/log_birch_top",
+              "north": "textures/blocks/log_birch",
+              "south": "textures/blocks/log_birch",
+              "east": "textures/blocks/log_birch",
+              "west": "textures/blocks/log_birch"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_birch",
+              "down": "textures/blocks/log_birch",
+              "north": "textures/blocks/log_birch",
+              "south": "textures/blocks/log_birch",
+              "east": "textures/blocks/log_birch_top",
+              "west": "textures/blocks/log_birch_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_birch",
+              "down": "textures/blocks/log_birch",
+              "north": "textures/blocks/log_birch_top",
+              "south": "textures/blocks/log_birch_top",
+              "east": "textures/blocks/log_birch",
+              "west": "textures/blocks/log_birch"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/log_birch_top",
+            "down": "textures/blocks/log_birch_top",
+            "north": "textures/blocks/log_birch",
+            "south": "textures/blocks/log_birch",
+            "east": "textures/blocks/log_birch",
+            "west": "textures/blocks/log_birch"
+          }
+        }
+      }
+    },
+    "minecraft:jungle_log": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:pillar_axis"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_jungle_top",
+              "down": "textures/blocks/log_jungle_top",
+              "north": "textures/blocks/log_jungle",
+              "south": "textures/blocks/log_jungle",
+              "east": "textures/blocks/log_jungle",
+              "west": "textures/blocks/log_jungle"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_jungle",
+              "down": "textures/blocks/log_jungle",
+              "north": "textures/blocks/log_jungle",
+              "south": "textures/blocks/log_jungle",
+              "east": "textures/blocks/log_jungle_top",
+              "west": "textures/blocks/log_jungle_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_jungle",
+              "down": "textures/blocks/log_jungle",
+              "north": "textures/blocks/log_jungle_top",
+              "south": "textures/blocks/log_jungle_top",
+              "east": "textures/blocks/log_jungle",
+              "west": "textures/blocks/log_jungle"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/log_jungle_top",
+            "down": "textures/blocks/log_jungle_top",
+            "north": "textures/blocks/log_jungle",
+            "south": "textures/blocks/log_jungle",
+            "east": "textures/blocks/log_jungle",
+            "west": "textures/blocks/log_jungle"
+          }
+        }
+      }
+    },
+    "minecraft:acacia_log": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:pillar_axis"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_acacia_top",
+              "down": "textures/blocks/log_acacia_top",
+              "north": "textures/blocks/log_acacia",
+              "south": "textures/blocks/log_acacia",
+              "east": "textures/blocks/log_acacia",
+              "west": "textures/blocks/log_acacia"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_acacia",
+              "down": "textures/blocks/log_acacia",
+              "north": "textures/blocks/log_acacia",
+              "south": "textures/blocks/log_acacia",
+              "east": "textures/blocks/log_acacia_top",
+              "west": "textures/blocks/log_acacia_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_acacia",
+              "down": "textures/blocks/log_acacia",
+              "north": "textures/blocks/log_acacia_top",
+              "south": "textures/blocks/log_acacia_top",
+              "east": "textures/blocks/log_acacia",
+              "west": "textures/blocks/log_acacia"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/log_acacia_top",
+            "down": "textures/blocks/log_acacia_top",
+            "north": "textures/blocks/log_acacia",
+            "south": "textures/blocks/log_acacia",
+            "east": "textures/blocks/log_acacia",
+            "west": "textures/blocks/log_acacia"
+          }
+        }
+      }
+    },
+    "minecraft:dark_oak_log": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:pillar_axis"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_dark_oak_top",
+              "down": "textures/blocks/log_dark_oak_top",
+              "north": "textures/blocks/log_dark_oak",
+              "south": "textures/blocks/log_dark_oak",
+              "east": "textures/blocks/log_dark_oak",
+              "west": "textures/blocks/log_dark_oak"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_dark_oak",
+              "down": "textures/blocks/log_dark_oak",
+              "north": "textures/blocks/log_dark_oak",
+              "south": "textures/blocks/log_dark_oak",
+              "east": "textures/blocks/log_dark_oak_top",
+              "west": "textures/blocks/log_dark_oak_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_dark_oak",
+              "down": "textures/blocks/log_dark_oak",
+              "north": "textures/blocks/log_dark_oak_top",
+              "south": "textures/blocks/log_dark_oak_top",
+              "east": "textures/blocks/log_dark_oak",
+              "west": "textures/blocks/log_dark_oak"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/log_dark_oak_top",
+            "down": "textures/blocks/log_dark_oak_top",
+            "north": "textures/blocks/log_dark_oak",
+            "south": "textures/blocks/log_dark_oak",
+            "east": "textures/blocks/log_dark_oak",
+            "west": "textures/blocks/log_dark_oak"
+          }
+        }
+      }
+    },
+    "minecraft:mangrove_log": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:pillar_axis"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_mangrove_top",
+              "down": "textures/blocks/log_mangrove_top",
+              "north": "textures/blocks/log_mangrove",
+              "south": "textures/blocks/log_mangrove",
+              "east": "textures/blocks/log_mangrove",
+              "west": "textures/blocks/log_mangrove"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_mangrove",
+              "down": "textures/blocks/log_mangrove",
+              "north": "textures/blocks/log_mangrove",
+              "south": "textures/blocks/log_mangrove",
+              "east": "textures/blocks/log_mangrove_top",
+              "west": "textures/blocks/log_mangrove_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_mangrove",
+              "down": "textures/blocks/log_mangrove",
+              "north": "textures/blocks/log_mangrove_top",
+              "south": "textures/blocks/log_mangrove_top",
+              "east": "textures/blocks/log_mangrove",
+              "west": "textures/blocks/log_mangrove"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/log_mangrove_top",
+            "down": "textures/blocks/log_mangrove_top",
+            "north": "textures/blocks/log_mangrove",
+            "south": "textures/blocks/log_mangrove",
+            "east": "textures/blocks/log_mangrove",
+            "west": "textures/blocks/log_mangrove"
+          }
+        }
+      }
+    },
+    "minecraft:cherry_log": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:pillar_axis"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_cherry_top",
+              "down": "textures/blocks/log_cherry_top",
+              "north": "textures/blocks/log_cherry",
+              "south": "textures/blocks/log_cherry",
+              "east": "textures/blocks/log_cherry",
+              "west": "textures/blocks/log_cherry"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_cherry",
+              "down": "textures/blocks/log_cherry",
+              "north": "textures/blocks/log_cherry",
+              "south": "textures/blocks/log_cherry",
+              "east": "textures/blocks/log_cherry_top",
+              "west": "textures/blocks/log_cherry_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_cherry",
+              "down": "textures/blocks/log_cherry",
+              "north": "textures/blocks/log_cherry_top",
+              "south": "textures/blocks/log_cherry_top",
+              "east": "textures/blocks/log_cherry",
+              "west": "textures/blocks/log_cherry"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/log_cherry_top",
+            "down": "textures/blocks/log_cherry_top",
+            "north": "textures/blocks/log_cherry",
+            "south": "textures/blocks/log_cherry",
+            "east": "textures/blocks/log_cherry",
+            "west": "textures/blocks/log_cherry"
+          }
+        }
+      }
+    },
+    "minecraft:pale_oak_log": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:pillar_axis"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_pale_oak_top",
+              "down": "textures/blocks/log_pale_oak_top",
+              "north": "textures/blocks/log_pale_oak",
+              "south": "textures/blocks/log_pale_oak",
+              "east": "textures/blocks/log_pale_oak",
+              "west": "textures/blocks/log_pale_oak"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_pale_oak",
+              "down": "textures/blocks/log_pale_oak",
+              "north": "textures/blocks/log_pale_oak",
+              "south": "textures/blocks/log_pale_oak",
+              "east": "textures/blocks/log_pale_oak_top",
+              "west": "textures/blocks/log_pale_oak_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_pale_oak",
+              "down": "textures/blocks/log_pale_oak",
+              "north": "textures/blocks/log_pale_oak_top",
+              "south": "textures/blocks/log_pale_oak_top",
+              "east": "textures/blocks/log_pale_oak",
+              "west": "textures/blocks/log_pale_oak"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/log_pale_oak_top",
+            "down": "textures/blocks/log_pale_oak_top",
+            "north": "textures/blocks/log_pale_oak",
+            "south": "textures/blocks/log_pale_oak",
+            "east": "textures/blocks/log_pale_oak",
+            "west": "textures/blocks/log_pale_oak"
+          }
+        }
+      }
+    },
+    "minecraft:stripped_oak_log": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:pillar_axis"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_oak_log_top",
+              "down": "textures/blocks/stripped_oak_log_top",
+              "north": "textures/blocks/stripped_oak_log",
+              "south": "textures/blocks/stripped_oak_log",
+              "east": "textures/blocks/stripped_oak_log",
+              "west": "textures/blocks/stripped_oak_log"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_oak_log",
+              "down": "textures/blocks/stripped_oak_log",
+              "north": "textures/blocks/stripped_oak_log",
+              "south": "textures/blocks/stripped_oak_log",
+              "east": "textures/blocks/stripped_oak_log_top",
+              "west": "textures/blocks/stripped_oak_log_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_oak_log",
+              "down": "textures/blocks/stripped_oak_log",
+              "north": "textures/blocks/stripped_oak_log_top",
+              "south": "textures/blocks/stripped_oak_log_top",
+              "east": "textures/blocks/stripped_oak_log",
+              "west": "textures/blocks/stripped_oak_log"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stripped_oak_log_top",
+            "down": "textures/blocks/stripped_oak_log_top",
+            "north": "textures/blocks/stripped_oak_log",
+            "south": "textures/blocks/stripped_oak_log",
+            "east": "textures/blocks/stripped_oak_log",
+            "west": "textures/blocks/stripped_oak_log"
+          }
+        }
+      }
+    },
+    "minecraft:stripped_spruce_log": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:pillar_axis"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_spruce_log_top",
+              "down": "textures/blocks/stripped_spruce_log_top",
+              "north": "textures/blocks/stripped_spruce_log",
+              "south": "textures/blocks/stripped_spruce_log",
+              "east": "textures/blocks/stripped_spruce_log",
+              "west": "textures/blocks/stripped_spruce_log"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_spruce_log",
+              "down": "textures/blocks/stripped_spruce_log",
+              "north": "textures/blocks/stripped_spruce_log",
+              "south": "textures/blocks/stripped_spruce_log",
+              "east": "textures/blocks/stripped_spruce_log_top",
+              "west": "textures/blocks/stripped_spruce_log_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_spruce_log",
+              "down": "textures/blocks/stripped_spruce_log",
+              "north": "textures/blocks/stripped_spruce_log_top",
+              "south": "textures/blocks/stripped_spruce_log_top",
+              "east": "textures/blocks/stripped_spruce_log",
+              "west": "textures/blocks/stripped_spruce_log"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stripped_spruce_log_top",
+            "down": "textures/blocks/stripped_spruce_log_top",
+            "north": "textures/blocks/stripped_spruce_log",
+            "south": "textures/blocks/stripped_spruce_log",
+            "east": "textures/blocks/stripped_spruce_log",
+            "west": "textures/blocks/stripped_spruce_log"
+          }
+        }
+      }
+    },
+    "minecraft:stripped_birch_log": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:pillar_axis"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_birch_log_top",
+              "down": "textures/blocks/stripped_birch_log_top",
+              "north": "textures/blocks/stripped_birch_log",
+              "south": "textures/blocks/stripped_birch_log",
+              "east": "textures/blocks/stripped_birch_log",
+              "west": "textures/blocks/stripped_birch_log"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_birch_log",
+              "down": "textures/blocks/stripped_birch_log",
+              "north": "textures/blocks/stripped_birch_log",
+              "south": "textures/blocks/stripped_birch_log",
+              "east": "textures/blocks/stripped_birch_log_top",
+              "west": "textures/blocks/stripped_birch_log_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_birch_log",
+              "down": "textures/blocks/stripped_birch_log",
+              "north": "textures/blocks/stripped_birch_log_top",
+              "south": "textures/blocks/stripped_birch_log_top",
+              "east": "textures/blocks/stripped_birch_log",
+              "west": "textures/blocks/stripped_birch_log"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stripped_birch_log_top",
+            "down": "textures/blocks/stripped_birch_log_top",
+            "north": "textures/blocks/stripped_birch_log",
+            "south": "textures/blocks/stripped_birch_log",
+            "east": "textures/blocks/stripped_birch_log",
+            "west": "textures/blocks/stripped_birch_log"
+          }
+        }
+      }
+    },
+    "minecraft:stripped_jungle_log": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:pillar_axis"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_jungle_log_top",
+              "down": "textures/blocks/stripped_jungle_log_top",
+              "north": "textures/blocks/stripped_jungle_log",
+              "south": "textures/blocks/stripped_jungle_log",
+              "east": "textures/blocks/stripped_jungle_log",
+              "west": "textures/blocks/stripped_jungle_log"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_jungle_log",
+              "down": "textures/blocks/stripped_jungle_log",
+              "north": "textures/blocks/stripped_jungle_log",
+              "south": "textures/blocks/stripped_jungle_log",
+              "east": "textures/blocks/stripped_jungle_log_top",
+              "west": "textures/blocks/stripped_jungle_log_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_jungle_log",
+              "down": "textures/blocks/stripped_jungle_log",
+              "north": "textures/blocks/stripped_jungle_log_top",
+              "south": "textures/blocks/stripped_jungle_log_top",
+              "east": "textures/blocks/stripped_jungle_log",
+              "west": "textures/blocks/stripped_jungle_log"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stripped_jungle_log_top",
+            "down": "textures/blocks/stripped_jungle_log_top",
+            "north": "textures/blocks/stripped_jungle_log",
+            "south": "textures/blocks/stripped_jungle_log",
+            "east": "textures/blocks/stripped_jungle_log",
+            "west": "textures/blocks/stripped_jungle_log"
+          }
+        }
+      }
+    },
+    "minecraft:stripped_acacia_log": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:pillar_axis"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_acacia_log_top",
+              "down": "textures/blocks/stripped_acacia_log_top",
+              "north": "textures/blocks/stripped_acacia_log",
+              "south": "textures/blocks/stripped_acacia_log",
+              "east": "textures/blocks/stripped_acacia_log",
+              "west": "textures/blocks/stripped_acacia_log"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_acacia_log",
+              "down": "textures/blocks/stripped_acacia_log",
+              "north": "textures/blocks/stripped_acacia_log",
+              "south": "textures/blocks/stripped_acacia_log",
+              "east": "textures/blocks/stripped_acacia_log_top",
+              "west": "textures/blocks/stripped_acacia_log_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_acacia_log",
+              "down": "textures/blocks/stripped_acacia_log",
+              "north": "textures/blocks/stripped_acacia_log_top",
+              "south": "textures/blocks/stripped_acacia_log_top",
+              "east": "textures/blocks/stripped_acacia_log",
+              "west": "textures/blocks/stripped_acacia_log"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stripped_acacia_log_top",
+            "down": "textures/blocks/stripped_acacia_log_top",
+            "north": "textures/blocks/stripped_acacia_log",
+            "south": "textures/blocks/stripped_acacia_log",
+            "east": "textures/blocks/stripped_acacia_log",
+            "west": "textures/blocks/stripped_acacia_log"
+          }
+        }
+      }
+    },
+    "minecraft:stripped_dark_oak_log": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:pillar_axis"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_dark_oak_log_top",
+              "down": "textures/blocks/stripped_dark_oak_log_top",
+              "north": "textures/blocks/stripped_dark_oak_log",
+              "south": "textures/blocks/stripped_dark_oak_log",
+              "east": "textures/blocks/stripped_dark_oak_log",
+              "west": "textures/blocks/stripped_dark_oak_log"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_dark_oak_log",
+              "down": "textures/blocks/stripped_dark_oak_log",
+              "north": "textures/blocks/stripped_dark_oak_log",
+              "south": "textures/blocks/stripped_dark_oak_log",
+              "east": "textures/blocks/stripped_dark_oak_log_top",
+              "west": "textures/blocks/stripped_dark_oak_log_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_dark_oak_log",
+              "down": "textures/blocks/stripped_dark_oak_log",
+              "north": "textures/blocks/stripped_dark_oak_log_top",
+              "south": "textures/blocks/stripped_dark_oak_log_top",
+              "east": "textures/blocks/stripped_dark_oak_log",
+              "west": "textures/blocks/stripped_dark_oak_log"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stripped_dark_oak_log_top",
+            "down": "textures/blocks/stripped_dark_oak_log_top",
+            "north": "textures/blocks/stripped_dark_oak_log",
+            "south": "textures/blocks/stripped_dark_oak_log",
+            "east": "textures/blocks/stripped_dark_oak_log",
+            "west": "textures/blocks/stripped_dark_oak_log"
+          }
+        }
+      }
+    },
+    "minecraft:stripped_mangrove_log": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:pillar_axis"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_mangrove_log_top",
+              "down": "textures/blocks/stripped_mangrove_log_top",
+              "north": "textures/blocks/stripped_mangrove_log",
+              "south": "textures/blocks/stripped_mangrove_log",
+              "east": "textures/blocks/stripped_mangrove_log",
+              "west": "textures/blocks/stripped_mangrove_log"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_mangrove_log",
+              "down": "textures/blocks/stripped_mangrove_log",
+              "north": "textures/blocks/stripped_mangrove_log",
+              "south": "textures/blocks/stripped_mangrove_log",
+              "east": "textures/blocks/stripped_mangrove_log_top",
+              "west": "textures/blocks/stripped_mangrove_log_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_mangrove_log",
+              "down": "textures/blocks/stripped_mangrove_log",
+              "north": "textures/blocks/stripped_mangrove_log_top",
+              "south": "textures/blocks/stripped_mangrove_log_top",
+              "east": "textures/blocks/stripped_mangrove_log",
+              "west": "textures/blocks/stripped_mangrove_log"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stripped_mangrove_log_top",
+            "down": "textures/blocks/stripped_mangrove_log_top",
+            "north": "textures/blocks/stripped_mangrove_log",
+            "south": "textures/blocks/stripped_mangrove_log",
+            "east": "textures/blocks/stripped_mangrove_log",
+            "west": "textures/blocks/stripped_mangrove_log"
+          }
+        }
+      }
+    },
+    "minecraft:stripped_cherry_log": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:pillar_axis"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_cherry_log_top",
+              "down": "textures/blocks/stripped_cherry_log_top",
+              "north": "textures/blocks/stripped_cherry_log",
+              "south": "textures/blocks/stripped_cherry_log",
+              "east": "textures/blocks/stripped_cherry_log",
+              "west": "textures/blocks/stripped_cherry_log"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_cherry_log",
+              "down": "textures/blocks/stripped_cherry_log",
+              "north": "textures/blocks/stripped_cherry_log",
+              "south": "textures/blocks/stripped_cherry_log",
+              "east": "textures/blocks/stripped_cherry_log_top",
+              "west": "textures/blocks/stripped_cherry_log_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_cherry_log",
+              "down": "textures/blocks/stripped_cherry_log",
+              "north": "textures/blocks/stripped_cherry_log_top",
+              "south": "textures/blocks/stripped_cherry_log_top",
+              "east": "textures/blocks/stripped_cherry_log",
+              "west": "textures/blocks/stripped_cherry_log"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stripped_cherry_log_top",
+            "down": "textures/blocks/stripped_cherry_log_top",
+            "north": "textures/blocks/stripped_cherry_log",
+            "south": "textures/blocks/stripped_cherry_log",
+            "east": "textures/blocks/stripped_cherry_log",
+            "west": "textures/blocks/stripped_cherry_log"
+          }
+        }
+      }
+    },
+    "minecraft:stripped_pale_oak_log": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:pillar_axis"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_pale_oak_log_top",
+              "down": "textures/blocks/stripped_pale_oak_log_top",
+              "north": "textures/blocks/stripped_pale_oak_log",
+              "south": "textures/blocks/stripped_pale_oak_log",
+              "east": "textures/blocks/stripped_pale_oak_log",
+              "west": "textures/blocks/stripped_pale_oak_log"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_pale_oak_log",
+              "down": "textures/blocks/stripped_pale_oak_log",
+              "north": "textures/blocks/stripped_pale_oak_log",
+              "south": "textures/blocks/stripped_pale_oak_log",
+              "east": "textures/blocks/stripped_pale_oak_log_top",
+              "west": "textures/blocks/stripped_pale_oak_log_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/stripped_pale_oak_log",
+              "down": "textures/blocks/stripped_pale_oak_log",
+              "north": "textures/blocks/stripped_pale_oak_log_top",
+              "south": "textures/blocks/stripped_pale_oak_log_top",
+              "east": "textures/blocks/stripped_pale_oak_log",
+              "west": "textures/blocks/stripped_pale_oak_log"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stripped_pale_oak_log_top",
+            "down": "textures/blocks/stripped_pale_oak_log_top",
+            "north": "textures/blocks/stripped_pale_oak_log",
+            "south": "textures/blocks/stripped_pale_oak_log",
+            "east": "textures/blocks/stripped_pale_oak_log",
+            "west": "textures/blocks/stripped_pale_oak_log"
+          }
+        }
+      }
+    },
+    "minecraft:oak_wood": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/log_oak",
+            "down": "textures/blocks/log_oak",
+            "north": "textures/blocks/log_oak",
+            "south": "textures/blocks/log_oak",
+            "east": "textures/blocks/log_oak",
+            "west": "textures/blocks/log_oak"
+          }
+        }
+      }
+    },
+    "minecraft:spruce_wood": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/log_spruce",
+            "down": "textures/blocks/log_spruce",
+            "north": "textures/blocks/log_spruce",
+            "south": "textures/blocks/log_spruce",
+            "east": "textures/blocks/log_spruce",
+            "west": "textures/blocks/log_spruce"
+          }
+        }
+      }
+    },
+    "minecraft:birch_wood": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/log_birch",
+            "down": "textures/blocks/log_birch",
+            "north": "textures/blocks/log_birch",
+            "south": "textures/blocks/log_birch",
+            "east": "textures/blocks/log_birch",
+            "west": "textures/blocks/log_birch"
+          }
+        }
+      }
+    },
+    "minecraft:jungle_wood": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/log_jungle",
+            "down": "textures/blocks/log_jungle",
+            "north": "textures/blocks/log_jungle",
+            "south": "textures/blocks/log_jungle",
+            "east": "textures/blocks/log_jungle",
+            "west": "textures/blocks/log_jungle"
+          }
+        }
+      }
+    },
+    "minecraft:acacia_wood": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/log_acacia",
+            "down": "textures/blocks/log_acacia",
+            "north": "textures/blocks/log_acacia",
+            "south": "textures/blocks/log_acacia",
+            "east": "textures/blocks/log_acacia",
+            "west": "textures/blocks/log_acacia"
+          }
+        }
+      }
+    },
+    "minecraft:dark_oak_wood": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/log_dark_oak",
+            "down": "textures/blocks/log_dark_oak",
+            "north": "textures/blocks/log_dark_oak",
+            "south": "textures/blocks/log_dark_oak",
+            "east": "textures/blocks/log_dark_oak",
+            "west": "textures/blocks/log_dark_oak"
+          }
+        }
+      }
+    },
+    "minecraft:mangrove_wood": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/log_mangrove",
+            "down": "textures/blocks/log_mangrove",
+            "north": "textures/blocks/log_mangrove",
+            "south": "textures/blocks/log_mangrove",
+            "east": "textures/blocks/log_mangrove",
+            "west": "textures/blocks/log_mangrove"
+          }
+        }
+      }
+    },
+    "minecraft:cherry_wood": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/log_cherry",
+            "down": "textures/blocks/log_cherry",
+            "north": "textures/blocks/log_cherry",
+            "south": "textures/blocks/log_cherry",
+            "east": "textures/blocks/log_cherry",
+            "west": "textures/blocks/log_cherry"
+          }
+        }
+      }
+    },
+    "minecraft:pale_oak_wood": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/log_pale_oak",
+            "down": "textures/blocks/log_pale_oak",
+            "north": "textures/blocks/log_pale_oak",
+            "south": "textures/blocks/log_pale_oak",
+            "east": "textures/blocks/log_pale_oak",
+            "west": "textures/blocks/log_pale_oak"
+          }
+        }
+      }
+    },
+    "minecraft:stripped_oak_wood": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stripped_oak_log",
+            "down": "textures/blocks/stripped_oak_log",
+            "north": "textures/blocks/stripped_oak_log",
+            "south": "textures/blocks/stripped_oak_log",
+            "east": "textures/blocks/stripped_oak_log",
+            "west": "textures/blocks/stripped_oak_log"
+          }
+        }
+      }
+    },
+    "minecraft:stripped_spruce_wood": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stripped_spruce_log",
+            "down": "textures/blocks/stripped_spruce_log",
+            "north": "textures/blocks/stripped_spruce_log",
+            "south": "textures/blocks/stripped_spruce_log",
+            "east": "textures/blocks/stripped_spruce_log",
+            "west": "textures/blocks/stripped_spruce_log"
+          }
+        }
+      }
+    },
+    "minecraft:stripped_birch_wood": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stripped_birch_log",
+            "down": "textures/blocks/stripped_birch_log",
+            "north": "textures/blocks/stripped_birch_log",
+            "south": "textures/blocks/stripped_birch_log",
+            "east": "textures/blocks/stripped_birch_log",
+            "west": "textures/blocks/stripped_birch_log"
+          }
+        }
+      }
+    },
+    "minecraft:stripped_jungle_wood": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stripped_jungle_log",
+            "down": "textures/blocks/stripped_jungle_log",
+            "north": "textures/blocks/stripped_jungle_log",
+            "south": "textures/blocks/stripped_jungle_log",
+            "east": "textures/blocks/stripped_jungle_log",
+            "west": "textures/blocks/stripped_jungle_log"
+          }
+        }
+      }
+    },
+    "minecraft:stripped_acacia_wood": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stripped_acacia_log",
+            "down": "textures/blocks/stripped_acacia_log",
+            "north": "textures/blocks/stripped_acacia_log",
+            "south": "textures/blocks/stripped_acacia_log",
+            "east": "textures/blocks/stripped_acacia_log",
+            "west": "textures/blocks/stripped_acacia_log"
+          }
+        }
+      }
+    },
+    "minecraft:stripped_dark_oak_wood": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stripped_dark_oak_log",
+            "down": "textures/blocks/stripped_dark_oak_log",
+            "north": "textures/blocks/stripped_dark_oak_log",
+            "south": "textures/blocks/stripped_dark_oak_log",
+            "east": "textures/blocks/stripped_dark_oak_log",
+            "west": "textures/blocks/stripped_dark_oak_log"
+          }
+        }
+      }
+    },
+    "minecraft:stripped_mangrove_wood": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stripped_mangrove_log",
+            "down": "textures/blocks/stripped_mangrove_log",
+            "north": "textures/blocks/stripped_mangrove_log",
+            "south": "textures/blocks/stripped_mangrove_log",
+            "east": "textures/blocks/stripped_mangrove_log",
+            "west": "textures/blocks/stripped_mangrove_log"
+          }
+        }
+      }
+    },
+    "minecraft:stripped_cherry_wood": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stripped_cherry_log",
+            "down": "textures/blocks/stripped_cherry_log",
+            "north": "textures/blocks/stripped_cherry_log",
+            "south": "textures/blocks/stripped_cherry_log",
+            "east": "textures/blocks/stripped_cherry_log",
+            "west": "textures/blocks/stripped_cherry_log"
+          }
+        }
+      }
+    },
+    "minecraft:stripped_pale_oak_wood": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stripped_pale_oak_log",
+            "down": "textures/blocks/stripped_pale_oak_log",
+            "north": "textures/blocks/stripped_pale_oak_log",
+            "south": "textures/blocks/stripped_pale_oak_log",
+            "east": "textures/blocks/stripped_pale_oak_log",
+            "west": "textures/blocks/stripped_pale_oak_log"
+          }
+        }
+      }
+    },
+    "minecraft:log": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:old_log_type",
+        "minecraft:pillar_axis"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:old_log_type') == 'oak' && q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_oak_top",
+              "down": "textures/blocks/log_oak_top",
+              "north": "textures/blocks/log_oak",
+              "south": "textures/blocks/log_oak",
+              "east": "textures/blocks/log_oak",
+              "west": "textures/blocks/log_oak"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:old_log_type') == 'oak' && q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_oak",
+              "down": "textures/blocks/log_oak",
+              "north": "textures/blocks/log_oak",
+              "south": "textures/blocks/log_oak",
+              "east": "textures/blocks/log_oak_top",
+              "west": "textures/blocks/log_oak_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:old_log_type') == 'oak' && q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_oak",
+              "down": "textures/blocks/log_oak",
+              "north": "textures/blocks/log_oak_top",
+              "south": "textures/blocks/log_oak_top",
+              "east": "textures/blocks/log_oak",
+              "west": "textures/blocks/log_oak"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:old_log_type') == 'spruce' && q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_spruce_top",
+              "down": "textures/blocks/log_spruce_top",
+              "north": "textures/blocks/log_spruce",
+              "south": "textures/blocks/log_spruce",
+              "east": "textures/blocks/log_spruce",
+              "west": "textures/blocks/log_spruce"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:old_log_type') == 'spruce' && q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_spruce",
+              "down": "textures/blocks/log_spruce",
+              "north": "textures/blocks/log_spruce",
+              "south": "textures/blocks/log_spruce",
+              "east": "textures/blocks/log_spruce_top",
+              "west": "textures/blocks/log_spruce_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:old_log_type') == 'spruce' && q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_spruce",
+              "down": "textures/blocks/log_spruce",
+              "north": "textures/blocks/log_spruce_top",
+              "south": "textures/blocks/log_spruce_top",
+              "east": "textures/blocks/log_spruce",
+              "west": "textures/blocks/log_spruce"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:old_log_type') == 'birch' && q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_birch_top",
+              "down": "textures/blocks/log_birch_top",
+              "north": "textures/blocks/log_birch",
+              "south": "textures/blocks/log_birch",
+              "east": "textures/blocks/log_birch",
+              "west": "textures/blocks/log_birch"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:old_log_type') == 'birch' && q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_birch",
+              "down": "textures/blocks/log_birch",
+              "north": "textures/blocks/log_birch",
+              "south": "textures/blocks/log_birch",
+              "east": "textures/blocks/log_birch_top",
+              "west": "textures/blocks/log_birch_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:old_log_type') == 'birch' && q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_birch",
+              "down": "textures/blocks/log_birch",
+              "north": "textures/blocks/log_birch_top",
+              "south": "textures/blocks/log_birch_top",
+              "east": "textures/blocks/log_birch",
+              "west": "textures/blocks/log_birch"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:old_log_type') == 'jungle' && q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_jungle_top",
+              "down": "textures/blocks/log_jungle_top",
+              "north": "textures/blocks/log_jungle",
+              "south": "textures/blocks/log_jungle",
+              "east": "textures/blocks/log_jungle",
+              "west": "textures/blocks/log_jungle"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:old_log_type') == 'jungle' && q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_jungle",
+              "down": "textures/blocks/log_jungle",
+              "north": "textures/blocks/log_jungle",
+              "south": "textures/blocks/log_jungle",
+              "east": "textures/blocks/log_jungle_top",
+              "west": "textures/blocks/log_jungle_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:old_log_type') == 'jungle' && q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_jungle",
+              "down": "textures/blocks/log_jungle",
+              "north": "textures/blocks/log_jungle_top",
+              "south": "textures/blocks/log_jungle_top",
+              "east": "textures/blocks/log_jungle",
+              "west": "textures/blocks/log_jungle"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/log_oak_top",
+            "down": "textures/blocks/log_oak_top",
+            "north": "textures/blocks/log_oak",
+            "south": "textures/blocks/log_oak",
+            "east": "textures/blocks/log_oak",
+            "west": "textures/blocks/log_oak"
+          }
+        }
+      }
+    },
+    "minecraft:log2": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:new_log_type",
+        "minecraft:pillar_axis"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:new_log_type') == 'acacia' && q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_acacia_top",
+              "down": "textures/blocks/log_acacia_top",
+              "north": "textures/blocks/log_acacia",
+              "south": "textures/blocks/log_acacia",
+              "east": "textures/blocks/log_acacia",
+              "west": "textures/blocks/log_acacia"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:new_log_type') == 'acacia' && q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_acacia",
+              "down": "textures/blocks/log_acacia",
+              "north": "textures/blocks/log_acacia",
+              "south": "textures/blocks/log_acacia",
+              "east": "textures/blocks/log_acacia_top",
+              "west": "textures/blocks/log_acacia_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:new_log_type') == 'acacia' && q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_acacia",
+              "down": "textures/blocks/log_acacia",
+              "north": "textures/blocks/log_acacia_top",
+              "south": "textures/blocks/log_acacia_top",
+              "east": "textures/blocks/log_acacia",
+              "west": "textures/blocks/log_acacia"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:new_log_type') == 'dark_oak' && q.block_state('minecraft:pillar_axis') == 'y'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_dark_oak_top",
+              "down": "textures/blocks/log_dark_oak_top",
+              "north": "textures/blocks/log_dark_oak",
+              "south": "textures/blocks/log_dark_oak",
+              "east": "textures/blocks/log_dark_oak",
+              "west": "textures/blocks/log_dark_oak"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:new_log_type') == 'dark_oak' && q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_dark_oak",
+              "down": "textures/blocks/log_dark_oak",
+              "north": "textures/blocks/log_dark_oak",
+              "south": "textures/blocks/log_dark_oak",
+              "east": "textures/blocks/log_dark_oak_top",
+              "west": "textures/blocks/log_dark_oak_top"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:new_log_type') == 'dark_oak' && q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/log_dark_oak",
+              "down": "textures/blocks/log_dark_oak",
+              "north": "textures/blocks/log_dark_oak_top",
+              "south": "textures/blocks/log_dark_oak_top",
+              "east": "textures/blocks/log_dark_oak",
+              "west": "textures/blocks/log_dark_oak"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/log_acacia",
+            "down": "textures/blocks/log_acacia",
+            "north": "textures/blocks/log_acacia",
+            "south": "textures/blocks/log_acacia",
+            "east": "textures/blocks/log_acacia",
+            "west": "textures/blocks/log_acacia"
+          }
+        }
+      }
+    },
+    "minecraft:oak_leaves": {
+      "materials": "alpha_test_tint",
+      "category": "nature/leaves",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/leaves_oak",
+            "down": "textures/blocks/leaves_oak",
+            "north": "textures/blocks/leaves_oak",
+            "south": "textures/blocks/leaves_oak",
+            "east": "textures/blocks/leaves_oak",
+            "west": "textures/blocks/leaves_oak"
+          }
+        },
+        "tint": {
+          "method": "foliage"
+        }
+      }
+    },
+    "minecraft:jungle_leaves": {
+      "materials": "alpha_test_tint",
+      "category": "nature/leaves",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/leaves_jungle",
+            "down": "textures/blocks/leaves_jungle",
+            "north": "textures/blocks/leaves_jungle",
+            "south": "textures/blocks/leaves_jungle",
+            "east": "textures/blocks/leaves_jungle",
+            "west": "textures/blocks/leaves_jungle"
+          }
+        },
+        "tint": {
+          "method": "foliage"
+        }
+      }
+    },
+    "minecraft:acacia_leaves": {
+      "materials": "alpha_test_tint",
+      "category": "nature/leaves",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/leaves_acacia",
+            "down": "textures/blocks/leaves_acacia",
+            "north": "textures/blocks/leaves_acacia",
+            "south": "textures/blocks/leaves_acacia",
+            "east": "textures/blocks/leaves_acacia",
+            "west": "textures/blocks/leaves_acacia"
+          }
+        },
+        "tint": {
+          "method": "foliage"
+        }
+      }
+    },
+    "minecraft:dark_oak_leaves": {
+      "materials": "alpha_test_tint",
+      "category": "nature/leaves",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/leaves_big_oak",
+            "down": "textures/blocks/leaves_big_oak",
+            "north": "textures/blocks/leaves_big_oak",
+            "south": "textures/blocks/leaves_big_oak",
+            "east": "textures/blocks/leaves_big_oak",
+            "west": "textures/blocks/leaves_big_oak"
+          }
+        },
+        "tint": {
+          "method": "foliage"
+        }
+      }
+    },
+    "minecraft:mangrove_leaves": {
+      "materials": "alpha_test_tint",
+      "category": "nature/leaves",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/mangrove_leaves",
+            "down": "textures/blocks/mangrove_leaves",
+            "north": "textures/blocks/mangrove_leaves",
+            "south": "textures/blocks/mangrove_leaves",
+            "east": "textures/blocks/mangrove_leaves",
+            "west": "textures/blocks/mangrove_leaves"
+          }
+        },
+        "tint": {
+          "method": "foliage"
+        }
+      }
+    },
+    "minecraft:spruce_leaves": {
+      "materials": "alpha_test_tint",
+      "category": "nature/leaves",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/leaves_spruce",
+            "down": "textures/blocks/leaves_spruce",
+            "north": "textures/blocks/leaves_spruce",
+            "south": "textures/blocks/leaves_spruce",
+            "east": "textures/blocks/leaves_spruce",
+            "west": "textures/blocks/leaves_spruce"
+          }
+        },
+        "tint": {
+          "method": "fixed",
+          "color": "#619961"
+        }
+      }
+    },
+    "minecraft:birch_leaves": {
+      "materials": "alpha_test_tint",
+      "category": "nature/leaves",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/leaves_birch",
+            "down": "textures/blocks/leaves_birch",
+            "north": "textures/blocks/leaves_birch",
+            "south": "textures/blocks/leaves_birch",
+            "east": "textures/blocks/leaves_birch",
+            "west": "textures/blocks/leaves_birch"
+          }
+        },
+        "tint": {
+          "method": "fixed",
+          "color": "#80A755"
+        }
+      }
+    },
+    "minecraft:cherry_leaves": {
+      "materials": "alpha_test",
+      "category": "nature/leaves",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/cherry_leaves",
+            "down": "textures/blocks/cherry_leaves",
+            "north": "textures/blocks/cherry_leaves",
+            "south": "textures/blocks/cherry_leaves",
+            "east": "textures/blocks/cherry_leaves",
+            "west": "textures/blocks/cherry_leaves"
+          }
+        }
+      }
+    },
+    "minecraft:pale_oak_leaves": {
+      "materials": "alpha_test",
+      "category": "nature/leaves",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/pale_oak_leaves",
+            "down": "textures/blocks/pale_oak_leaves",
+            "north": "textures/blocks/pale_oak_leaves",
+            "south": "textures/blocks/pale_oak_leaves",
+            "east": "textures/blocks/pale_oak_leaves",
+            "west": "textures/blocks/pale_oak_leaves"
+          }
+        }
+      }
+    },
+    "minecraft:azalea_leaves": {
+      "materials": "alpha_test",
+      "category": "nature/leaves",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/azalea_leaves",
+            "down": "textures/blocks/azalea_leaves",
+            "north": "textures/blocks/azalea_leaves",
+            "south": "textures/blocks/azalea_leaves",
+            "east": "textures/blocks/azalea_leaves",
+            "west": "textures/blocks/azalea_leaves"
+          }
+        }
+      }
+    },
+    "minecraft:flowering_azalea_leaves": {
+      "materials": "alpha_test",
+      "category": "nature/leaves",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/azalea_leaves_flowers",
+            "down": "textures/blocks/azalea_leaves_flowers",
+            "north": "textures/blocks/azalea_leaves_flowers",
+            "south": "textures/blocks/azalea_leaves_flowers",
+            "east": "textures/blocks/azalea_leaves_flowers",
+            "west": "textures/blocks/azalea_leaves_flowers"
+          }
+        }
+      }
+    },
+    "minecraft:leaves": {
+      "materials": "alpha_test_tint",
+      "category": "nature/leaves",
+      "states": [
+        "minecraft:old_leaf_type"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:old_leaf_type') == 'oak'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/leaves_oak",
+              "down": "textures/blocks/leaves_oak",
+              "north": "textures/blocks/leaves_oak",
+              "south": "textures/blocks/leaves_oak",
+              "east": "textures/blocks/leaves_oak",
+              "west": "textures/blocks/leaves_oak"
+            }
+          },
+          "tint": {
+            "method": "foliage"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:old_leaf_type') == 'spruce'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/leaves_spruce",
+              "down": "textures/blocks/leaves_spruce",
+              "north": "textures/blocks/leaves_spruce",
+              "south": "textures/blocks/leaves_spruce",
+              "east": "textures/blocks/leaves_spruce",
+              "west": "textures/blocks/leaves_spruce"
+            }
+          },
+          "tint": {
+            "method": "fixed",
+            "color": "#619961"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:old_leaf_type') == 'birch'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/leaves_birch",
+              "down": "textures/blocks/leaves_birch",
+              "north": "textures/blocks/leaves_birch",
+              "south": "textures/blocks/leaves_birch",
+              "east": "textures/blocks/leaves_birch",
+              "west": "textures/blocks/leaves_birch"
+            }
+          },
+          "tint": {
+            "method": "fixed",
+            "color": "#80A755"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:old_leaf_type') == 'jungle'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/leaves_jungle",
+              "down": "textures/blocks/leaves_jungle",
+              "north": "textures/blocks/leaves_jungle",
+              "south": "textures/blocks/leaves_jungle",
+              "east": "textures/blocks/leaves_jungle",
+              "west": "textures/blocks/leaves_jungle"
+            }
+          },
+          "tint": {
+            "method": "foliage"
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/leaves_oak",
+            "down": "textures/blocks/leaves_oak",
+            "north": "textures/blocks/leaves_oak",
+            "south": "textures/blocks/leaves_oak",
+            "east": "textures/blocks/leaves_oak",
+            "west": "textures/blocks/leaves_oak"
+          }
+        },
+        "tint": {
+          "method": "foliage"
+        }
+      }
+    },
+    "minecraft:leaves2": {
+      "materials": "alpha_test_tint",
+      "category": "nature/leaves",
+      "states": [
+        "minecraft:new_leaf_type"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:new_leaf_type') == 'acacia'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/leaves_acacia",
+              "down": "textures/blocks/leaves_acacia",
+              "north": "textures/blocks/leaves_acacia",
+              "south": "textures/blocks/leaves_acacia",
+              "east": "textures/blocks/leaves_acacia",
+              "west": "textures/blocks/leaves_acacia"
+            }
+          },
+          "tint": {
+            "method": "foliage"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:new_leaf_type') == 'dark_oak'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/leaves_big_oak",
+              "down": "textures/blocks/leaves_big_oak",
+              "north": "textures/blocks/leaves_big_oak",
+              "south": "textures/blocks/leaves_big_oak",
+              "east": "textures/blocks/leaves_big_oak",
+              "west": "textures/blocks/leaves_big_oak"
+            }
+          },
+          "tint": {
+            "method": "foliage"
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/leaves_acacia",
+            "down": "textures/blocks/leaves_acacia",
+            "north": "textures/blocks/leaves_acacia",
+            "south": "textures/blocks/leaves_acacia",
+            "east": "textures/blocks/leaves_acacia",
+            "west": "textures/blocks/leaves_acacia"
+          }
+        },
+        "tint": {
+          "method": "foliage"
+        }
+      }
+    },
+    "minecraft:chest": {
+      "materials": "alpha_test",
+      "category": "functional/chests_and_containers",
+      "states": [
+        "minecraft:cardinal_direction"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:cardinal_direction') == 'north'",
+          "model": {
+            "type": "chest",
+            "texture": "textures/entity/chest/normal",
+            "facing": "north"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:cardinal_direction') == 'east'",
+          "model": {
+            "type": "chest",
+            "texture": "textures/entity/chest/normal",
+            "facing": "east"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:cardinal_direction') == 'south'",
+          "model": {
+            "type": "chest",
+            "texture": "textures/entity/chest/normal",
+            "facing": "south"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:cardinal_direction') == 'west'",
+          "model": {
+            "type": "chest",
+            "texture": "textures/entity/chest/normal",
+            "facing": "west"
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "chest",
+          "texture": "textures/entity/chest/normal",
+          "facing": "south"
+        }
+      }
+    },
+    "minecraft:bee_nest": {
+      "materials": "opaque",
+      "category": "nature/other_natural_blocks",
+      "states": [
+        "minecraft:direction",
+        "minecraft:honey_level"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:direction') == 0 && q.block_state('minecraft:honey_level') < 5",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/bee_nest_top",
+              "down": "textures/blocks/bee_nest_bottom",
+              "north": "textures/blocks/bee_nest_side",
+              "south": "textures/blocks/bee_nest_side",
+              "east": "textures/blocks/bee_nest_side",
+              "west": "textures/blocks/bee_nest_side"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:direction') == 0 && q.block_state('minecraft:honey_level') >= 5",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/bee_nest_top",
+              "down": "textures/blocks/bee_nest_bottom",
+              "north": "textures/blocks/bee_nest_side",
+              "south": "textures/blocks/bee_nest_side",
+              "east": "textures/blocks/bee_nest_side",
+              "west": "textures/blocks/bee_nest_side"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:direction') == 1 && q.block_state('minecraft:honey_level') < 5",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/bee_nest_top",
+              "down": "textures/blocks/bee_nest_bottom",
+              "north": "textures/blocks/bee_nest_side",
+              "south": "textures/blocks/bee_nest_side",
+              "east": "textures/blocks/bee_nest_side",
+              "west": "textures/blocks/bee_nest_side"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:direction') == 1 && q.block_state('minecraft:honey_level') >= 5",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/bee_nest_top",
+              "down": "textures/blocks/bee_nest_bottom",
+              "north": "textures/blocks/bee_nest_side",
+              "south": "textures/blocks/bee_nest_side",
+              "east": "textures/blocks/bee_nest_side",
+              "west": "textures/blocks/bee_nest_side"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:direction') == 2 && q.block_state('minecraft:honey_level') < 5",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/bee_nest_top",
+              "down": "textures/blocks/bee_nest_bottom",
+              "north": "textures/blocks/bee_nest_side",
+              "south": "textures/blocks/bee_nest_side",
+              "east": "textures/blocks/bee_nest_side",
+              "west": "textures/blocks/bee_nest_side"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:direction') == 2 && q.block_state('minecraft:honey_level') >= 5",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/bee_nest_top",
+              "down": "textures/blocks/bee_nest_bottom",
+              "north": "textures/blocks/bee_nest_side",
+              "south": "textures/blocks/bee_nest_side",
+              "east": "textures/blocks/bee_nest_side",
+              "west": "textures/blocks/bee_nest_side"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:direction') == 3 && q.block_state('minecraft:honey_level') < 5",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/bee_nest_top",
+              "down": "textures/blocks/bee_nest_bottom",
+              "north": "textures/blocks/bee_nest_side",
+              "south": "textures/blocks/bee_nest_side",
+              "east": "textures/blocks/bee_nest_side",
+              "west": "textures/blocks/bee_nest_side"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:direction') == 3 && q.block_state('minecraft:honey_level') >= 5",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/bee_nest_top",
+              "down": "textures/blocks/bee_nest_bottom",
+              "north": "textures/blocks/bee_nest_side",
+              "south": "textures/blocks/bee_nest_side",
+              "east": "textures/blocks/bee_nest_side",
+              "west": "textures/blocks/bee_nest_side"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/bee_nest_side",
+            "down": "textures/blocks/bee_nest_side",
+            "north": "textures/blocks/bee_nest_side",
+            "south": "textures/blocks/bee_nest_side",
+            "east": "textures/blocks/bee_nest_side",
+            "west": "textures/blocks/bee_nest_side"
+          }
+        }
+      }
+    },
+    "minecraft:cocoa": {
+      "materials": "alpha_test",
+      "category": "nature/crops",
+      "states": [
+        "minecraft:direction",
+        "minecraft:age"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:direction') == 0 && q.block_state('minecraft:age') == 0",
+          "model": {
+            "type": "cocoa",
+            "texture": "textures/blocks/cocoa_stage_0",
+            "facing": "south",
+            "age": 0
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:direction') == 0 && q.block_state('minecraft:age') == 1",
+          "model": {
+            "type": "cocoa",
+            "texture": "textures/blocks/cocoa_stage_1",
+            "facing": "south",
+            "age": 1
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:direction') == 0 && q.block_state('minecraft:age') == 2",
+          "model": {
+            "type": "cocoa",
+            "texture": "textures/blocks/cocoa_stage_2",
+            "facing": "south",
+            "age": 2
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:direction') == 1 && q.block_state('minecraft:age') == 0",
+          "model": {
+            "type": "cocoa",
+            "texture": "textures/blocks/cocoa_stage_0",
+            "facing": "west",
+            "age": 0
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:direction') == 1 && q.block_state('minecraft:age') == 1",
+          "model": {
+            "type": "cocoa",
+            "texture": "textures/blocks/cocoa_stage_1",
+            "facing": "west",
+            "age": 1
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:direction') == 1 && q.block_state('minecraft:age') == 2",
+          "model": {
+            "type": "cocoa",
+            "texture": "textures/blocks/cocoa_stage_2",
+            "facing": "west",
+            "age": 2
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:direction') == 2 && q.block_state('minecraft:age') == 0",
+          "model": {
+            "type": "cocoa",
+            "texture": "textures/blocks/cocoa_stage_0",
+            "facing": "north",
+            "age": 0
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:direction') == 2 && q.block_state('minecraft:age') == 1",
+          "model": {
+            "type": "cocoa",
+            "texture": "textures/blocks/cocoa_stage_1",
+            "facing": "north",
+            "age": 1
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:direction') == 2 && q.block_state('minecraft:age') == 2",
+          "model": {
+            "type": "cocoa",
+            "texture": "textures/blocks/cocoa_stage_2",
+            "facing": "north",
+            "age": 2
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:direction') == 3 && q.block_state('minecraft:age') == 0",
+          "model": {
+            "type": "cocoa",
+            "texture": "textures/blocks/cocoa_stage_0",
+            "facing": "east",
+            "age": 0
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:direction') == 3 && q.block_state('minecraft:age') == 1",
+          "model": {
+            "type": "cocoa",
+            "texture": "textures/blocks/cocoa_stage_1",
+            "facing": "east",
+            "age": 1
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:direction') == 3 && q.block_state('minecraft:age') == 2",
+          "model": {
+            "type": "cocoa",
+            "texture": "textures/blocks/cocoa_stage_2",
+            "facing": "east",
+            "age": 2
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "cocoa",
+          "texture": "textures/blocks/cocoa_stage_0",
+          "facing": "south",
+          "age": 0
+        }
+      }
+    },
+    "minecraft:hanging_roots": {
+      "materials": "alpha_test",
+      "category": "nature/plants_and_flowers",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "hanging_roots",
+          "texture": "textures/blocks/hanging_roots"
+        }
+      }
+    },
+    "minecraft:mangrove_roots": {
+      "materials": "alpha_test",
+      "category": "nature/other_natural_blocks",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "mangrove_roots",
+          "textures": {
+            "top": "textures/blocks/mangrove_roots_top",
+            "side": "textures/blocks/mangrove_roots_side"
+          }
+        }
+      }
+    },
+    "minecraft:muddy_mangrove_roots": {
+      "materials": "opaque",
+      "category": "nature/other_natural_blocks",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "muddy_mangrove_roots",
+          "textures": {
+            "top": "textures/blocks/muddy_mangrove_roots_top",
+            "side": "textures/blocks/muddy_mangrove_roots_side"
+          }
+        }
+      }
+    },
+    "minecraft:mangrove_propagule": {
+      "materials": "alpha_test",
+      "category": "nature/saplings",
+      "states": [
+        "minecraft:hanging",
+        "minecraft:propagule_stage"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:hanging') == false && q.block_state('minecraft:propagule_stage') == 0",
+          "model": {
+            "type": "mangrove_propagule",
+            "texture": "textures/blocks/mangrove_propagule",
+            "hanging": false,
+            "stage": 0
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == false && q.block_state('minecraft:propagule_stage') == 1",
+          "model": {
+            "type": "mangrove_propagule",
+            "texture": "textures/blocks/mangrove_propagule",
+            "hanging": false,
+            "stage": 1
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == false && q.block_state('minecraft:propagule_stage') == 2",
+          "model": {
+            "type": "mangrove_propagule",
+            "texture": "textures/blocks/mangrove_propagule",
+            "hanging": false,
+            "stage": 2
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == false && q.block_state('minecraft:propagule_stage') == 3",
+          "model": {
+            "type": "mangrove_propagule",
+            "texture": "textures/blocks/mangrove_propagule",
+            "hanging": false,
+            "stage": 3
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == false && q.block_state('minecraft:propagule_stage') == 4",
+          "model": {
+            "type": "mangrove_propagule",
+            "texture": "textures/blocks/mangrove_propagule",
+            "hanging": false,
+            "stage": 4
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == true && q.block_state('minecraft:propagule_stage') == 0",
+          "model": {
+            "type": "mangrove_propagule",
+            "texture": "textures/blocks/mangrove_propagule",
+            "hanging": true,
+            "stage": 0
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == true && q.block_state('minecraft:propagule_stage') == 1",
+          "model": {
+            "type": "mangrove_propagule",
+            "texture": "textures/blocks/mangrove_propagule",
+            "hanging": true,
+            "stage": 1
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == true && q.block_state('minecraft:propagule_stage') == 2",
+          "model": {
+            "type": "mangrove_propagule",
+            "texture": "textures/blocks/mangrove_propagule",
+            "hanging": true,
+            "stage": 2
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == true && q.block_state('minecraft:propagule_stage') == 3",
+          "model": {
+            "type": "mangrove_propagule",
+            "texture": "textures/blocks/mangrove_propagule",
+            "hanging": true,
+            "stage": 3
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == true && q.block_state('minecraft:propagule_stage') == 4",
+          "model": {
+            "type": "mangrove_propagule",
+            "texture": "textures/blocks/mangrove_propagule",
+            "hanging": true,
+            "stage": 4
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "mangrove_propagule",
+          "texture": "textures/blocks/mangrove_propagule",
+          "hanging": false,
+          "stage": 0
+        }
+      }
+    },
+    "minecraft:pale_hanging_moss": {
+      "materials": "alpha_test",
+      "category": "nature/plants_and_flowers",
+      "states": [
+        "minecraft:tip"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:tip') == true",
+          "model": {
+            "type": "pale_hanging_moss",
+            "texture": "textures/blocks/pale_hanging_moss_tip",
+            "tip": true
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:tip') == false",
+          "model": {
+            "type": "pale_hanging_moss",
+            "texture": "textures/blocks/pale_hanging_moss_middle",
+            "tip": false
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "pale_hanging_moss",
+          "texture": "textures/blocks/pale_hanging_moss_middle",
+          "tip": false
+        }
+      }
+    },
+    "minecraft:vine": {
+      "materials": "alpha_test_tint",
+      "category": "nature/plants_and_flowers",
+      "states": [
+        "minecraft:vine_direction_bits"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:vine_direction_bits') == 0",
+          "model": {
+            "type": "vine",
+            "texture": "textures/blocks/vine",
+            "faces": [
+              "up"
+            ]
+          },
+          "tint": {
+            "method": "foliage"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:vine_direction_bits') == 1",
+          "model": {
+            "type": "vine",
+            "texture": "textures/blocks/vine",
+            "faces": [
+              "south"
+            ]
+          },
+          "tint": {
+            "method": "foliage"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:vine_direction_bits') == 2",
+          "model": {
+            "type": "vine",
+            "texture": "textures/blocks/vine",
+            "faces": [
+              "west"
+            ]
+          },
+          "tint": {
+            "method": "foliage"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:vine_direction_bits') == 3",
+          "model": {
+            "type": "vine",
+            "texture": "textures/blocks/vine",
+            "faces": [
+              "south",
+              "west"
+            ]
+          },
+          "tint": {
+            "method": "foliage"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:vine_direction_bits') == 4",
+          "model": {
+            "type": "vine",
+            "texture": "textures/blocks/vine",
+            "faces": [
+              "north"
+            ]
+          },
+          "tint": {
+            "method": "foliage"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:vine_direction_bits') == 5",
+          "model": {
+            "type": "vine",
+            "texture": "textures/blocks/vine",
+            "faces": [
+              "south",
+              "north"
+            ]
+          },
+          "tint": {
+            "method": "foliage"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:vine_direction_bits') == 6",
+          "model": {
+            "type": "vine",
+            "texture": "textures/blocks/vine",
+            "faces": [
+              "west",
+              "north"
+            ]
+          },
+          "tint": {
+            "method": "foliage"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:vine_direction_bits') == 7",
+          "model": {
+            "type": "vine",
+            "texture": "textures/blocks/vine",
+            "faces": [
+              "south",
+              "west",
+              "north"
+            ]
+          },
+          "tint": {
+            "method": "foliage"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:vine_direction_bits') == 8",
+          "model": {
+            "type": "vine",
+            "texture": "textures/blocks/vine",
+            "faces": [
+              "east"
+            ]
+          },
+          "tint": {
+            "method": "foliage"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:vine_direction_bits') == 9",
+          "model": {
+            "type": "vine",
+            "texture": "textures/blocks/vine",
+            "faces": [
+              "south",
+              "east"
+            ]
+          },
+          "tint": {
+            "method": "foliage"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:vine_direction_bits') == 10",
+          "model": {
+            "type": "vine",
+            "texture": "textures/blocks/vine",
+            "faces": [
+              "west",
+              "east"
+            ]
+          },
+          "tint": {
+            "method": "foliage"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:vine_direction_bits') == 11",
+          "model": {
+            "type": "vine",
+            "texture": "textures/blocks/vine",
+            "faces": [
+              "south",
+              "west",
+              "east"
+            ]
+          },
+          "tint": {
+            "method": "foliage"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:vine_direction_bits') == 12",
+          "model": {
+            "type": "vine",
+            "texture": "textures/blocks/vine",
+            "faces": [
+              "north",
+              "east"
+            ]
+          },
+          "tint": {
+            "method": "foliage"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:vine_direction_bits') == 13",
+          "model": {
+            "type": "vine",
+            "texture": "textures/blocks/vine",
+            "faces": [
+              "south",
+              "north",
+              "east"
+            ]
+          },
+          "tint": {
+            "method": "foliage"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:vine_direction_bits') == 14",
+          "model": {
+            "type": "vine",
+            "texture": "textures/blocks/vine",
+            "faces": [
+              "west",
+              "north",
+              "east"
+            ]
+          },
+          "tint": {
+            "method": "foliage"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:vine_direction_bits') == 15",
+          "model": {
+            "type": "vine",
+            "texture": "textures/blocks/vine",
+            "faces": [
+              "south",
+              "west",
+              "north",
+              "east"
+            ]
+          },
+          "tint": {
+            "method": "foliage"
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "vine",
+          "texture": "textures/blocks/vine",
+          "faces": [
+            "north"
+          ]
+        },
+        "tint": {
+          "method": "foliage"
+        }
+      }
+    },
+    "minecraft:creaking_heart": {
+      "materials": "opaque",
+      "category": "building/logs_and_wood",
+      "states": [
+        "minecraft:pillar_axis",
+        "minecraft:creaking_heart_state"
+      ],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y' && q.block_state('minecraft:creaking_heart_state') == 'uprooted'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/creaking_heart_top",
+              "down": "textures/blocks/creaking_heart_top",
+              "north": "textures/blocks/creaking_heart_side",
+              "south": "textures/blocks/creaking_heart_side",
+              "east": "textures/blocks/creaking_heart_side",
+              "west": "textures/blocks/creaking_heart_side"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y' && q.block_state('minecraft:creaking_heart_state') == 'dormant'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/creaking_heart_top",
+              "down": "textures/blocks/creaking_heart_top",
+              "north": "textures/blocks/creaking_heart_side",
+              "south": "textures/blocks/creaking_heart_side",
+              "east": "textures/blocks/creaking_heart_side",
+              "west": "textures/blocks/creaking_heart_side"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'y' && q.block_state('minecraft:creaking_heart_state') == 'awake'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/creaking_heart_top",
+              "down": "textures/blocks/creaking_heart_top",
+              "north": "textures/blocks/creaking_heart_side",
+              "south": "textures/blocks/creaking_heart_side",
+              "east": "textures/blocks/creaking_heart_side",
+              "west": "textures/blocks/creaking_heart_side"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x' && q.block_state('minecraft:creaking_heart_state') == 'uprooted'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/creaking_heart_top",
+              "down": "textures/blocks/creaking_heart_top",
+              "north": "textures/blocks/creaking_heart_side",
+              "south": "textures/blocks/creaking_heart_side",
+              "east": "textures/blocks/creaking_heart_side",
+              "west": "textures/blocks/creaking_heart_side"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x' && q.block_state('minecraft:creaking_heart_state') == 'dormant'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/creaking_heart_top",
+              "down": "textures/blocks/creaking_heart_top",
+              "north": "textures/blocks/creaking_heart_side",
+              "south": "textures/blocks/creaking_heart_side",
+              "east": "textures/blocks/creaking_heart_side",
+              "west": "textures/blocks/creaking_heart_side"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x' && q.block_state('minecraft:creaking_heart_state') == 'awake'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/creaking_heart_top",
+              "down": "textures/blocks/creaking_heart_top",
+              "north": "textures/blocks/creaking_heart_side",
+              "south": "textures/blocks/creaking_heart_side",
+              "east": "textures/blocks/creaking_heart_side",
+              "west": "textures/blocks/creaking_heart_side"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z' && q.block_state('minecraft:creaking_heart_state') == 'uprooted'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/creaking_heart_top",
+              "down": "textures/blocks/creaking_heart_top",
+              "north": "textures/blocks/creaking_heart_side",
+              "south": "textures/blocks/creaking_heart_side",
+              "east": "textures/blocks/creaking_heart_side",
+              "west": "textures/blocks/creaking_heart_side"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z' && q.block_state('minecraft:creaking_heart_state') == 'dormant'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/creaking_heart_top",
+              "down": "textures/blocks/creaking_heart_top",
+              "north": "textures/blocks/creaking_heart_side",
+              "south": "textures/blocks/creaking_heart_side",
+              "east": "textures/blocks/creaking_heart_side",
+              "west": "textures/blocks/creaking_heart_side"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z' && q.block_state('minecraft:creaking_heart_state') == 'awake'",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/creaking_heart_top",
+              "down": "textures/blocks/creaking_heart_top",
+              "north": "textures/blocks/creaking_heart_side",
+              "south": "textures/blocks/creaking_heart_side",
+              "east": "textures/blocks/creaking_heart_side",
+              "west": "textures/blocks/creaking_heart_side"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/creaking_heart_top",
+            "down": "textures/blocks/creaking_heart_top",
+            "north": "textures/blocks/creaking_heart_side",
+            "south": "textures/blocks/creaking_heart_side",
+            "east": "textures/blocks/creaking_heart_side",
+            "west": "textures/blocks/creaking_heart_side"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import { system, type Entity, type Vector3 } from "@minecraft/server";
+import { type Entity, type Vector3 } from "@minecraft/server";
 import type {
   SubLevelRenderBody
 } from "../../SubLevel.js";
@@ -8,51 +8,58 @@ import {
   type BlockSlot,
   type SubLevelRenderData
 } from "../SubLevelRenderData.js";
-import { selectSubLevelVisualAnchor } from "../../../util/SublevelRenderOffsetHelper.js";
+import { selectSubLevelRenderAnchor } from "../../../util/SublevelRenderOffsetHelper.js";
+import {
+  RENDER_POSITION_WRITE_THRESHOLD,
+  RENDER_ROTATION_WRITE_THRESHOLD_DEGREES,
+  getContinuousRenderRotation,
+  hasExactRiders,
+  hasRidersConsistentWithPendingMounts,
+  scheduleRiderMountConfirmation,
+  exceedsWriteThreshold,
+  validEntityLocations
+} from "../SubLevelRenderEntityUtils.js";
 
-export const VISUAL_POSITION_WRITE_THRESHOLD = 1 / 1024;
-export const VISUAL_ROTATION_WRITE_THRESHOLD_DEGREES = 0.05;
-const RIDER_ATTACHMENT_TIMEOUT_TICKS = 20;
 const EMPTY_RIDER_IDS = new Set<string>();
 
-/** Entity-backed renderer for a sub-level's paired hand-item block visuals. */
+/** Entity-backed renderer for a sub-level's paired hand-item block renders. */
 export class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
   readonly #assignments = new Map<string, LiveBlockAssignment>();
   readonly #carriers: LiveBlockCarrier[] = [];
   readonly #carrierByBlockEntityId = new Map<string, LiveBlockCarrier>();
   readonly #body: SubLevelRenderBody;
-  readonly #visualsByEntityId = new Map<string, LiveBlock>();
+  readonly #rendersByEntityId = new Map<string, LiveBlock>();
   readonly #onEntityRemoved?: (entityId: string) => void;
-  readonly #visualAnchor: Vector3;
-  #lastVisualX = Number.NaN;
-  #lastVisualY = Number.NaN;
-  #lastVisualZ = Number.NaN;
+  readonly #renderAnchor: Vector3;
+  #lastRenderX = Number.NaN;
+  #lastRenderY = Number.NaN;
+  #lastRenderZ = Number.NaN;
   #initialPoseDeferred = true;
   #knownIntegrityFailure = false;
   #sleepingAtLastSync = false;
-  #visualRotation: Vector3 | undefined;
-  readonly #publishedVisualRotation: Vector3 = {
+  #renderRotation: Vector3 | undefined;
+  readonly #publishedRenderRotation: Vector3 = {
     x: Number.NaN,
     y: Number.NaN,
     z: Number.NaN
   };
 
   get initialPoseDeferred(): boolean { return this.#initialPoseDeferred; }
-  get visualRotation(): Readonly<Vector3> { return this.#publishedVisualRotation; }
-  get visualAnchorLocal(): Vector3 { return { ...this.#visualAnchor }; }
+  get renderRotation(): Readonly<Vector3> { return this.#publishedRenderRotation; }
+  get renderAnchorLocal(): Vector3 { return { ...this.#renderAnchor }; }
 
   constructor(
     body: SubLevelRenderBody,
     assignments: readonly BlockAssignment[],
     carriers: readonly BlockCarrier[],
     onEntityRemoved?: (entityId: string) => void,
-    visualAnchor: Vector3 = selectSubLevelVisualAnchor(
+    renderAnchor: Vector3 = selectSubLevelRenderAnchor(
       assignments.map(assignment => assignment.block)
     )
   ) {
     this.#body = body;
     this.#onEntityRemoved = onEntityRemoved;
-    this.#visualAnchor = { ...visualAnchor };
+    this.#renderAnchor = { ...renderAnchor };
     for (const carrier of carriers) {
       const liveCarrier: LiveBlockCarrier = {
         entity: carrier.entity,
@@ -66,46 +73,46 @@ export class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
     }
     for (const assignment of assignments) {
       const key = blockKey(assignment.block.localLocation);
-      let visual = this.#visualsByEntityId.get(assignment.entity.id);
-      if (!visual) {
-        visual = { blockKeys: new Set(), entity: assignment.entity };
-        this.#visualsByEntityId.set(assignment.entity.id, visual);
+      let render = this.#rendersByEntityId.get(assignment.entity.id);
+      if (!render) {
+        render = { blockKeys: new Set(), entity: assignment.entity };
+        this.#rendersByEntityId.set(assignment.entity.id, render);
       }
-      visual.blockKeys.add(key);
+      render.blockKeys.add(key);
       this.#assignments.set(key, {
         entity: assignment.entity,
         slot: assignment.slot,
-        visual
+        render
       });
     }
     for (const carrier of this.#carriers) {
       for (const riderId of carrier.riderIds) {
-        const rider = this.#visualsByEntityId.get(riderId)?.entity;
+        const rider = this.#rendersByEntityId.get(riderId)?.entity;
         if (!rider) {
           throw new Error(
-            `Block carrier ${carrier.entity.id} references unknown visual ${riderId}.`
+            `Block carrier ${carrier.entity.id} references unknown render ${riderId}.`
           );
         }
-        scheduleRiderAttachmentConfirmation(
+        scheduleRiderMountConfirmation(
           carrier.entity,
           rider,
           carrier.pendingRiderIds,
           () => this.#body.isValid && carrier.riderIds.has(riderId),
           () => { this.#knownIntegrityFailure = true; },
-          "visual"
+          "render"
         );
       }
     }
   }
 
   get entityCount(): number {
-    return [...this.#visualsByEntityId.values()].filter(visual => visual.entity.isValid).length
+    return [...this.#rendersByEntityId.values()].filter(render => render.entity.isValid).length
       + this.#carriers.filter(carrier => carrier.entity.isValid).length;
   }
 
   get entityIds(): readonly string[] {
     return [
-      ...[...this.#visualsByEntityId.keys()].filter(entityId => this.hasEntity(entityId)),
+      ...[...this.#rendersByEntityId.keys()].filter(entityId => this.hasEntity(entityId)),
       ...this.#carriers
         .filter(carrier => carrier.entity.isValid)
         .map(carrier => carrier.entity.id)
@@ -114,7 +121,7 @@ export class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
 
   get entityLocations(): readonly Vector3[] {
     return validEntityLocations([
-      ...[...this.#visualsByEntityId.values()].map(visual => visual.entity),
+      ...[...this.#rendersByEntityId.values()].map(render => render.entity),
       ...this.#carriers.map(carrier => carrier.entity)
     ]);
   }
@@ -124,7 +131,7 @@ export class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
   }
 
   hasEntity(entityId: string): boolean {
-    if (this.#visualsByEntityId.get(entityId)?.entity.isValid === true) return true;
+    if (this.#rendersByEntityId.get(entityId)?.entity.isValid === true) return true;
     return this.#carriers.some(
       carrier => carrier.entity.id === entityId && carrier.entity.isValid
     );
@@ -132,19 +139,19 @@ export class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
 
   hasIntactEntities(): boolean {
     if (this.#knownIntegrityFailure) return false;
-    const hasBlockVisuals = this.#assignments.size > 0;
-    if (hasBlockVisuals !== (this.#visualsByEntityId.size > 0)) return false;
-    if (!hasBlockVisuals) return false;
+    const hasBlockRenders = this.#assignments.size > 0;
+    if (hasBlockRenders !== (this.#rendersByEntityId.size > 0)) return false;
+    if (!hasBlockRenders) return false;
     if (this.#carriers.length === 0) return false;
     let assignedBlockCount = 0;
-    for (const visual of this.#visualsByEntityId.values()) {
-      if (!visual.entity.isValid || visual.blockKeys.size === 0) return false;
-      assignedBlockCount += visual.blockKeys.size;
+    for (const render of this.#rendersByEntityId.values()) {
+      if (!render.entity.isValid || render.blockKeys.size === 0) return false;
+      assignedBlockCount += render.blockKeys.size;
     }
     if (assignedBlockCount !== this.#assignments.size) return false;
     for (const carrier of this.#carriers) {
       const intact = carrier.pendingRiderIds.size > 0
-        ? hasRidersConsistentWithPendingAttachments(
+        ? hasRidersConsistentWithPendingMounts(
           carrier.entity,
           carrier.riderIds,
           EMPTY_RIDER_IDS,
@@ -168,12 +175,12 @@ export class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
 
   releaseInitialPose(): void {
     if (!this.#initialPoseDeferred) return;
-    for (const visual of this.#visualsByEntityId.values()) {
-      if (!visual.entity.isValid) {
+    for (const render of this.#rendersByEntityId.values()) {
+      if (!render.entity.isValid) {
         this.#knownIntegrityFailure = true;
         continue;
       }
-      visual.entity.setProperty("sable:scale", 1);
+      render.entity.setProperty("sable:scale", 1);
     }
     this.#initialPoseDeferred = false;
   }
@@ -182,14 +189,14 @@ export class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
     for (const key of blockKeys) {
       const assignment = this.#assignments.get(key);
       if (!assignment) continue;
-      const { entity, slot, visual } = assignment;
-      if (visual.blockKeys.size > 1 && entity.isValid) {
+      const { entity, slot, render } = assignment;
+      if (render.blockKeys.size > 1 && entity.isValid) {
         entity.runCommand(`replaceitem entity @s slot.weapon.${slot} 0 minecraft:air`);
       }
       this.#assignments.delete(key);
-      visual.blockKeys.delete(key);
-      if (visual.blockKeys.size > 0) continue;
-      this.#visualsByEntityId.delete(entity.id);
+      render.blockKeys.delete(key);
+      if (render.blockKeys.size > 0) continue;
+      this.#rendersByEntityId.delete(entity.id);
       this.#onEntityRemoved?.(entity.id);
       if (entity.isValid) entity.remove();
       const carrier = this.#carrierByBlockEntityId.get(entity.id);
@@ -202,9 +209,9 @@ export class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
   }
 
   remove(): void {
-    for (const visual of this.#visualsByEntityId.values()) {
-      this.#onEntityRemoved?.(visual.entity.id);
-      if (visual.entity.isValid) visual.entity.remove();
+    for (const render of this.#rendersByEntityId.values()) {
+      this.#onEntityRemoved?.(render.entity.id);
+      if (render.entity.isValid) render.entity.remove();
     }
     for (const carrier of this.#carriers) {
       carrier.pendingRiderIds.clear();
@@ -212,7 +219,7 @@ export class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
       if (carrier.entity.isValid) carrier.entity.remove();
     }
     this.#assignments.clear();
-    this.#visualsByEntityId.clear();
+    this.#rendersByEntityId.clear();
     this.#carriers.length = 0;
     this.#carrierByBlockEntityId.clear();
   }
@@ -223,61 +230,61 @@ export class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
     const sleeping = this.#body.isSleeping === true;
     if (!force && sleeping && this.#sleepingAtLastSync) return writes;
     this.#sleepingAtLastSync = sleeping;
-    const rotation = getContinuousVisualRotation(this.#body, this.#visualRotation);
-    this.#visualRotation = rotation;
-    const visualAnchor = this.#body.localPointToWorld(this.#visualAnchor);
+    const rotation = getContinuousRenderRotation(this.#body, this.#renderRotation);
+    this.#renderRotation = rotation;
+    const renderAnchor = this.#body.localPointToWorld(this.#renderAnchor);
     const positionChanged = force
       || exceedsWriteThreshold(
-        visualAnchor.x,
-        this.#lastVisualX,
-        VISUAL_POSITION_WRITE_THRESHOLD
+        renderAnchor.x,
+        this.#lastRenderX,
+        RENDER_POSITION_WRITE_THRESHOLD
       )
       || exceedsWriteThreshold(
-        visualAnchor.y,
-        this.#lastVisualY,
-        VISUAL_POSITION_WRITE_THRESHOLD
+        renderAnchor.y,
+        this.#lastRenderY,
+        RENDER_POSITION_WRITE_THRESHOLD
       )
       || exceedsWriteThreshold(
-        visualAnchor.z,
-        this.#lastVisualZ,
-        VISUAL_POSITION_WRITE_THRESHOLD
+        renderAnchor.z,
+        this.#lastRenderZ,
+        RENDER_POSITION_WRITE_THRESHOLD
       );
     const pitchChanged = force || exceedsWriteThreshold(
       rotation.x,
-      this.#publishedVisualRotation.x,
-      VISUAL_ROTATION_WRITE_THRESHOLD_DEGREES
+      this.#publishedRenderRotation.x,
+      RENDER_ROTATION_WRITE_THRESHOLD_DEGREES
     );
     const yawChanged = force || exceedsWriteThreshold(
       rotation.y,
-      this.#publishedVisualRotation.y,
-      VISUAL_ROTATION_WRITE_THRESHOLD_DEGREES
+      this.#publishedRenderRotation.y,
+      RENDER_ROTATION_WRITE_THRESHOLD_DEGREES
     );
     const rollChanged = force || exceedsWriteThreshold(
       rotation.z,
-      this.#publishedVisualRotation.z,
-      VISUAL_ROTATION_WRITE_THRESHOLD_DEGREES
+      this.#publishedRenderRotation.z,
+      RENDER_ROTATION_WRITE_THRESHOLD_DEGREES
     );
     if (!positionChanged && !pitchChanged && !yawChanged && !rollChanged) return writes;
     if (positionChanged) {
-      this.#lastVisualX = visualAnchor.x;
-      this.#lastVisualY = visualAnchor.y;
-      this.#lastVisualZ = visualAnchor.z;
+      this.#lastRenderX = renderAnchor.x;
+      this.#lastRenderY = renderAnchor.y;
+      this.#lastRenderZ = renderAnchor.z;
     }
-    if (pitchChanged) this.#publishedVisualRotation.x = rotation.x;
-    if (yawChanged) this.#publishedVisualRotation.y = rotation.y;
-    if (rollChanged) this.#publishedVisualRotation.z = rotation.z;
+    if (pitchChanged) this.#publishedRenderRotation.x = rotation.x;
+    if (yawChanged) this.#publishedRenderRotation.y = rotation.y;
+    if (rollChanged) this.#publishedRenderRotation.z = rotation.z;
     if (positionChanged) {
       for (const carrier of this.#carriers) {
         if (!carrier.entity.isValid) {
           this.#knownIntegrityFailure = true;
           continue;
         }
-        carrier.entity.teleport(visualAnchor);
+        carrier.entity.teleport(renderAnchor);
         writes++;
       }
     }
-    for (const visual of this.#visualsByEntityId.values()) {
-      const entity = visual.entity;
+    for (const render of this.#rendersByEntityId.values()) {
+      const entity = render.entity;
       if (!entity.isValid) {
         this.#knownIntegrityFailure = true;
         continue;
@@ -303,183 +310,6 @@ function blockKey(location: Vector3): string {
   return `${location.x},${location.y},${location.z}`;
 }
 
-function getContinuousVisualRotation(
-  body: SubLevelRenderBody,
-  reference: Vector3 | undefined
-): Vector3 {
-  return body.getVisualRotation?.(reference) ?? body.getRotation();
-}
-
-function validEntityLocations(entities: Iterable<Entity>): Vector3[] {
-  const result: Vector3[] = [];
-  for (const entity of entities) {
-    if (!entity.isValid) continue;
-    try {
-      result.push({ ...entity.location });
-    } catch {
-      // The entity can invalidate between the validity check and location read.
-    }
-  }
-  return result;
-}
-
-function hasExactRiders(
-  carrier: Entity,
-  expectedRiderIds: ReadonlySet<string>,
-  additionalExpectedRiderIds?: ReadonlySet<string>,
-  persistentExpectedRiderIds?: ReadonlySet<string>
-): boolean {
-  const expectedSize = expectedRiderIds.size
-    + (additionalExpectedRiderIds?.size ?? 0)
-    + (persistentExpectedRiderIds?.size ?? 0);
-  if (!carrier.isValid) return false;
-  try {
-    const rideable = carrier.getComponent("minecraft:rideable");
-    if (!rideable) return false;
-    const riders = rideable.getRiders();
-    if (riders.length !== expectedSize) return false;
-    for (const rider of riders) {
-      if (
-        !rider.isValid
-        || (
-          !expectedRiderIds.has(rider.id)
-          && !additionalExpectedRiderIds?.has(rider.id)
-          && !persistentExpectedRiderIds?.has(rider.id)
-        )
-      ) return false;
-    }
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function hasRidersConsistentWithPendingAttachments(
-  carrier: Entity,
-  expectedRiderIds: ReadonlySet<string>,
-  additionalExpectedRiderIds: ReadonlySet<string>,
-  persistentExpectedRiderIds: ReadonlySet<string>,
-  pendingRiderIds: ReadonlySet<string>
-): boolean {
-  for (const riderId of pendingRiderIds) {
-    if (
-      !expectedRiderIds.has(riderId)
-      && !additionalExpectedRiderIds.has(riderId)
-      && !persistentExpectedRiderIds.has(riderId)
-    ) return false;
-  }
-  const expectedSize = expectedRiderIds.size
-    + additionalExpectedRiderIds.size
-    + persistentExpectedRiderIds.size;
-  if (!carrier.isValid) return false;
-  try {
-    const rideable = carrier.getComponent("minecraft:rideable");
-    if (!rideable) return false;
-    const riders = rideable.getRiders();
-    const minimumExpectedSize = expectedSize - pendingRiderIds.size;
-    if (riders.length < minimumExpectedSize || riders.length > expectedSize) return false;
-    const nativeRiderIds = new Set<string>();
-    for (const rider of riders) {
-      if (
-        !rider.isValid
-        || (
-          !expectedRiderIds.has(rider.id)
-          && !additionalExpectedRiderIds.has(rider.id)
-          && !persistentExpectedRiderIds.has(rider.id)
-        )
-      ) return false;
-      if (!nativeRiderIds.add(rider.id)) return false;
-    }
-    for (const riderId of expectedRiderIds) {
-      if (!pendingRiderIds.has(riderId) && !nativeRiderIds.has(riderId)) return false;
-    }
-    for (const riderId of additionalExpectedRiderIds) {
-      if (!pendingRiderIds.has(riderId) && !nativeRiderIds.has(riderId)) return false;
-    }
-    for (const riderId of persistentExpectedRiderIds) {
-      if (!pendingRiderIds.has(riderId) && !nativeRiderIds.has(riderId)) return false;
-    }
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function hasNativeRider(carrier: Entity, riderId: string): boolean {
-  if (!carrier.isValid) return false;
-  try {
-    return carrier.getComponent("minecraft:rideable")?.getRiders().some(rider => (
-      rider.isValid && rider.id === riderId
-    )) === true;
-  } catch {
-    return false;
-  }
-}
-
-function scheduleRiderAttachmentConfirmation(
-  carrier: Entity,
-  rider: Entity,
-  pendingRiderIds: Set<string>,
-  isAttachmentCurrent: () => boolean,
-  markIntegrityFailure: () => void,
-  kind: "persistent" | "visual"
-): void {
-  const riderId = rider.id;
-  const queuedTick = system.currentTick;
-  const riderDescription = kind === "persistent"
-    ? "Persistent sub-level entity"
-    : "Sub-level visual entity";
-  const carrierDescription = kind === "persistent"
-    ? "Persistent sub-level carrier"
-    : "Sub-level visual carrier";
-  pendingRiderIds.add(riderId);
-  const confirm = (): void => {
-    if (!pendingRiderIds.has(riderId)) return;
-    if (!isAttachmentCurrent()) {
-      pendingRiderIds.delete(riderId);
-      return;
-    }
-    if (hasNativeRider(carrier, riderId)) {
-      pendingRiderIds.delete(riderId);
-      return;
-    }
-    if (!carrier.isValid || !rider.isValid) {
-      pendingRiderIds.delete(riderId);
-      markIntegrityFailure();
-      throw new Error(
-        `${riderDescription} ${riderId} lost its attachment entities: rider valid=${rider.isValid}, carrier ${carrier.id} valid=${carrier.isValid}.`
-      );
-    }
-    const vehicle = rider.getComponent("minecraft:riding")?.entityRidingOn;
-    if (system.currentTick - queuedTick >= RIDER_ATTACHMENT_TIMEOUT_TICKS) {
-      pendingRiderIds.delete(riderId);
-      markIntegrityFailure();
-      throw new Error(
-        `${riderDescription} ${riderId} did not attach to carrier ${carrier.id} within ${RIDER_ATTACHMENT_TIMEOUT_TICKS} ticks; current vehicle=${vehicle?.id ?? "none"}.`
-      );
-    }
-    if (!vehicle) {
-      const rideable = carrier.getComponent("minecraft:rideable");
-      if (!rideable) {
-        pendingRiderIds.delete(riderId);
-        markIntegrityFailure();
-        throw new Error(`${carrierDescription} ${carrier.id} lost minecraft:rideable.`);
-      }
-      rideable.addRider(rider);
-    }
-    system.run(confirm);
-  };
-  system.run(confirm);
-}
-
-function exceedsWriteThreshold(
-  value: number,
-  previous: number,
-  threshold: number
-): boolean {
-  return !Number.isFinite(previous) || Math.abs(value - previous) >= threshold;
-}
-
 interface LiveBlockCarrier {
   entity: Entity;
   pendingRiderIds: Set<string>;
@@ -494,5 +324,5 @@ interface LiveBlock {
 interface LiveBlockAssignment {
   entity: Entity;
   slot: BlockSlot;
-  visual: LiveBlock;
+  render: LiveBlock;
 }

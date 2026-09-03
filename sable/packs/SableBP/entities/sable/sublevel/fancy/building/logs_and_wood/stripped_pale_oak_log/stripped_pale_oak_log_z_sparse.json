@@ -1,0 +1,334 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "sable:fancy_model_stripped_pale_oak_log_z_sparse",
+      "is_spawnable": false,
+      "is_summonable": true,
+      "runtime_identifier": "minecraft:arrow",
+      "properties": {
+        "sable:pitch": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            -400,
+            400
+          ],
+          "type": "float"
+        },
+        "sable:yaw": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            -400,
+            400
+          ],
+          "type": "float"
+        },
+        "sable:roll": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            -400,
+            400
+          ],
+          "type": "float"
+        },
+        "sable:origin_xz": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            4194303
+          ],
+          "type": "int"
+        },
+        "sable:origin_y": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            4095
+          ],
+          "type": "int"
+        },
+        "sable:tint": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s0": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s1": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s2": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s3": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s4": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s5": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s6": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s7": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s8": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s9": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s10": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s11": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s12": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s13": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s14": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s15": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s16": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s17": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s18": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s19": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s20": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s21": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s22": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s23": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s24": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        },
+        "sable:s25": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16777215
+          ],
+          "type": "int"
+        }
+      }
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": [
+          "fancy_model",
+          "inanimate"
+        ]
+      },
+      "minecraft:damage_sensor": {
+        "triggers": [
+          {
+            "cause": "all",
+            "deals_damage": false
+          }
+        ]
+      },
+      "minecraft:collision_box": {
+        "height": 0,
+        "width": 0
+      },
+      "minecraft:pushable": {
+        "is_pushable": false,
+        "is_pushable_by_piston": false
+      },
+      "minecraft:persistent": {},
+      "minecraft:physics": {
+        "has_collision": false,
+        "has_gravity": false
+      },
+      "minecraft:conditional_bandwidth_optimization": {
+        "conditional_values": [],
+        "default_values": {}
+      }
+    }
+  }
+}

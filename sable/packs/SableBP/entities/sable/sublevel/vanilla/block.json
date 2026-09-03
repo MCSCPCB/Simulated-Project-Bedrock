@@ -1,0 +1,199 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "sable:block",
+      "is_spawnable": false,
+      "is_summonable": true,
+      "properties": {
+        "sable:scale": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            0,
+            16
+          ],
+          "type": "float"
+        },
+        "sable:pitch": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            -400,
+            400
+          ],
+          "type": "float"
+        },
+        "sable:yaw": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            -400,
+            400
+          ],
+          "type": "float"
+        },
+        "sable:roll": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            -400,
+            400
+          ],
+          "type": "float"
+        },
+        "sable:local_pitch": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            -512,
+            512
+          ],
+          "type": "float"
+        },
+        "sable:local_yaw": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            -512,
+            512
+          ],
+          "type": "float"
+        },
+        "sable:local_roll": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            -512,
+            512
+          ],
+          "type": "float"
+        },
+        "sable:left_local_pitch": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            -512,
+            512
+          ],
+          "type": "float"
+        },
+        "sable:left_local_yaw": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            -512,
+            512
+          ],
+          "type": "float"
+        },
+        "sable:left_local_roll": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            -512,
+            512
+          ],
+          "type": "float"
+        },
+        "sable:local_x": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            -512,
+            512
+          ],
+          "type": "float"
+        },
+        "sable:local_y": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            -512,
+            512
+          ],
+          "type": "float"
+        },
+        "sable:local_z": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            -512,
+            512
+          ],
+          "type": "float"
+        },
+        "sable:left_local_x": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            -512,
+            512
+          ],
+          "type": "float"
+        },
+        "sable:left_local_y": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            -512,
+            512
+          ],
+          "type": "float"
+        },
+        "sable:left_local_z": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            -512,
+            512
+          ],
+          "type": "float"
+        },
+        "sable:left_item_offset": {
+          "client_sync": true,
+          "default": 0,
+          "range": [
+            -3,
+            3
+          ],
+          "type": "float"
+        }
+      }
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": [
+          "block",
+          "inanimate"
+        ]
+      },
+      "minecraft:damage_sensor": {
+        "triggers": [
+          {
+            "cause": "all",
+            "deals_damage": false
+          }
+        ]
+      },
+      "minecraft:collision_box": {
+        "height": 0,
+        "width": 0
+      },
+      "minecraft:pushable": {
+        "is_pushable": false,
+        "is_pushable_by_piston": false
+      },
+      "minecraft:persistent": {},
+      "minecraft:physics": {
+        "has_collision": false,
+        "has_gravity": false
+      },
+      "minecraft:conditional_bandwidth_optimization": {
+        "conditional_values": [],
+        "default_values": {}
+      },
+      "minecraft:equipment": {}
+    }
+  }
+}

@@ -4,25 +4,25 @@ import type {
   SubLevelRenderBody
 } from "../../SubLevel.js";
 
-export const DEFAULT_VISUAL_ENTITY_TYPE_ID = "sable:block";
+export const DEFAULT_RENDER_ENTITY_TYPE_ID = "sable:block";
 export const BLOCK_OFFHAND_ITEM_OFFSET_PROPERTY = "sable:left_item_offset";
 export const ADDON_BLOCK_OFFHAND_ITEM_OFFSET = 0.00;
 export const MINECRAFT_BLOCK_OFFHAND_ITEM_OFFSET = 2.00;
 
-/** Create one visual entity carrying up to two independently transformed block items. */
-export function createBlockVisualPair(
+/** Create one render entity carrying up to two independently transformed block items. */
+export function createBlockRenderPair(
   dimension: Dimension,
   body: SubLevelRenderBody,
-  visualAnchor: Vector3,
+  renderAnchor: Vector3,
   mainhandBlock: SubLevelBlock,
   offhandBlock: SubLevelBlock | undefined,
-  visualEntityTags: readonly string[]
+  renderEntityTags: readonly string[]
 ): Entity {
-  const entity = spawnTaggedVisualEntity(
+  const entity = spawnTaggedRenderEntity(
     dimension,
-    DEFAULT_VISUAL_ENTITY_TYPE_ID,
-    body.localPointToWorld(visualAnchor),
-    visualEntityTags
+    DEFAULT_RENDER_ENTITY_TYPE_ID,
+    body.localPointToWorld(renderAnchor),
+    renderEntityTags
   );
   try {
     entity.runCommand(
@@ -33,8 +33,8 @@ export function createBlockVisualPair(
         `replaceitem entity @s slot.weapon.offhand 0 ${offhandBlock.itemTypeId ?? offhandBlock.typeId}`
       );
     }
-    setBlockVisualTransform(entity, mainhandBlock, visualAnchor, "");
-    if (offhandBlock) setBlockVisualTransform(entity, offhandBlock, visualAnchor, "left_");
+    setBlockRenderTransform(entity, mainhandBlock, renderAnchor, "");
+    if (offhandBlock) setBlockRenderTransform(entity, offhandBlock, renderAnchor, "left_");
     return entity;
   } catch (error) {
     if (entity.isValid) entity.remove();
@@ -42,7 +42,7 @@ export function createBlockVisualPair(
   }
 }
 
-export function spawnTaggedVisualEntity(
+export function spawnTaggedRenderEntity(
   dimension: Dimension,
   typeId: string,
   location: Vector3,
@@ -52,7 +52,7 @@ export function spawnTaggedVisualEntity(
   try {
     for (const tag of tags) {
       if (!entity.addTag(tag)) {
-        throw new Error(`Could not assign visual entity tag ${tag}.`);
+        throw new Error(`Could not assign render entity tag ${tag}.`);
       }
     }
     return entity;
@@ -62,23 +62,23 @@ export function spawnTaggedVisualEntity(
   }
 }
 
-function setBlockVisualTransform(
+function setBlockRenderTransform(
   entity: Entity,
   block: SubLevelBlock,
-  visualAnchor: Vector3,
+  renderAnchor: Vector3,
   prefix: "" | "left_"
 ): void {
   entity.setProperty(
     `sable:${prefix}local_x`,
-    block.localLocation.x - visualAnchor.x
+    block.localLocation.x - renderAnchor.x
   );
   entity.setProperty(
     `sable:${prefix}local_y`,
-    block.localLocation.y - visualAnchor.y
+    block.localLocation.y - renderAnchor.y
   );
   entity.setProperty(
     `sable:${prefix}local_z`,
-    block.localLocation.z - visualAnchor.z
+    block.localLocation.z - renderAnchor.z
   );
   entity.setProperty(`sable:${prefix}local_pitch`, block.rotation?.x ?? 0);
   entity.setProperty(`sable:${prefix}local_yaw`, block.rotation?.y ?? 0);

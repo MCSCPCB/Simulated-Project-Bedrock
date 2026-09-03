@@ -1,0 +1,1166 @@
+{
+  "format_version": "1.10.0",
+  "render_controllers": {
+    "controller.render.sable_model_oak_leaves_sparse.up": {
+      "geometry": "Geometry.up",
+      "light_color_multiplier": 0.88,
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Texture.up"
+      ],
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_0": "(v.c0 > 0)"
+        },
+        {
+          "slot_1": "(v.c1 > 0)"
+        },
+        {
+          "slot_2": "(v.c2 > 0)"
+        },
+        {
+          "slot_3": "(v.c3 > 0)"
+        },
+        {
+          "slot_4": "(v.c4 > 0)"
+        },
+        {
+          "slot_5": "(v.c5 > 0)"
+        },
+        {
+          "slot_6": "(v.c6 > 0)"
+        },
+        {
+          "slot_7": "(v.c7 > 0)"
+        },
+        {
+          "slot_8": "(v.c8 > 0)"
+        },
+        {
+          "slot_9": "(v.c9 > 0)"
+        },
+        {
+          "slot_10": "(v.c10 > 0)"
+        },
+        {
+          "slot_11": "(v.c11 > 0)"
+        },
+        {
+          "slot_12": "(v.c12 > 0)"
+        },
+        {
+          "slot_13": "(v.c13 > 0)"
+        },
+        {
+          "slot_14": "(v.c14 > 0)"
+        },
+        {
+          "slot_15": "(v.c15 > 0)"
+        },
+        {
+          "slot_16": "(v.c16 > 0)"
+        },
+        {
+          "slot_17": "(v.c17 > 0)"
+        },
+        {
+          "slot_18": "(v.c18 > 0)"
+        },
+        {
+          "slot_19": "(v.c19 > 0)"
+        },
+        {
+          "slot_20": "(v.c20 > 0)"
+        },
+        {
+          "slot_21": "(v.c21 > 0)"
+        },
+        {
+          "slot_22": "(v.c22 > 0)"
+        },
+        {
+          "slot_23": "(v.c23 > 0)"
+        },
+        {
+          "slot_24": "(v.c24 > 0)"
+        },
+        {
+          "slot_25": "(v.c25 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_0": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s0 / 262144), 64) : math.mod(math.floor(v.s0 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s0 / 262144), 64) : math.mod(math.floor(v.s0 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_0": "(v.c0 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_1": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s1 / 262144), 64) : math.mod(math.floor(v.s1 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s1 / 262144), 64) : math.mod(math.floor(v.s1 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_1": "(v.c1 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_2": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s2 / 262144), 64) : math.mod(math.floor(v.s2 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s2 / 262144), 64) : math.mod(math.floor(v.s2 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_2": "(v.c2 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_3": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s3 / 262144), 64) : math.mod(math.floor(v.s3 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s3 / 262144), 64) : math.mod(math.floor(v.s3 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_3": "(v.c3 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_4": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s4 / 262144), 64) : math.mod(math.floor(v.s4 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s4 / 262144), 64) : math.mod(math.floor(v.s4 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_4": "(v.c4 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_5": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s5 / 262144), 64) : math.mod(math.floor(v.s5 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s5 / 262144), 64) : math.mod(math.floor(v.s5 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_5": "(v.c5 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_6": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s6 / 262144), 64) : math.mod(math.floor(v.s6 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s6 / 262144), 64) : math.mod(math.floor(v.s6 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_6": "(v.c6 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_7": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s7 / 262144), 64) : math.mod(math.floor(v.s7 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s7 / 262144), 64) : math.mod(math.floor(v.s7 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_7": "(v.c7 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_8": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s8 / 262144), 64) : math.mod(math.floor(v.s8 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s8 / 262144), 64) : math.mod(math.floor(v.s8 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_8": "(v.c8 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_9": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s9 / 262144), 64) : math.mod(math.floor(v.s9 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s9 / 262144), 64) : math.mod(math.floor(v.s9 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_9": "(v.c9 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_10": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s10 / 262144), 64) : math.mod(math.floor(v.s10 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s10 / 262144), 64) : math.mod(math.floor(v.s10 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_10": "(v.c10 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_11": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s11 / 262144), 64) : math.mod(math.floor(v.s11 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s11 / 262144), 64) : math.mod(math.floor(v.s11 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_11": "(v.c11 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_12": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s12 / 262144), 64) : math.mod(math.floor(v.s12 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s12 / 262144), 64) : math.mod(math.floor(v.s12 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_12": "(v.c12 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_13": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s13 / 262144), 64) : math.mod(math.floor(v.s13 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s13 / 262144), 64) : math.mod(math.floor(v.s13 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_13": "(v.c13 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_14": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s14 / 262144), 64) : math.mod(math.floor(v.s14 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s14 / 262144), 64) : math.mod(math.floor(v.s14 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_14": "(v.c14 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_15": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s15 / 262144), 64) : math.mod(math.floor(v.s15 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s15 / 262144), 64) : math.mod(math.floor(v.s15 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_15": "(v.c15 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_16": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s16 / 262144), 64) : math.mod(math.floor(v.s16 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s16 / 262144), 64) : math.mod(math.floor(v.s16 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_16": "(v.c16 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_17": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s17 / 262144), 64) : math.mod(math.floor(v.s17 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s17 / 262144), 64) : math.mod(math.floor(v.s17 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_17": "(v.c17 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_18": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s18 / 262144), 64) : math.mod(math.floor(v.s18 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s18 / 262144), 64) : math.mod(math.floor(v.s18 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_18": "(v.c18 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_19": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s19 / 262144), 64) : math.mod(math.floor(v.s19 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s19 / 262144), 64) : math.mod(math.floor(v.s19 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_19": "(v.c19 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_20": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s20 / 262144), 64) : math.mod(math.floor(v.s20 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s20 / 262144), 64) : math.mod(math.floor(v.s20 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_20": "(v.c20 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_21": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s21 / 262144), 64) : math.mod(math.floor(v.s21 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s21 / 262144), 64) : math.mod(math.floor(v.s21 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_21": "(v.c21 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_22": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s22 / 262144), 64) : math.mod(math.floor(v.s22 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s22 / 262144), 64) : math.mod(math.floor(v.s22 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_22": "(v.c22 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_23": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s23 / 262144), 64) : math.mod(math.floor(v.s23 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s23 / 262144), 64) : math.mod(math.floor(v.s23 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_23": "(v.c23 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_24": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s24 / 262144), 64) : math.mod(math.floor(v.s24 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s24 / 262144), 64) : math.mod(math.floor(v.s24 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_24": "(v.c24 > 0)"
+        }
+      ]
+    },
+    "controller.render.sable_model_oak_leaves_sparse.tint_multiply_25": {
+      "arrays": {
+        "textures": {
+          "Array.colormaps": [
+            "Texture.colormap_foliage",
+            "Texture.colormap_swamp_foliage",
+            "Texture.colormap_mangrove_swamp_foliage",
+            "Texture.colormap_birch",
+            "Texture.colormap_evergreen",
+            "Texture.colormap_foliage_fixed"
+          ]
+        }
+      },
+      "geometry": "Geometry.up",
+      "materials": [
+        {
+          "*": "Material.tint_multiply"
+        }
+      ],
+      "textures": [
+        "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"
+      ],
+      "uv_anim": {
+        "offset": [
+          "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s25 / 262144), 64) : math.mod(math.floor(v.s25 / 64), 64)) / 64)",
+          "v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? math.mod(math.floor(v.s25 / 262144), 64) : math.mod(math.floor(v.s25 / 64), 64)) / 64)"
+        ],
+        "scale": [
+          "v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / 64)",
+          "v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / 64)"
+        ]
+      },
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "slot_25": "(v.c25 > 0)"
+        }
+      ]
+    }
+  }
+}

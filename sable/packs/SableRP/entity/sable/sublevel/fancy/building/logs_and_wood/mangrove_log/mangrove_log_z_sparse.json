@@ -1,0 +1,98 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sable:fancy_model_mangrove_log_z_sparse",
+      "materials": {
+        "default": "opaque_block"
+      },
+      "textures": {
+        "up": "textures/blocks/log_mangrove",
+        "north": "textures/blocks/log_mangrove_top"
+      },
+      "geometry": {
+        "up": "geometry.sable_model_mangrove_log_z_sparse.up",
+        "north": "geometry.sable_model_mangrove_log_z_sparse.north"
+      },
+      "render_controllers": [
+        "controller.render.sable_model_mangrove_log_z_sparse.up",
+        "controller.render.sable_model_mangrove_log_z_sparse.north"
+      ],
+      "animations": {
+        "transform": "animation.sable_model_mangrove_log_z_sparse.transform"
+      },
+      "scripts": {
+        "initialize": [
+          "v.pose_initialized = 0;"
+        ],
+        "animate": [
+          "transform"
+        ],
+        "pre_animation": [
+          "v.pose_ready = q.property('sable:origin_y') >= 2048;",
+          "v.pitch = v.pose_ready ? (v.pose_initialized ? math.lerprotate(v.pitch, q.property('sable:pitch'), q.delta_time/0.05) : q.property('sable:pitch')) : 0;",
+          "v.yaw = v.pose_ready ? (v.pose_initialized ? math.lerprotate(v.yaw, q.property('sable:yaw'), q.delta_time/0.05) : q.property('sable:yaw')) : 0;",
+          "v.roll = v.pose_ready ? (v.pose_initialized ? math.lerprotate(v.roll, q.property('sable:roll'), q.delta_time/0.05) : q.property('sable:roll')) : 0;",
+          "v.pose_initialized = v.pose_ready;",
+          "v.sparse = 1;",
+          "v.layout_width = 7;",
+          "v.layout_depth = 7;",
+          "v.layout_plane = v.layout_width * v.layout_depth;",
+          "v.tint = q.property('sable:tint');",
+          "v.s0 = q.property('sable:s0');",
+          "v.s1 = q.property('sable:s1');",
+          "v.s2 = q.property('sable:s2');",
+          "v.s3 = q.property('sable:s3');",
+          "v.s4 = q.property('sable:s4');",
+          "v.s5 = q.property('sable:s5');",
+          "v.s6 = q.property('sable:s6');",
+          "v.s7 = q.property('sable:s7');",
+          "v.s8 = q.property('sable:s8');",
+          "v.s9 = q.property('sable:s9');",
+          "v.s10 = q.property('sable:s10');",
+          "v.s11 = q.property('sable:s11');",
+          "v.s12 = q.property('sable:s12');",
+          "v.s13 = q.property('sable:s13');",
+          "v.s14 = q.property('sable:s14');",
+          "v.s15 = q.property('sable:s15');",
+          "v.s16 = q.property('sable:s16');",
+          "v.s17 = q.property('sable:s17');",
+          "v.s18 = q.property('sable:s18');",
+          "v.s19 = q.property('sable:s19');",
+          "v.s20 = q.property('sable:s20');",
+          "v.s21 = q.property('sable:s21');",
+          "v.s22 = q.property('sable:s22');",
+          "v.s23 = q.property('sable:s23');",
+          "v.s24 = q.property('sable:s24');",
+          "v.s25 = q.property('sable:s25');",
+          "v.c0 = math.mod(v.s0, 64);",
+          "v.c1 = math.mod(v.s1, 64);",
+          "v.c2 = math.mod(v.s2, 64);",
+          "v.c3 = math.mod(v.s3, 64);",
+          "v.c4 = math.mod(v.s4, 64);",
+          "v.c5 = math.mod(v.s5, 64);",
+          "v.c6 = math.mod(v.s6, 64);",
+          "v.c7 = math.mod(v.s7, 64);",
+          "v.c8 = math.mod(v.s8, 64);",
+          "v.c9 = math.mod(v.s9, 64);",
+          "v.c10 = math.mod(v.s10, 64);",
+          "v.c11 = math.mod(v.s11, 64);",
+          "v.c12 = math.mod(v.s12, 64);",
+          "v.c13 = math.mod(v.s13, 64);",
+          "v.c14 = math.mod(v.s14, 64);",
+          "v.c15 = math.mod(v.s15, 64);",
+          "v.c16 = math.mod(v.s16, 64);",
+          "v.c17 = math.mod(v.s17, 64);",
+          "v.c18 = math.mod(v.s18, 64);",
+          "v.c19 = math.mod(v.s19, 64);",
+          "v.c20 = math.mod(v.s20, 64);",
+          "v.c21 = math.mod(v.s21, 64);",
+          "v.c22 = math.mod(v.s22, 64);",
+          "v.c23 = math.mod(v.s23, 64);",
+          "v.c24 = math.mod(v.s24, 64);",
+          "v.c25 = math.mod(v.s25, 64);"
+        ]
+      }
+    }
+  }
+}

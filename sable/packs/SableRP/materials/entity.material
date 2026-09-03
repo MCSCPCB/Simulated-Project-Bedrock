@@ -1,0 +1,25 @@
+{
+  "materials": {
+    "version": "1.0.0",
+    "tint_multiply:alpha_block_color": {
+      "+defines": [
+        "USE_UV_ANIM"
+      ],
+      "+states": [
+        "Blending",
+        "DisableDepthWrite",
+        "DisableAlphaWrite"
+      ],
+      "depthFunc": "Equal",
+      "blendSrc": "DestColor",
+      "blendDst": "Zero",
+      "+samplerStates": [
+        {
+          "samplerIndex": 0,
+          "textureWrap": "Clamp",
+          "textureFilter": "Bilinear"
+        }
+      ]
+    }
+  }
+}
