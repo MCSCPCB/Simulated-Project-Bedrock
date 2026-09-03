@@ -1,5 +1,5 @@
 {
-  "format_version": 3,
+  "format_version": 2,
   "metadata": {
     "authors": [
       "MINECRAFT-SCPCB"
@@ -7,6 +7,7 @@
     "product_type": "addon"
   },
   "header": {
+    "pack_scope": "world",
     "name": "pack.name",
     "description": "pack.description",
     "uuid": "d2e6a4d9-5f35-4d5f-8f9e-f8d3a6fb4d42",
