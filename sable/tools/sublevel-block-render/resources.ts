@@ -1,4 +1,4 @@
-import { access, mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { dirname, join, posix, relative, sep } from "node:path";
 import { transform } from "esbuild";
 import { CATEGORY_TREE, type CompiledModel, type CompiledPool } from "./registry.ts";
@@ -26,12 +26,6 @@ type JsonObject = Record<string, unknown>;
 const FOLIAGE_FIXED_COLORMAP_TGA_BASE64 =
   "AAACAAAAAAAAAAAACAACACAoYdu2/2Hbtv9h27b/Ydu2/3aNh/92jYf/do2H/3aNh/9h27b/Ydu2/2Hbtv9h27b/do2H/3aNh/92jYf/do2H/w==";
 
-const BP_UUID = "5bd1a5b8-6d6b-4c9f-9f31-33f2f5963501";
-const RP_UUID = "d2e6a4d9-5f35-4d5f-8f9e-f8d3a6fb4d42";
-const SCRIPT_UUID = "4b8a31c2-2f5d-49cf-a9ae-8c0ee4c4e31f";
-const BP_MODULE_UUID = "d98f571c-aab0-4d20-9b91-b8e8ac52f0bc";
-const RP_MODULE_UUID = "d6d7b1f9-c2b3-4d9a-8e14-3f4d8d4b5c21";
-
 const REGISTRY_VIRTUAL_SPECIFIER = "sable:sublevel-block-render-registry";
 const REGISTRY_MODULE_PATH = "SableBP/scripts/sable/generated/sublevel-block-render-registry.js";
 
@@ -53,39 +47,6 @@ const CATEGORY_SKELETON_ROOTS = [
   "SableRP/animations/sable/sublevel",
   "SableRP/render_controllers/sable/sublevel"
 ] as const;
-
-function bpManifest(): JsonObject {
-  return {
-    format_version: 3,
-    header: {
-      name: "Sable Behavior",
-      description: "Sable sub-level rendering",
-      uuid: BP_UUID,
-      version: [1, 0, 0],
-      min_engine_version: [1, 20, 30]
-    },
-    modules: [
-      { description: "Sable data", type: "data", uuid: BP_MODULE_UUID, version: [1, 0, 0] },
-      { description: "Sable script", language: "javascript", type: "script", entry: "scripts/sable/Sable.js", uuid: SCRIPT_UUID, version: [1, 0, 0] }
-    ],
-    dependencies: [{ uuid: RP_UUID, version: [1, 0, 0] }, { module_name: "@minecraft/server", version: "2.8.0" }]
-  };
-}
-
-function rpManifest(): JsonObject {
-  return {
-    format_version: 3,
-    header: {
-      name: "Sable Resources",
-      description: "Sable sub-level rendering",
-      uuid: RP_UUID,
-      version: [1, 0, 0],
-      min_engine_version: [1, 20, 30]
-    },
-    modules: [{ description: "Sable resources", type: "resources", uuid: RP_MODULE_UUID, version: [1, 0, 0] }],
-    dependencies: [{ uuid: BP_UUID, version: [1, 0, 0] }]
-  };
-}
 
 function entityMaterials(): JsonObject {
   return {
@@ -152,15 +113,6 @@ async function listFiles(root: string): Promise<string[]> {
     else if (entry.isFile()) result.push(path);
   }
   return result;
-}
-
-async function writeIfMissing(path: string, content: string): Promise<void> {
-  try {
-    await access(path);
-  } catch {
-    await mkdir(dirname(path), { recursive: true });
-    await writeFile(path, content, "utf8");
-  }
 }
 
 export async function writeSablePacks(
@@ -257,9 +209,6 @@ export async function writeSablePacks(
     await mkdir(dirname(path), { recursive: true });
     await writeFile(path, content);
   }
-
-  await writeIfMissing(join(packsRoot, "SableBP/manifest.json"), jsonText(bpManifest()));
-  await writeIfMissing(join(packsRoot, "SableRP/manifest.json"), jsonText(rpManifest()));
 
   for (const root of CATEGORY_SKELETON_ROOTS) {
     for (const route of ["fancy", "vanilla"] as const) {
