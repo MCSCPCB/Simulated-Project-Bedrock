@@ -1,8 +1,14 @@
 {
   "format_version": 3,
+  "metadata": {
+    "authors": [
+      "MINECRAFT-SCPCB"
+    ],
+    "product_type": "addon"
+  },
   "header": {
-    "name": "Sable Resources",
-    "description": "Sable sub-level rendering",
+    "name": "pack.name",
+    "description": "pack.description",
     "uuid": "d2e6a4d9-5f35-4d5f-8f9e-f8d3a6fb4d42",
     "version": [
       1,
@@ -11,13 +17,12 @@
     ],
     "min_engine_version": [
       1,
-      20,
-      30
+      21,
+      50
     ]
   },
   "modules": [
     {
-      "description": "Sable resources",
       "type": "resources",
       "uuid": "d6d7b1f9-c2b3-4d9a-8e14-3f4d8d4b5c21",
       "version": [
