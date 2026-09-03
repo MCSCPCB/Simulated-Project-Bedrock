@@ -120,6 +120,7 @@ async function collectScriptTargets(
     const outputPath = `SableBP/scripts/sable/${relativeSource.slice(0, -3)}.js`;
     const source = await readFile(sourcePath, "utf8");
     const { code } = await transform(source, { format: "esm", loader: "ts" });
+    if (!code.trim()) continue;
     targets.set(outputPath, rewriteRegistrySpecifier(code, outputPath));
   }
 }
