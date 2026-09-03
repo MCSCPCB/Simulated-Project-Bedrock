@@ -333,12 +333,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/log_dark_oak_top",
-              "down": "textures/blocks/log_dark_oak_top",
-              "north": "textures/blocks/log_dark_oak",
-              "south": "textures/blocks/log_dark_oak",
-              "east": "textures/blocks/log_dark_oak",
-              "west": "textures/blocks/log_dark_oak"
+              "up": "textures/blocks/log_big_oak_top",
+              "down": "textures/blocks/log_big_oak_top",
+              "north": "textures/blocks/log_big_oak",
+              "south": "textures/blocks/log_big_oak",
+              "east": "textures/blocks/log_big_oak",
+              "west": "textures/blocks/log_big_oak"
             }
           }
         },
@@ -347,12 +347,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/log_dark_oak",
-              "down": "textures/blocks/log_dark_oak",
-              "north": "textures/blocks/log_dark_oak",
-              "south": "textures/blocks/log_dark_oak",
-              "east": "textures/blocks/log_dark_oak_top",
-              "west": "textures/blocks/log_dark_oak_top"
+              "up": "textures/blocks/log_big_oak",
+              "down": "textures/blocks/log_big_oak",
+              "north": "textures/blocks/log_big_oak",
+              "south": "textures/blocks/log_big_oak",
+              "east": "textures/blocks/log_big_oak_top",
+              "west": "textures/blocks/log_big_oak_top"
             }
           }
         },
@@ -361,12 +361,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/log_dark_oak",
-              "down": "textures/blocks/log_dark_oak",
-              "north": "textures/blocks/log_dark_oak_top",
-              "south": "textures/blocks/log_dark_oak_top",
-              "east": "textures/blocks/log_dark_oak",
-              "west": "textures/blocks/log_dark_oak"
+              "up": "textures/blocks/log_big_oak",
+              "down": "textures/blocks/log_big_oak",
+              "north": "textures/blocks/log_big_oak_top",
+              "south": "textures/blocks/log_big_oak_top",
+              "east": "textures/blocks/log_big_oak",
+              "west": "textures/blocks/log_big_oak"
             }
           }
         }
@@ -375,12 +375,12 @@
         "model": {
           "type": "full_block",
           "textures": {
-            "up": "textures/blocks/log_dark_oak_top",
-            "down": "textures/blocks/log_dark_oak_top",
-            "north": "textures/blocks/log_dark_oak",
-            "south": "textures/blocks/log_dark_oak",
-            "east": "textures/blocks/log_dark_oak",
-            "west": "textures/blocks/log_dark_oak"
+            "up": "textures/blocks/log_big_oak_top",
+            "down": "textures/blocks/log_big_oak_top",
+            "north": "textures/blocks/log_big_oak",
+            "south": "textures/blocks/log_big_oak",
+            "east": "textures/blocks/log_big_oak",
+            "west": "textures/blocks/log_big_oak"
           }
         }
       }
@@ -397,12 +397,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/log_mangrove_top",
-              "down": "textures/blocks/log_mangrove_top",
-              "north": "textures/blocks/log_mangrove",
-              "south": "textures/blocks/log_mangrove",
-              "east": "textures/blocks/log_mangrove",
-              "west": "textures/blocks/log_mangrove"
+              "up": "textures/blocks/mangrove_log_top",
+              "down": "textures/blocks/mangrove_log_top",
+              "north": "textures/blocks/mangrove_log_side",
+              "south": "textures/blocks/mangrove_log_side",
+              "east": "textures/blocks/mangrove_log_side",
+              "west": "textures/blocks/mangrove_log_side"
             }
           }
         },
@@ -411,12 +411,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/log_mangrove",
-              "down": "textures/blocks/log_mangrove",
-              "north": "textures/blocks/log_mangrove",
-              "south": "textures/blocks/log_mangrove",
-              "east": "textures/blocks/log_mangrove_top",
-              "west": "textures/blocks/log_mangrove_top"
+              "up": "textures/blocks/mangrove_log_side",
+              "down": "textures/blocks/mangrove_log_side",
+              "north": "textures/blocks/mangrove_log_side",
+              "south": "textures/blocks/mangrove_log_side",
+              "east": "textures/blocks/mangrove_log_top",
+              "west": "textures/blocks/mangrove_log_top"
             }
           }
         },
@@ -425,12 +425,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/log_mangrove",
-              "down": "textures/blocks/log_mangrove",
-              "north": "textures/blocks/log_mangrove_top",
-              "south": "textures/blocks/log_mangrove_top",
-              "east": "textures/blocks/log_mangrove",
-              "west": "textures/blocks/log_mangrove"
+              "up": "textures/blocks/mangrove_log_side",
+              "down": "textures/blocks/mangrove_log_side",
+              "north": "textures/blocks/mangrove_log_top",
+              "south": "textures/blocks/mangrove_log_top",
+              "east": "textures/blocks/mangrove_log_side",
+              "west": "textures/blocks/mangrove_log_side"
             }
           }
         }
@@ -439,12 +439,12 @@
         "model": {
           "type": "full_block",
           "textures": {
-            "up": "textures/blocks/log_mangrove_top",
-            "down": "textures/blocks/log_mangrove_top",
-            "north": "textures/blocks/log_mangrove",
-            "south": "textures/blocks/log_mangrove",
-            "east": "textures/blocks/log_mangrove",
-            "west": "textures/blocks/log_mangrove"
+            "up": "textures/blocks/mangrove_log_top",
+            "down": "textures/blocks/mangrove_log_top",
+            "north": "textures/blocks/mangrove_log_side",
+            "south": "textures/blocks/mangrove_log_side",
+            "east": "textures/blocks/mangrove_log_side",
+            "west": "textures/blocks/mangrove_log_side"
           }
         }
       }
@@ -461,12 +461,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/log_cherry_top",
-              "down": "textures/blocks/log_cherry_top",
-              "north": "textures/blocks/log_cherry",
-              "south": "textures/blocks/log_cherry",
-              "east": "textures/blocks/log_cherry",
-              "west": "textures/blocks/log_cherry"
+              "up": "textures/blocks/cherry_log_top",
+              "down": "textures/blocks/cherry_log_top",
+              "north": "textures/blocks/cherry_log_side",
+              "south": "textures/blocks/cherry_log_side",
+              "east": "textures/blocks/cherry_log_side",
+              "west": "textures/blocks/cherry_log_side"
             }
           }
         },
@@ -475,12 +475,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/log_cherry",
-              "down": "textures/blocks/log_cherry",
-              "north": "textures/blocks/log_cherry",
-              "south": "textures/blocks/log_cherry",
-              "east": "textures/blocks/log_cherry_top",
-              "west": "textures/blocks/log_cherry_top"
+              "up": "textures/blocks/cherry_log_side",
+              "down": "textures/blocks/cherry_log_side",
+              "north": "textures/blocks/cherry_log_side",
+              "south": "textures/blocks/cherry_log_side",
+              "east": "textures/blocks/cherry_log_top",
+              "west": "textures/blocks/cherry_log_top"
             }
           }
         },
@@ -489,12 +489,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/log_cherry",
-              "down": "textures/blocks/log_cherry",
-              "north": "textures/blocks/log_cherry_top",
-              "south": "textures/blocks/log_cherry_top",
-              "east": "textures/blocks/log_cherry",
-              "west": "textures/blocks/log_cherry"
+              "up": "textures/blocks/cherry_log_side",
+              "down": "textures/blocks/cherry_log_side",
+              "north": "textures/blocks/cherry_log_top",
+              "south": "textures/blocks/cherry_log_top",
+              "east": "textures/blocks/cherry_log_side",
+              "west": "textures/blocks/cherry_log_side"
             }
           }
         }
@@ -503,12 +503,12 @@
         "model": {
           "type": "full_block",
           "textures": {
-            "up": "textures/blocks/log_cherry_top",
-            "down": "textures/blocks/log_cherry_top",
-            "north": "textures/blocks/log_cherry",
-            "south": "textures/blocks/log_cherry",
-            "east": "textures/blocks/log_cherry",
-            "west": "textures/blocks/log_cherry"
+            "up": "textures/blocks/cherry_log_top",
+            "down": "textures/blocks/cherry_log_top",
+            "north": "textures/blocks/cherry_log_side",
+            "south": "textures/blocks/cherry_log_side",
+            "east": "textures/blocks/cherry_log_side",
+            "west": "textures/blocks/cherry_log_side"
           }
         }
       }
@@ -525,12 +525,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/log_pale_oak_top",
-              "down": "textures/blocks/log_pale_oak_top",
-              "north": "textures/blocks/log_pale_oak",
-              "south": "textures/blocks/log_pale_oak",
-              "east": "textures/blocks/log_pale_oak",
-              "west": "textures/blocks/log_pale_oak"
+              "up": "textures/blocks/pale_oak_log_top",
+              "down": "textures/blocks/pale_oak_log_top",
+              "north": "textures/blocks/pale_oak_log_side",
+              "south": "textures/blocks/pale_oak_log_side",
+              "east": "textures/blocks/pale_oak_log_side",
+              "west": "textures/blocks/pale_oak_log_side"
             }
           }
         },
@@ -539,12 +539,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/log_pale_oak",
-              "down": "textures/blocks/log_pale_oak",
-              "north": "textures/blocks/log_pale_oak",
-              "south": "textures/blocks/log_pale_oak",
-              "east": "textures/blocks/log_pale_oak_top",
-              "west": "textures/blocks/log_pale_oak_top"
+              "up": "textures/blocks/pale_oak_log_side",
+              "down": "textures/blocks/pale_oak_log_side",
+              "north": "textures/blocks/pale_oak_log_side",
+              "south": "textures/blocks/pale_oak_log_side",
+              "east": "textures/blocks/pale_oak_log_top",
+              "west": "textures/blocks/pale_oak_log_top"
             }
           }
         },
@@ -553,12 +553,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/log_pale_oak",
-              "down": "textures/blocks/log_pale_oak",
-              "north": "textures/blocks/log_pale_oak_top",
-              "south": "textures/blocks/log_pale_oak_top",
-              "east": "textures/blocks/log_pale_oak",
-              "west": "textures/blocks/log_pale_oak"
+              "up": "textures/blocks/pale_oak_log_side",
+              "down": "textures/blocks/pale_oak_log_side",
+              "north": "textures/blocks/pale_oak_log_top",
+              "south": "textures/blocks/pale_oak_log_top",
+              "east": "textures/blocks/pale_oak_log_side",
+              "west": "textures/blocks/pale_oak_log_side"
             }
           }
         }
@@ -567,12 +567,12 @@
         "model": {
           "type": "full_block",
           "textures": {
-            "up": "textures/blocks/log_pale_oak_top",
-            "down": "textures/blocks/log_pale_oak_top",
-            "north": "textures/blocks/log_pale_oak",
-            "south": "textures/blocks/log_pale_oak",
-            "east": "textures/blocks/log_pale_oak",
-            "west": "textures/blocks/log_pale_oak"
+            "up": "textures/blocks/pale_oak_log_top",
+            "down": "textures/blocks/pale_oak_log_top",
+            "north": "textures/blocks/pale_oak_log_side",
+            "south": "textures/blocks/pale_oak_log_side",
+            "east": "textures/blocks/pale_oak_log_side",
+            "west": "textures/blocks/pale_oak_log_side"
           }
         }
       }
@@ -975,10 +975,10 @@
             "textures": {
               "up": "textures/blocks/stripped_mangrove_log_top",
               "down": "textures/blocks/stripped_mangrove_log_top",
-              "north": "textures/blocks/stripped_mangrove_log",
-              "south": "textures/blocks/stripped_mangrove_log",
-              "east": "textures/blocks/stripped_mangrove_log",
-              "west": "textures/blocks/stripped_mangrove_log"
+              "north": "textures/blocks/stripped_mangrove_log_side",
+              "south": "textures/blocks/stripped_mangrove_log_side",
+              "east": "textures/blocks/stripped_mangrove_log_side",
+              "west": "textures/blocks/stripped_mangrove_log_side"
             }
           }
         },
@@ -987,10 +987,10 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/stripped_mangrove_log",
-              "down": "textures/blocks/stripped_mangrove_log",
-              "north": "textures/blocks/stripped_mangrove_log",
-              "south": "textures/blocks/stripped_mangrove_log",
+              "up": "textures/blocks/stripped_mangrove_log_side",
+              "down": "textures/blocks/stripped_mangrove_log_side",
+              "north": "textures/blocks/stripped_mangrove_log_side",
+              "south": "textures/blocks/stripped_mangrove_log_side",
               "east": "textures/blocks/stripped_mangrove_log_top",
               "west": "textures/blocks/stripped_mangrove_log_top"
             }
@@ -1001,12 +1001,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/stripped_mangrove_log",
-              "down": "textures/blocks/stripped_mangrove_log",
+              "up": "textures/blocks/stripped_mangrove_log_side",
+              "down": "textures/blocks/stripped_mangrove_log_side",
               "north": "textures/blocks/stripped_mangrove_log_top",
               "south": "textures/blocks/stripped_mangrove_log_top",
-              "east": "textures/blocks/stripped_mangrove_log",
-              "west": "textures/blocks/stripped_mangrove_log"
+              "east": "textures/blocks/stripped_mangrove_log_side",
+              "west": "textures/blocks/stripped_mangrove_log_side"
             }
           }
         }
@@ -1017,10 +1017,10 @@
           "textures": {
             "up": "textures/blocks/stripped_mangrove_log_top",
             "down": "textures/blocks/stripped_mangrove_log_top",
-            "north": "textures/blocks/stripped_mangrove_log",
-            "south": "textures/blocks/stripped_mangrove_log",
-            "east": "textures/blocks/stripped_mangrove_log",
-            "west": "textures/blocks/stripped_mangrove_log"
+            "north": "textures/blocks/stripped_mangrove_log_side",
+            "south": "textures/blocks/stripped_mangrove_log_side",
+            "east": "textures/blocks/stripped_mangrove_log_side",
+            "west": "textures/blocks/stripped_mangrove_log_side"
           }
         }
       }
@@ -1039,10 +1039,10 @@
             "textures": {
               "up": "textures/blocks/stripped_cherry_log_top",
               "down": "textures/blocks/stripped_cherry_log_top",
-              "north": "textures/blocks/stripped_cherry_log",
-              "south": "textures/blocks/stripped_cherry_log",
-              "east": "textures/blocks/stripped_cherry_log",
-              "west": "textures/blocks/stripped_cherry_log"
+              "north": "textures/blocks/stripped_cherry_log_side",
+              "south": "textures/blocks/stripped_cherry_log_side",
+              "east": "textures/blocks/stripped_cherry_log_side",
+              "west": "textures/blocks/stripped_cherry_log_side"
             }
           }
         },
@@ -1051,10 +1051,10 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/stripped_cherry_log",
-              "down": "textures/blocks/stripped_cherry_log",
-              "north": "textures/blocks/stripped_cherry_log",
-              "south": "textures/blocks/stripped_cherry_log",
+              "up": "textures/blocks/stripped_cherry_log_side",
+              "down": "textures/blocks/stripped_cherry_log_side",
+              "north": "textures/blocks/stripped_cherry_log_side",
+              "south": "textures/blocks/stripped_cherry_log_side",
               "east": "textures/blocks/stripped_cherry_log_top",
               "west": "textures/blocks/stripped_cherry_log_top"
             }
@@ -1065,12 +1065,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/stripped_cherry_log",
-              "down": "textures/blocks/stripped_cherry_log",
+              "up": "textures/blocks/stripped_cherry_log_side",
+              "down": "textures/blocks/stripped_cherry_log_side",
               "north": "textures/blocks/stripped_cherry_log_top",
               "south": "textures/blocks/stripped_cherry_log_top",
-              "east": "textures/blocks/stripped_cherry_log",
-              "west": "textures/blocks/stripped_cherry_log"
+              "east": "textures/blocks/stripped_cherry_log_side",
+              "west": "textures/blocks/stripped_cherry_log_side"
             }
           }
         }
@@ -1081,10 +1081,10 @@
           "textures": {
             "up": "textures/blocks/stripped_cherry_log_top",
             "down": "textures/blocks/stripped_cherry_log_top",
-            "north": "textures/blocks/stripped_cherry_log",
-            "south": "textures/blocks/stripped_cherry_log",
-            "east": "textures/blocks/stripped_cherry_log",
-            "west": "textures/blocks/stripped_cherry_log"
+            "north": "textures/blocks/stripped_cherry_log_side",
+            "south": "textures/blocks/stripped_cherry_log_side",
+            "east": "textures/blocks/stripped_cherry_log_side",
+            "west": "textures/blocks/stripped_cherry_log_side"
           }
         }
       }
@@ -1103,10 +1103,10 @@
             "textures": {
               "up": "textures/blocks/stripped_pale_oak_log_top",
               "down": "textures/blocks/stripped_pale_oak_log_top",
-              "north": "textures/blocks/stripped_pale_oak_log",
-              "south": "textures/blocks/stripped_pale_oak_log",
-              "east": "textures/blocks/stripped_pale_oak_log",
-              "west": "textures/blocks/stripped_pale_oak_log"
+              "north": "textures/blocks/stripped_pale_oak_log_side",
+              "south": "textures/blocks/stripped_pale_oak_log_side",
+              "east": "textures/blocks/stripped_pale_oak_log_side",
+              "west": "textures/blocks/stripped_pale_oak_log_side"
             }
           }
         },
@@ -1115,10 +1115,10 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/stripped_pale_oak_log",
-              "down": "textures/blocks/stripped_pale_oak_log",
-              "north": "textures/blocks/stripped_pale_oak_log",
-              "south": "textures/blocks/stripped_pale_oak_log",
+              "up": "textures/blocks/stripped_pale_oak_log_side",
+              "down": "textures/blocks/stripped_pale_oak_log_side",
+              "north": "textures/blocks/stripped_pale_oak_log_side",
+              "south": "textures/blocks/stripped_pale_oak_log_side",
               "east": "textures/blocks/stripped_pale_oak_log_top",
               "west": "textures/blocks/stripped_pale_oak_log_top"
             }
@@ -1129,12 +1129,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/stripped_pale_oak_log",
-              "down": "textures/blocks/stripped_pale_oak_log",
+              "up": "textures/blocks/stripped_pale_oak_log_side",
+              "down": "textures/blocks/stripped_pale_oak_log_side",
               "north": "textures/blocks/stripped_pale_oak_log_top",
               "south": "textures/blocks/stripped_pale_oak_log_top",
-              "east": "textures/blocks/stripped_pale_oak_log",
-              "west": "textures/blocks/stripped_pale_oak_log"
+              "east": "textures/blocks/stripped_pale_oak_log_side",
+              "west": "textures/blocks/stripped_pale_oak_log_side"
             }
           }
         }
@@ -1145,10 +1145,10 @@
           "textures": {
             "up": "textures/blocks/stripped_pale_oak_log_top",
             "down": "textures/blocks/stripped_pale_oak_log_top",
-            "north": "textures/blocks/stripped_pale_oak_log",
-            "south": "textures/blocks/stripped_pale_oak_log",
-            "east": "textures/blocks/stripped_pale_oak_log",
-            "west": "textures/blocks/stripped_pale_oak_log"
+            "north": "textures/blocks/stripped_pale_oak_log_side",
+            "south": "textures/blocks/stripped_pale_oak_log_side",
+            "east": "textures/blocks/stripped_pale_oak_log_side",
+            "west": "textures/blocks/stripped_pale_oak_log_side"
           }
         }
       }
@@ -1257,12 +1257,12 @@
         "model": {
           "type": "full_block",
           "textures": {
-            "up": "textures/blocks/log_dark_oak",
-            "down": "textures/blocks/log_dark_oak",
-            "north": "textures/blocks/log_dark_oak",
-            "south": "textures/blocks/log_dark_oak",
-            "east": "textures/blocks/log_dark_oak",
-            "west": "textures/blocks/log_dark_oak"
+            "up": "textures/blocks/log_big_oak",
+            "down": "textures/blocks/log_big_oak",
+            "north": "textures/blocks/log_big_oak",
+            "south": "textures/blocks/log_big_oak",
+            "east": "textures/blocks/log_big_oak",
+            "west": "textures/blocks/log_big_oak"
           }
         }
       }
@@ -1276,12 +1276,12 @@
         "model": {
           "type": "full_block",
           "textures": {
-            "up": "textures/blocks/log_mangrove",
-            "down": "textures/blocks/log_mangrove",
-            "north": "textures/blocks/log_mangrove",
-            "south": "textures/blocks/log_mangrove",
-            "east": "textures/blocks/log_mangrove",
-            "west": "textures/blocks/log_mangrove"
+            "up": "textures/blocks/mangrove_log_side",
+            "down": "textures/blocks/mangrove_log_side",
+            "north": "textures/blocks/mangrove_log_side",
+            "south": "textures/blocks/mangrove_log_side",
+            "east": "textures/blocks/mangrove_log_side",
+            "west": "textures/blocks/mangrove_log_side"
           }
         }
       }
@@ -1295,12 +1295,12 @@
         "model": {
           "type": "full_block",
           "textures": {
-            "up": "textures/blocks/log_cherry",
-            "down": "textures/blocks/log_cherry",
-            "north": "textures/blocks/log_cherry",
-            "south": "textures/blocks/log_cherry",
-            "east": "textures/blocks/log_cherry",
-            "west": "textures/blocks/log_cherry"
+            "up": "textures/blocks/cherry_log_side",
+            "down": "textures/blocks/cherry_log_side",
+            "north": "textures/blocks/cherry_log_side",
+            "south": "textures/blocks/cherry_log_side",
+            "east": "textures/blocks/cherry_log_side",
+            "west": "textures/blocks/cherry_log_side"
           }
         }
       }
@@ -1314,12 +1314,12 @@
         "model": {
           "type": "full_block",
           "textures": {
-            "up": "textures/blocks/log_pale_oak",
-            "down": "textures/blocks/log_pale_oak",
-            "north": "textures/blocks/log_pale_oak",
-            "south": "textures/blocks/log_pale_oak",
-            "east": "textures/blocks/log_pale_oak",
-            "west": "textures/blocks/log_pale_oak"
+            "up": "textures/blocks/pale_oak_log_side",
+            "down": "textures/blocks/pale_oak_log_side",
+            "north": "textures/blocks/pale_oak_log_side",
+            "south": "textures/blocks/pale_oak_log_side",
+            "east": "textures/blocks/pale_oak_log_side",
+            "west": "textures/blocks/pale_oak_log_side"
           }
         }
       }
@@ -1447,12 +1447,12 @@
         "model": {
           "type": "full_block",
           "textures": {
-            "up": "textures/blocks/stripped_mangrove_log",
-            "down": "textures/blocks/stripped_mangrove_log",
-            "north": "textures/blocks/stripped_mangrove_log",
-            "south": "textures/blocks/stripped_mangrove_log",
-            "east": "textures/blocks/stripped_mangrove_log",
-            "west": "textures/blocks/stripped_mangrove_log"
+            "up": "textures/blocks/stripped_mangrove_log_side",
+            "down": "textures/blocks/stripped_mangrove_log_side",
+            "north": "textures/blocks/stripped_mangrove_log_side",
+            "south": "textures/blocks/stripped_mangrove_log_side",
+            "east": "textures/blocks/stripped_mangrove_log_side",
+            "west": "textures/blocks/stripped_mangrove_log_side"
           }
         }
       }
@@ -1466,12 +1466,12 @@
         "model": {
           "type": "full_block",
           "textures": {
-            "up": "textures/blocks/stripped_cherry_log",
-            "down": "textures/blocks/stripped_cherry_log",
-            "north": "textures/blocks/stripped_cherry_log",
-            "south": "textures/blocks/stripped_cherry_log",
-            "east": "textures/blocks/stripped_cherry_log",
-            "west": "textures/blocks/stripped_cherry_log"
+            "up": "textures/blocks/stripped_cherry_log_side",
+            "down": "textures/blocks/stripped_cherry_log_side",
+            "north": "textures/blocks/stripped_cherry_log_side",
+            "south": "textures/blocks/stripped_cherry_log_side",
+            "east": "textures/blocks/stripped_cherry_log_side",
+            "west": "textures/blocks/stripped_cherry_log_side"
           }
         }
       }
@@ -1485,12 +1485,12 @@
         "model": {
           "type": "full_block",
           "textures": {
-            "up": "textures/blocks/stripped_pale_oak_log",
-            "down": "textures/blocks/stripped_pale_oak_log",
-            "north": "textures/blocks/stripped_pale_oak_log",
-            "south": "textures/blocks/stripped_pale_oak_log",
-            "east": "textures/blocks/stripped_pale_oak_log",
-            "west": "textures/blocks/stripped_pale_oak_log"
+            "up": "textures/blocks/stripped_pale_oak_log_side",
+            "down": "textures/blocks/stripped_pale_oak_log_side",
+            "north": "textures/blocks/stripped_pale_oak_log_side",
+            "south": "textures/blocks/stripped_pale_oak_log_side",
+            "east": "textures/blocks/stripped_pale_oak_log_side",
+            "west": "textures/blocks/stripped_pale_oak_log_side"
           }
         }
       }
@@ -1741,12 +1741,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/log_dark_oak_top",
-              "down": "textures/blocks/log_dark_oak_top",
-              "north": "textures/blocks/log_dark_oak",
-              "south": "textures/blocks/log_dark_oak",
-              "east": "textures/blocks/log_dark_oak",
-              "west": "textures/blocks/log_dark_oak"
+              "up": "textures/blocks/log_big_oak_top",
+              "down": "textures/blocks/log_big_oak_top",
+              "north": "textures/blocks/log_big_oak",
+              "south": "textures/blocks/log_big_oak",
+              "east": "textures/blocks/log_big_oak",
+              "west": "textures/blocks/log_big_oak"
             }
           }
         },
@@ -1755,12 +1755,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/log_dark_oak",
-              "down": "textures/blocks/log_dark_oak",
-              "north": "textures/blocks/log_dark_oak",
-              "south": "textures/blocks/log_dark_oak",
-              "east": "textures/blocks/log_dark_oak_top",
-              "west": "textures/blocks/log_dark_oak_top"
+              "up": "textures/blocks/log_big_oak",
+              "down": "textures/blocks/log_big_oak",
+              "north": "textures/blocks/log_big_oak",
+              "south": "textures/blocks/log_big_oak",
+              "east": "textures/blocks/log_big_oak_top",
+              "west": "textures/blocks/log_big_oak_top"
             }
           }
         },
@@ -1769,12 +1769,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/log_dark_oak",
-              "down": "textures/blocks/log_dark_oak",
-              "north": "textures/blocks/log_dark_oak_top",
-              "south": "textures/blocks/log_dark_oak_top",
-              "east": "textures/blocks/log_dark_oak",
-              "west": "textures/blocks/log_dark_oak"
+              "up": "textures/blocks/log_big_oak",
+              "down": "textures/blocks/log_big_oak",
+              "north": "textures/blocks/log_big_oak_top",
+              "south": "textures/blocks/log_big_oak_top",
+              "east": "textures/blocks/log_big_oak",
+              "west": "textures/blocks/log_big_oak"
             }
           }
         }
@@ -2929,12 +2929,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/creaking_heart_top",
-              "down": "textures/blocks/creaking_heart_top",
-              "north": "textures/blocks/creaking_heart_side",
-              "south": "textures/blocks/creaking_heart_side",
-              "east": "textures/blocks/creaking_heart_side",
-              "west": "textures/blocks/creaking_heart_side"
+              "up": "textures/blocks/creaking_heart_top_inactive",
+              "down": "textures/blocks/creaking_heart_top_inactive",
+              "north": "textures/blocks/creaking_heart_side_inactive",
+              "south": "textures/blocks/creaking_heart_side_inactive",
+              "east": "textures/blocks/creaking_heart_side_inactive",
+              "west": "textures/blocks/creaking_heart_side_inactive"
             }
           }
         },
@@ -2943,12 +2943,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/creaking_heart_top",
-              "down": "textures/blocks/creaking_heart_top",
-              "north": "textures/blocks/creaking_heart_side",
-              "south": "textures/blocks/creaking_heart_side",
-              "east": "textures/blocks/creaking_heart_side",
-              "west": "textures/blocks/creaking_heart_side"
+              "up": "textures/blocks/creaking_heart_top_dormant",
+              "down": "textures/blocks/creaking_heart_top_dormant",
+              "north": "textures/blocks/creaking_heart_side_dormant",
+              "south": "textures/blocks/creaking_heart_side_dormant",
+              "east": "textures/blocks/creaking_heart_side_dormant",
+              "west": "textures/blocks/creaking_heart_side_dormant"
             }
           }
         },
@@ -2957,12 +2957,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/creaking_heart_top",
-              "down": "textures/blocks/creaking_heart_top",
-              "north": "textures/blocks/creaking_heart_side",
-              "south": "textures/blocks/creaking_heart_side",
-              "east": "textures/blocks/creaking_heart_side",
-              "west": "textures/blocks/creaking_heart_side"
+              "up": "textures/blocks/creaking_heart_top_active",
+              "down": "textures/blocks/creaking_heart_top_active",
+              "north": "textures/blocks/creaking_heart_side_active",
+              "south": "textures/blocks/creaking_heart_side_active",
+              "east": "textures/blocks/creaking_heart_side_active",
+              "west": "textures/blocks/creaking_heart_side_active"
             }
           }
         },
@@ -2971,12 +2971,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/creaking_heart_top",
-              "down": "textures/blocks/creaking_heart_top",
-              "north": "textures/blocks/creaking_heart_side",
-              "south": "textures/blocks/creaking_heart_side",
-              "east": "textures/blocks/creaking_heart_side",
-              "west": "textures/blocks/creaking_heart_side"
+              "up": "textures/blocks/creaking_heart_top_inactive",
+              "down": "textures/blocks/creaking_heart_top_inactive",
+              "north": "textures/blocks/creaking_heart_side_inactive",
+              "south": "textures/blocks/creaking_heart_side_inactive",
+              "east": "textures/blocks/creaking_heart_side_inactive",
+              "west": "textures/blocks/creaking_heart_side_inactive"
             }
           }
         },
@@ -2985,12 +2985,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/creaking_heart_top",
-              "down": "textures/blocks/creaking_heart_top",
-              "north": "textures/blocks/creaking_heart_side",
-              "south": "textures/blocks/creaking_heart_side",
-              "east": "textures/blocks/creaking_heart_side",
-              "west": "textures/blocks/creaking_heart_side"
+              "up": "textures/blocks/creaking_heart_top_dormant",
+              "down": "textures/blocks/creaking_heart_top_dormant",
+              "north": "textures/blocks/creaking_heart_side_dormant",
+              "south": "textures/blocks/creaking_heart_side_dormant",
+              "east": "textures/blocks/creaking_heart_side_dormant",
+              "west": "textures/blocks/creaking_heart_side_dormant"
             }
           }
         },
@@ -2999,12 +2999,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/creaking_heart_top",
-              "down": "textures/blocks/creaking_heart_top",
-              "north": "textures/blocks/creaking_heart_side",
-              "south": "textures/blocks/creaking_heart_side",
-              "east": "textures/blocks/creaking_heart_side",
-              "west": "textures/blocks/creaking_heart_side"
+              "up": "textures/blocks/creaking_heart_top_active",
+              "down": "textures/blocks/creaking_heart_top_active",
+              "north": "textures/blocks/creaking_heart_side_active",
+              "south": "textures/blocks/creaking_heart_side_active",
+              "east": "textures/blocks/creaking_heart_side_active",
+              "west": "textures/blocks/creaking_heart_side_active"
             }
           }
         },
@@ -3013,12 +3013,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/creaking_heart_top",
-              "down": "textures/blocks/creaking_heart_top",
-              "north": "textures/blocks/creaking_heart_side",
-              "south": "textures/blocks/creaking_heart_side",
-              "east": "textures/blocks/creaking_heart_side",
-              "west": "textures/blocks/creaking_heart_side"
+              "up": "textures/blocks/creaking_heart_top_inactive",
+              "down": "textures/blocks/creaking_heart_top_inactive",
+              "north": "textures/blocks/creaking_heart_side_inactive",
+              "south": "textures/blocks/creaking_heart_side_inactive",
+              "east": "textures/blocks/creaking_heart_side_inactive",
+              "west": "textures/blocks/creaking_heart_side_inactive"
             }
           }
         },
@@ -3027,12 +3027,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/creaking_heart_top",
-              "down": "textures/blocks/creaking_heart_top",
-              "north": "textures/blocks/creaking_heart_side",
-              "south": "textures/blocks/creaking_heart_side",
-              "east": "textures/blocks/creaking_heart_side",
-              "west": "textures/blocks/creaking_heart_side"
+              "up": "textures/blocks/creaking_heart_top_dormant",
+              "down": "textures/blocks/creaking_heart_top_dormant",
+              "north": "textures/blocks/creaking_heart_side_dormant",
+              "south": "textures/blocks/creaking_heart_side_dormant",
+              "east": "textures/blocks/creaking_heart_side_dormant",
+              "west": "textures/blocks/creaking_heart_side_dormant"
             }
           }
         },
@@ -3041,12 +3041,12 @@
           "model": {
             "type": "full_block",
             "textures": {
-              "up": "textures/blocks/creaking_heart_top",
-              "down": "textures/blocks/creaking_heart_top",
-              "north": "textures/blocks/creaking_heart_side",
-              "south": "textures/blocks/creaking_heart_side",
-              "east": "textures/blocks/creaking_heart_side",
-              "west": "textures/blocks/creaking_heart_side"
+              "up": "textures/blocks/creaking_heart_top_active",
+              "down": "textures/blocks/creaking_heart_top_active",
+              "north": "textures/blocks/creaking_heart_side_active",
+              "south": "textures/blocks/creaking_heart_side_active",
+              "east": "textures/blocks/creaking_heart_side_active",
+              "west": "textures/blocks/creaking_heart_side_active"
             }
           }
         }
@@ -3055,12 +3055,12 @@
         "model": {
           "type": "full_block",
           "textures": {
-            "up": "textures/blocks/creaking_heart_top",
-            "down": "textures/blocks/creaking_heart_top",
-            "north": "textures/blocks/creaking_heart_side",
-            "south": "textures/blocks/creaking_heart_side",
-            "east": "textures/blocks/creaking_heart_side",
-            "west": "textures/blocks/creaking_heart_side"
+            "up": "textures/blocks/creaking_heart_top_inactive",
+            "down": "textures/blocks/creaking_heart_top_inactive",
+            "north": "textures/blocks/creaking_heart_side_inactive",
+            "south": "textures/blocks/creaking_heart_side_inactive",
+            "east": "textures/blocks/creaking_heart_side_inactive",
+            "west": "textures/blocks/creaking_heart_side_inactive"
           }
         }
       }
