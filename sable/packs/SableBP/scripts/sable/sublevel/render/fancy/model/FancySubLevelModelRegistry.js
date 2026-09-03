@@ -42,7 +42,8 @@ function materializeModel(compiled) {
     material: compiled.material,
     description: compiled.model,
     tint: compiled.tint,
-    state: createFancySubLevelModelState(compiled.model)
+    state: createFancySubLevelModelState(compiled.model),
+    pool: compiled.pool
   };
   modelCache.set(compiled.key, model);
   return model;

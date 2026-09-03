@@ -1,0 +1,254 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.sable_pool_logs_and_wood_0.transform": {
+      "bones": {
+        "root": {
+          "rotation": [
+            "-q.body_x_rotation",
+            "-q.body_y_rotation",
+            0
+          ],
+          "scale": "v.pose_ready"
+        },
+        "pitch": {
+          "rotation": [
+            "v.pitch",
+            0,
+            0
+          ]
+        },
+        "roll": {
+          "rotation": [
+            0,
+            0,
+            "-v.roll"
+          ]
+        },
+        "yaw": {
+          "rotation": [
+            0,
+            "-v.yaw",
+            0
+          ]
+        },
+        "model_offset": {
+          "position": [
+            "(math.mod(q.property('sable:origin_xz'), 2048) - 1024) * 16",
+            "(math.mod(q.property('sable:origin_y'), 2048) - 1024) * 16",
+            "-(math.floor(q.property('sable:origin_xz') / 2048) - 1024) * 16"
+          ]
+        },
+        "slot_0": {
+          "position": [
+            "math.mod(v.s0, 64) * 16",
+            "math.mod(math.floor(v.s0 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s0 / 4096), 64) * 16"
+          ],
+          "scale": "v.o0"
+        },
+        "slot_1": {
+          "position": [
+            "math.mod(v.s1, 64) * 16",
+            "math.mod(math.floor(v.s1 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s1 / 4096), 64) * 16"
+          ],
+          "scale": "v.o1"
+        },
+        "slot_2": {
+          "position": [
+            "math.mod(v.s2, 64) * 16",
+            "math.mod(math.floor(v.s2 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s2 / 4096), 64) * 16"
+          ],
+          "scale": "v.o2"
+        },
+        "slot_3": {
+          "position": [
+            "math.mod(v.s3, 64) * 16",
+            "math.mod(math.floor(v.s3 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s3 / 4096), 64) * 16"
+          ],
+          "scale": "v.o3"
+        },
+        "slot_4": {
+          "position": [
+            "math.mod(v.s4, 64) * 16",
+            "math.mod(math.floor(v.s4 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s4 / 4096), 64) * 16"
+          ],
+          "scale": "v.o4"
+        },
+        "slot_5": {
+          "position": [
+            "math.mod(v.s5, 64) * 16",
+            "math.mod(math.floor(v.s5 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s5 / 4096), 64) * 16"
+          ],
+          "scale": "v.o5"
+        },
+        "slot_6": {
+          "position": [
+            "math.mod(v.s6, 64) * 16",
+            "math.mod(math.floor(v.s6 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s6 / 4096), 64) * 16"
+          ],
+          "scale": "v.o6"
+        },
+        "slot_7": {
+          "position": [
+            "math.mod(v.s7, 64) * 16",
+            "math.mod(math.floor(v.s7 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s7 / 4096), 64) * 16"
+          ],
+          "scale": "v.o7"
+        },
+        "slot_8": {
+          "position": [
+            "math.mod(v.s8, 64) * 16",
+            "math.mod(math.floor(v.s8 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s8 / 4096), 64) * 16"
+          ],
+          "scale": "v.o8"
+        },
+        "slot_9": {
+          "position": [
+            "math.mod(v.s9, 64) * 16",
+            "math.mod(math.floor(v.s9 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s9 / 4096), 64) * 16"
+          ],
+          "scale": "v.o9"
+        },
+        "slot_10": {
+          "position": [
+            "math.mod(v.s10, 64) * 16",
+            "math.mod(math.floor(v.s10 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s10 / 4096), 64) * 16"
+          ],
+          "scale": "v.o10"
+        },
+        "slot_11": {
+          "position": [
+            "math.mod(v.s11, 64) * 16",
+            "math.mod(math.floor(v.s11 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s11 / 4096), 64) * 16"
+          ],
+          "scale": "v.o11"
+        },
+        "slot_12": {
+          "position": [
+            "math.mod(v.s12, 64) * 16",
+            "math.mod(math.floor(v.s12 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s12 / 4096), 64) * 16"
+          ],
+          "scale": "v.o12"
+        },
+        "slot_13": {
+          "position": [
+            "math.mod(v.s13, 64) * 16",
+            "math.mod(math.floor(v.s13 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s13 / 4096), 64) * 16"
+          ],
+          "scale": "v.o13"
+        },
+        "slot_14": {
+          "position": [
+            "math.mod(v.s14, 64) * 16",
+            "math.mod(math.floor(v.s14 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s14 / 4096), 64) * 16"
+          ],
+          "scale": "v.o14"
+        },
+        "slot_15": {
+          "position": [
+            "math.mod(v.s15, 64) * 16",
+            "math.mod(math.floor(v.s15 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s15 / 4096), 64) * 16"
+          ],
+          "scale": "v.o15"
+        },
+        "slot_16": {
+          "position": [
+            "math.mod(v.s16, 64) * 16",
+            "math.mod(math.floor(v.s16 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s16 / 4096), 64) * 16"
+          ],
+          "scale": "v.o16"
+        },
+        "slot_17": {
+          "position": [
+            "math.mod(v.s17, 64) * 16",
+            "math.mod(math.floor(v.s17 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s17 / 4096), 64) * 16"
+          ],
+          "scale": "v.o17"
+        },
+        "slot_18": {
+          "position": [
+            "math.mod(v.s18, 64) * 16",
+            "math.mod(math.floor(v.s18 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s18 / 4096), 64) * 16"
+          ],
+          "scale": "v.o18"
+        },
+        "slot_19": {
+          "position": [
+            "math.mod(v.s19, 64) * 16",
+            "math.mod(math.floor(v.s19 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s19 / 4096), 64) * 16"
+          ],
+          "scale": "v.o19"
+        },
+        "slot_20": {
+          "position": [
+            "math.mod(v.s20, 64) * 16",
+            "math.mod(math.floor(v.s20 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s20 / 4096), 64) * 16"
+          ],
+          "scale": "v.o20"
+        },
+        "slot_21": {
+          "position": [
+            "math.mod(v.s21, 64) * 16",
+            "math.mod(math.floor(v.s21 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s21 / 4096), 64) * 16"
+          ],
+          "scale": "v.o21"
+        },
+        "slot_22": {
+          "position": [
+            "math.mod(v.s22, 64) * 16",
+            "math.mod(math.floor(v.s22 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s22 / 4096), 64) * 16"
+          ],
+          "scale": "v.o22"
+        },
+        "slot_23": {
+          "position": [
+            "math.mod(v.s23, 64) * 16",
+            "math.mod(math.floor(v.s23 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s23 / 4096), 64) * 16"
+          ],
+          "scale": "v.o23"
+        },
+        "slot_24": {
+          "position": [
+            "math.mod(v.s24, 64) * 16",
+            "math.mod(math.floor(v.s24 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s24 / 4096), 64) * 16"
+          ],
+          "scale": "v.o24"
+        },
+        "slot_25": {
+          "position": [
+            "math.mod(v.s25, 64) * 16",
+            "math.mod(math.floor(v.s25 / 64), 64) * 16",
+            "-math.mod(math.floor(v.s25 / 4096), 64) * 16"
+          ],
+          "scale": "v.o25"
+        }
+      },
+      "loop": true
+    }
+  }
+}

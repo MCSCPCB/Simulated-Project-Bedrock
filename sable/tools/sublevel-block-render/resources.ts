@@ -1,7 +1,7 @@
 import { access, mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { dirname, join, posix, relative, sep } from "node:path";
 import { transform } from "esbuild";
-import { CATEGORY_TREE, type CompiledModel } from "./registry.ts";
+import { CATEGORY_TREE, type CompiledModel, type CompiledPool } from "./registry.ts";
 import {
   createCarrierEntity,
   createFancyClientEntity,
@@ -9,6 +9,10 @@ import {
   createFancyGeometry,
   createFancyAnimation,
   createFancyRenderController,
+  createPoolAnimation,
+  createPoolClientEntity,
+  createPoolGeometry,
+  createPoolRenderController,
   createVanillaAnimation,
   createVanillaClientEntity,
   createVanillaEntity,
@@ -163,6 +167,7 @@ export async function writeSablePacks(
   packsRoot: string,
   srcRoot: string,
   models: readonly CompiledModel[],
+  pools: readonly CompiledPool[],
   runtimeRegistry: Record<string, unknown>
 ): Promise<void> {
   const targets = new Map<string, string | Buffer>();
@@ -212,6 +217,31 @@ export async function writeSablePacks(
         jsonText(createFancyRenderController(model, format))
       );
     }
+  }
+
+  for (const pool of pools) {
+    const directory = `fancy/${pool.directory}`;
+    const base = `pool_${pool.name}`;
+    targets.set(
+      `SableBP/entities/sable/sublevel/${directory}/${base}.json`,
+      jsonText(createFancyEntity(pool.entityTypeId))
+    );
+    targets.set(
+      `SableRP/entity/sable/sublevel/${directory}/${base}.json`,
+      jsonText(createPoolClientEntity(pool))
+    );
+    targets.set(
+      `SableRP/models/entity/sable/sublevel/${directory}/${base}.geo.json`,
+      jsonText(createPoolGeometry(pool))
+    );
+    targets.set(
+      `SableRP/animations/sable/sublevel/${directory}/${base}.animation.json`,
+      jsonText(createPoolAnimation(pool))
+    );
+    targets.set(
+      `SableRP/render_controllers/sable/sublevel/${directory}/${base}.render_controllers.json`,
+      jsonText(createPoolRenderController(pool))
+    );
   }
 
   targets.set("SableRP/materials/entity.material", jsonText(entityMaterials()));

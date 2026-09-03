@@ -35,7 +35,7 @@
         "model_offset": {
           "position": [
             "(math.mod(q.property('sable:origin_xz'), 2048) - 1024) * 16",
-            "(q.property('sable:origin_y') - 1024) * 16",
+            "(math.mod(q.property('sable:origin_y'), 2048) - 1024) * 16",
             "-(math.floor(q.property('sable:origin_xz') / 2048) - 1024) * 16"
           ]
         },

@@ -2,8 +2,15 @@ import type { SubLevelBlock, SubLevelBlockMapColor } from "../../../SubLevel.js"
 
 export type FancySubLevelMaterial = "opaque" | "alpha_test" | "alpha_test_tint" | "opaque_tint";
 
-export function isFancySubLevelTintMaterial(material: FancySubLevelMaterial): boolean {
-  return material === "alpha_test_tint" || material === "opaque_tint";
+/** Descriptor pool an individual model can share with its neighbours. */
+export interface FancySubLevelModelPool {
+  readonly entityTypeId: string;
+  readonly family: number;
+  readonly xBits: number;
+  readonly yBits: number;
+  readonly zBits: number;
+  readonly familyBits: number;
+  readonly stateBits: number;
 }
 export type FancySubLevelFacing = "north" | "east" | "south" | "west";
 export type FancySubLevelFace = FancySubLevelFacing | "up";
@@ -90,6 +97,7 @@ export interface FancySubLevelModel {
   readonly description: FancySubLevelModelDescription;
   readonly tint?: FancySubLevelTint;
   readonly state?: FancySubLevelModelState;
+  readonly pool?: FancySubLevelModelPool;
 }
 
 export interface FancySubLevelBlock {
@@ -116,6 +124,7 @@ export interface CompiledFancySubLevelModel {
   readonly material: FancySubLevelMaterial;
   readonly model: FancySubLevelModelDescription;
   readonly tint?: FancySubLevelTint;
+  readonly pool?: FancySubLevelModelPool;
 }
 
 export interface CompiledBlockRenderRegistration {

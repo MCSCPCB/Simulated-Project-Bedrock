@@ -28,12 +28,7 @@ import {
   type FancySubLevelModelAssignment,
   type PackedFancySubLevelModel
 } from "./FancySubLevelModelLayout.js";
-import {
-  isFancySubLevelTintMaterial,
-  type FancySubLevelBlock,
-  type FancySubLevelModel,
-  type FancySubLevelModelState
-} from "./FancySubLevelModel.js";
+import type { FancySubLevelBlock } from "./FancySubLevelModel.js";
 import { resolveFancySubLevelBlock } from "./FancySubLevelModelRegistry.js";
 import { packFancySubLevelTint } from "./FancySubLevelTintCodec.js";
 
@@ -44,10 +39,8 @@ interface LiveModel {
   readonly anchorLocalLocation: Vector3;
   blockCount: number;
   readonly entity: Entity;
-  readonly format: "dense" | "sparse";
-  readonly model: FancySubLevelModel;
+  readonly format: "dense" | "sparse" | "pool";
   readonly originY: number;
-  readonly stateBits: number;
   readonly words: number[];
 }
 
@@ -179,9 +172,9 @@ export class FancySubLevelModelRenderer implements SubLevelRenderData {
 
   setBlockModelState(blockKey: string, dimension: string, value: number): boolean {
     const live = this.#assignments.get(blockKey);
-    if (!live || !live.model.model.state || !live.model.entity.isValid) return false;
+    if (!live || !live.assignment.state || !live.model.entity.isValid) return false;
     const current = readStoredState(live.model, live.assignment) - 1;
-    const next = live.model.model.state.update(current, dimension, value);
+    const next = live.assignment.state.update(current, dimension, value);
     if (next === undefined) return false;
     if (next === current) return true;
     writeStoredState(live.model, live.assignment, next + 1);
@@ -430,7 +423,12 @@ export class FancySubLevelModelRenderer implements SubLevelRenderData {
         const carrier = this.#availableCarrier() ?? this.#createCarrier(false);
         const rideable = carrier.entity.getComponent("minecraft:rideable");
         if (!rideable) throw new Error("Fancy model carrier lost minecraft:rideable.");
-        const origin = packFancySubLevelOrigin(packed.anchorLocalLocation, this.#renderAnchor);
+        const origin = packFancySubLevelOrigin(
+          packed.anchorLocalLocation,
+          this.#renderAnchor,
+          packed.format === "dense" ? packed.width : 1,
+          packed.format === "dense" ? packed.depth : 1
+        );
         const entity = this.#spawnEntity(
           packed.entityTypeId,
           this.#body.localPointToWorld(this.#renderAnchor)
@@ -449,9 +447,7 @@ export class FancySubLevelModelRenderer implements SubLevelRenderData {
           blockCount: packed.blockCount,
           entity,
           format: packed.format,
-          model: packed.model,
           originY: origin.y,
-          stateBits: packed.stateBits,
           words: [...packed.words]
         };
         this.#models.push(live);
@@ -588,7 +584,7 @@ function initializeModelProperties(
 ): void {
   entity.setProperty("sable:origin_xz", origin.xz);
   entity.setProperty("sable:origin_y", encodeFancySubLevelOriginY(origin.y, false));
-  if (isFancySubLevelTintMaterial(packed.model.material)) {
+  if (packed.tint) {
     entity.setProperty("sable:tint", packFancySubLevelTint(packed, foliageTint));
   }
   for (let index = 0; index < packed.words.length; index++) {
@@ -600,6 +596,10 @@ function initializeModelProperties(
 function readStoredState(model: LiveModel, assignment: FancySubLevelModelAssignment): number {
   const word = model.words[assignment.word] ?? 0;
   if (model.format === "sparse") return word % 64;
+  if (model.format === "pool") {
+    if (word === 0) return 0;
+    return Math.floor(word / (2 ** assignment.shift)) % (2 ** assignment.bitCount) + 1;
+  }
   return Math.floor(word / (2 ** assignment.shift)) % (2 ** assignment.bitCount);
 }
 
@@ -608,6 +608,19 @@ function writeStoredState(
   assignment: FancySubLevelModelAssignment,
   storedState: number
 ): void {
+  if (model.format === "pool") {
+    // A cleared pool slot drops its whole descriptor; otherwise only the
+    // state field of the occupied descriptor changes.
+    if (storedState === 0) {
+      model.words[assignment.word] = 0;
+      return;
+    }
+    const currentField = Math.floor((model.words[assignment.word] ?? 0) / (2 ** assignment.shift))
+      % (2 ** assignment.bitCount);
+    model.words[assignment.word] = (model.words[assignment.word] ?? 0)
+      + (storedState - 1 - currentField) * (2 ** assignment.shift);
+    return;
+  }
   const current = readStoredState(model, assignment);
   if (model.format === "sparse") {
     model.words[assignment.word] = (model.words[assignment.word] ?? 0) + storedState - current;

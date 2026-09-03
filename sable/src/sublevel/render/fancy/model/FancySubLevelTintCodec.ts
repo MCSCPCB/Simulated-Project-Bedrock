@@ -1,9 +1,4 @@
 import type { SubLevelFoliageTint } from "../../../SubLevel.js";
-import {
-  isFancySubLevelTintMaterial,
-  type FancySubLevelModel,
-  type FancySubLevelTint
-} from "./FancySubLevelModel.js";
 import type { PackedFancySubLevelModel } from "./FancySubLevelModelLayout.js";
 
 export const FOLIAGE_COLORMAP_DEFAULT = 1;
@@ -26,7 +21,7 @@ export function packFancySubLevelTint(
   packed: PackedFancySubLevelModel,
   foliage: SubLevelFoliageTint = DEFAULT_SUBLEVEL_FOLIAGE_TINT
 ): number {
-  const tint = packed.model.tint;
+  const tint = packed.tint;
   if (!tint) return 0xffffff;
   if (tint.method === "fixed") return parseFixedColor(tint.color);
   if (isUniformField(foliage)) {
@@ -34,8 +29,8 @@ export function packFancySubLevelTint(
       + textureCoordinate(foliage.vAtLocalOrigin) * TINT_TEXTURE_SIZE
       + TINT_UNIFORM_STATE * TINT_KIND_PLACE;
   }
-  const width = packed.format === "dense" ? packed.width : 64;
-  const depth = packed.format === "dense" ? packed.depth : 64;
+  const width = packed.width;
+  const depth = packed.depth;
   const minimumX = packed.anchorLocalLocation.x - 0.5;
   const minimumZ = packed.anchorLocalLocation.z - 0.5;
   const maximumX = minimumX + width;
@@ -50,16 +45,6 @@ export function packFancySubLevelTint(
     + v1 * TINT_COORDINATE_BASE ** 3
     + clampMapKind(foliage.mapKind) * TINT_KIND_PLACE
     + (foliage.gradientAxis === "z" ? TINT_AXIS_Z_PLACE : 0);
-}
-
-export function hasFancySubLevelTint(model: FancySubLevelModel): boolean {
-  return isFancySubLevelTintMaterial(model.material) && model.tint !== undefined;
-}
-
-export function isFixedFancySubLevelTint(
-  tint: FancySubLevelTint | undefined
-): tint is Extract<FancySubLevelTint, { method: "fixed" }> {
-  return tint?.method === "fixed";
 }
 
 function parseFixedColor(color: string): number {

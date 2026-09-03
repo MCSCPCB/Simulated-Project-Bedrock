@@ -62,6 +62,7 @@ export interface RawRegistry {
 export interface RawBlockRegistration {
   readonly materials: string;
   readonly category: string;
+  readonly domain?: string;
   readonly states: readonly string[];
   readonly variants: readonly RawVariant[];
   readonly default: RawRenderDefinition;
@@ -72,16 +73,47 @@ export interface RawRenderDefinition {
   readonly tint?: { readonly method: string; readonly color?: string };
 }
 
+export interface CompiledModelPool {
+  readonly entityTypeId: string;
+  readonly family: number;
+  readonly xBits: number;
+  readonly yBits: number;
+  readonly zBits: number;
+  readonly familyBits: number;
+  readonly stateBits: number;
+}
+
 export interface CompiledModel {
   readonly key: string;
   readonly name: string;
   readonly directory: string;
+  readonly poolKey: string;
   readonly denseEntityTypeId: string;
   readonly sparseEntityTypeId: string;
   readonly material: "opaque" | "alpha_test" | "alpha_test_tint" | "opaque_tint";
   readonly model: Record<string, unknown>;
   readonly tint?: { readonly method: "foliage" | "fixed"; readonly color?: string };
+  pool?: CompiledModelPool;
 }
+
+export interface CompiledPool {
+  readonly name: string;
+  readonly directory: string;
+  readonly entityTypeId: string;
+  readonly members: readonly CompiledModel[];
+  readonly xBits: number;
+  readonly yBits: number;
+  readonly zBits: number;
+  readonly familyBits: number;
+  readonly stateBits: number;
+}
+
+/** Runtime state bits a model type stores per slot, mirrored by the runtime registry. */
+export function modelRuntimeStateBits(model: Record<string, unknown>): number {
+  return model.type === "chest" ? 1 : 0;
+}
+
+const POOL_MEMBER_CAP = 32;
 export interface CompiledRegistryEntry {
   readonly states: readonly string[];
   readonly variants: readonly { readonly condition: ConditionNode; readonly model: CompiledModel }[];
@@ -93,6 +125,7 @@ export async function readAndCompileRegistry(file: string): Promise<{
   readonly raw: RawRegistry;
   readonly compiled: CompiledRegistry;
   readonly models: readonly CompiledModel[];
+  readonly pools: readonly CompiledPool[];
 }> {
   const raw = JSON.parse(await readFile(file, "utf8")) as RawRegistry;
   const compiled = compileRegistry(raw);
@@ -102,7 +135,73 @@ export async function readAndCompileRegistry(file: string): Promise<{
       ...entry.variants.map(variant => variant.model)
     ]).map(model => [model.key, model] as const)
   ).values()];
-  return { raw, compiled, models };
+  const pools = partitionPools(models);
+  return { raw, compiled, models, pools };
+}
+
+/**
+ * Splits every pool key (domain, defaulting to category) into descriptor pools:
+ * members are layered by their per-slot state width, then chunked to the
+ * member cap, so one pool always shares a single 24-bit descriptor layout.
+ */
+function partitionPools(models: readonly CompiledModel[]): CompiledPool[] {
+  const byPoolKey = new Map<string, CompiledModel[]>();
+  for (const model of models) {
+    const members = byPoolKey.get(model.poolKey);
+    if (members) members.push(model);
+    else byPoolKey.set(model.poolKey, [model]);
+  }
+  const pools: CompiledPool[] = [];
+  const usedNames = new Set<string>();
+  for (const [poolKey, members] of byPoolKey) {
+    const byStateBits = new Map<number, CompiledModel[]>();
+    for (const member of members) {
+      const stateBits = modelRuntimeStateBits(member.model);
+      const layer = byStateBits.get(stateBits);
+      if (layer) layer.push(member);
+      else byStateBits.set(stateBits, [member]);
+    }
+    const directory = CATEGORY_PATHS.has(poolKey) ? poolKey : `pools/${sanitizeNameToken(poolKey)}`;
+    const nameBase = sanitizeNameToken(poolKey.slice(poolKey.lastIndexOf("/") + 1));
+    let ordinal = 0;
+    for (const [stateBits, layer] of byStateBits) {
+      for (let start = 0; start < layer.length; start += POOL_MEMBER_CAP) {
+        const chunk = layer.slice(start, start + POOL_MEMBER_CAP);
+        const familyBits = Math.max(1, Math.ceil(Math.log2(chunk.length)));
+        const coordinateBits = 23 - familyBits - stateBits;
+        const yBits = Math.floor(coordinateBits / 3);
+        const xBits = Math.ceil((coordinateBits - yBits) / 2);
+        const zBits = coordinateBits - yBits - xBits;
+        if (zBits < 3) throw new Error(`Pool ${poolKey} leaves too few descriptor coordinate bits.`);
+        const name = uniqueModelName(usedNames, `${nameBase}_${ordinal}`);
+        ordinal++;
+        const pool: CompiledPool = {
+          directory,
+          entityTypeId: `sable:fancy_pool_${name}`,
+          familyBits,
+          members: chunk,
+          name,
+          stateBits,
+          xBits,
+          yBits,
+          zBits
+        };
+        chunk.forEach((member, family) => {
+          member.pool = {
+            entityTypeId: pool.entityTypeId,
+            family,
+            familyBits,
+            stateBits,
+            xBits,
+            yBits,
+            zBits
+          };
+        });
+        pools.push(pool);
+      }
+    }
+  }
+  return pools;
 }
 
 /** The runtime registry omits the packaging fields the script bundle never reads. */
@@ -117,7 +216,8 @@ export function toRuntimeRegistry(compiled: CompiledRegistry): Record<string, un
       sparseEntityTypeId: model.sparseEntityTypeId,
       material: model.material,
       model: model.model,
-      ...(model.tint ? { tint: model.tint } : {})
+      ...(model.tint ? { tint: model.tint } : {}),
+      ...(model.pool ? { pool: model.pool } : {})
     };
     strippedByKey.set(model.key, stripped);
     return stripped;
@@ -145,6 +245,9 @@ export function compileRegistry(raw: RawRegistry): CompiledRegistry {
     if (typeof entry.category !== "string" || !CATEGORY_PATHS.has(entry.category)) {
       throw new Error(`${blockId}: category must be one of the registered category paths.`);
     }
+    if (entry.domain !== undefined && (typeof entry.domain !== "string" || entry.domain.trim().length === 0)) {
+      throw new Error(`${blockId}: domain must be a non-empty string when present.`);
+    }
     if (!Array.isArray(entry.states) || new Set(entry.states).size !== entry.states.length) {
       throw new Error(`${blockId}: states must be a unique array.`);
     }
@@ -152,8 +255,9 @@ export function compileRegistry(raw: RawRegistry): CompiledRegistry {
     if (!Array.isArray(entry.variants)) throw new Error(`${blockId}: variants must be an array.`);
     const blockName = blockShortName(blockId);
     const directory = `${entry.category}/${blockName}`;
+    const poolKey = entry.domain ?? entry.category;
     const obtain = (definition: RawRenderDefinition, path: string, suffix: string): CompiledModel => (
-      obtainModel(modelsByKey, usedNames, entry.materials, definition, path, blockName, directory, suffix)
+      obtainModel(modelsByKey, usedNames, entry.materials, definition, path, blockName, directory, poolKey, suffix)
     );
     // The default resolves first so the plain block name lands on the default model.
     const defaultModel = obtain(entry.default, `${blockId}.default`, "");
@@ -178,6 +282,7 @@ function obtainModel(
   path: string,
   blockName: string,
   directory: string,
+  poolKey: string,
   suffix: string
 ): CompiledModel {
   if (!definition || !definition.model || typeof definition.model !== "object") {
@@ -199,6 +304,7 @@ function obtainModel(
     material: material as CompiledModel["material"],
     model,
     name,
+    poolKey,
     sparseEntityTypeId: `sable:fancy_model_${name}_sparse`,
     ...(tint ? { tint } : {})
   };

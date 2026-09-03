@@ -20,9 +20,6 @@ import {
 import {
   packFancySubLevelModels
 } from "./FancySubLevelModelLayout.js";
-import {
-  isFancySubLevelTintMaterial
-} from "./FancySubLevelModel.js";
 import { resolveFancySubLevelBlock } from "./FancySubLevelModelRegistry.js";
 import { packFancySubLevelTint } from "./FancySubLevelTintCodec.js";
 const FANCY_MODEL_CARRIER_ENTITY_TYPE_ID = "sable:fancy_model_carrier";
@@ -131,9 +128,9 @@ class FancySubLevelModelRenderer {
   }
   setBlockModelState(blockKey, dimension, value) {
     const live = this.#assignments.get(blockKey);
-    if (!live || !live.model.model.state || !live.model.entity.isValid) return false;
+    if (!live || !live.assignment.state || !live.model.entity.isValid) return false;
     const current = readStoredState(live.model, live.assignment) - 1;
-    const next = live.model.model.state.update(current, dimension, value);
+    const next = live.assignment.state.update(current, dimension, value);
     if (next === void 0) return false;
     if (next === current) return true;
     writeStoredState(live.model, live.assignment, next + 1);
@@ -359,7 +356,12 @@ class FancySubLevelModelRenderer {
         const carrier = this.#availableCarrier() ?? this.#createCarrier(false);
         const rideable = carrier.entity.getComponent("minecraft:rideable");
         if (!rideable) throw new Error("Fancy model carrier lost minecraft:rideable.");
-        const origin = packFancySubLevelOrigin(packed.anchorLocalLocation, this.#renderAnchor);
+        const origin = packFancySubLevelOrigin(
+          packed.anchorLocalLocation,
+          this.#renderAnchor,
+          packed.format === "dense" ? packed.width : 1,
+          packed.format === "dense" ? packed.depth : 1
+        );
         const entity = this.#spawnEntity(
           packed.entityTypeId,
           this.#body.localPointToWorld(this.#renderAnchor)
@@ -378,9 +380,7 @@ class FancySubLevelModelRenderer {
           blockCount: packed.blockCount,
           entity,
           format: packed.format,
-          model: packed.model,
           originY: origin.y,
-          stateBits: packed.stateBits,
           words: [...packed.words]
         };
         this.#models.push(live);
@@ -496,7 +496,7 @@ class FancySubLevelModelRenderer {
 function initializeModelProperties(entity, packed, foliageTint, origin) {
   entity.setProperty("sable:origin_xz", origin.xz);
   entity.setProperty("sable:origin_y", encodeFancySubLevelOriginY(origin.y, false));
-  if (isFancySubLevelTintMaterial(packed.model.material)) {
+  if (packed.tint) {
     entity.setProperty("sable:tint", packFancySubLevelTint(packed, foliageTint));
   }
   for (let index = 0; index < packed.words.length; index++) {
@@ -507,9 +507,22 @@ function initializeModelProperties(entity, packed, foliageTint, origin) {
 function readStoredState(model, assignment) {
   const word = model.words[assignment.word] ?? 0;
   if (model.format === "sparse") return word % 64;
+  if (model.format === "pool") {
+    if (word === 0) return 0;
+    return Math.floor(word / 2 ** assignment.shift) % 2 ** assignment.bitCount + 1;
+  }
   return Math.floor(word / 2 ** assignment.shift) % 2 ** assignment.bitCount;
 }
 function writeStoredState(model, assignment, storedState) {
+  if (model.format === "pool") {
+    if (storedState === 0) {
+      model.words[assignment.word] = 0;
+      return;
+    }
+    const currentField = Math.floor((model.words[assignment.word] ?? 0) / 2 ** assignment.shift) % 2 ** assignment.bitCount;
+    model.words[assignment.word] = (model.words[assignment.word] ?? 0) + (storedState - 1 - currentField) * 2 ** assignment.shift;
+    return;
+  }
   const current = readStoredState(model, assignment);
   if (model.format === "sparse") {
     model.words[assignment.word] = (model.words[assignment.word] ?? 0) + storedState - current;

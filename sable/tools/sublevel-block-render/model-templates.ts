@@ -1,4 +1,4 @@
-import type { CompiledModel } from "./registry.ts";
+import type { CompiledModel, CompiledPool } from "./registry.ts";
 import { CARRIER_SEAT_COUNT } from "../../src/sublevel/render/SubLevelRenderData.ts";
 
 export const MODEL_PROPERTY_NAMES = [
@@ -117,7 +117,7 @@ export function createFancyEntity(identifier: string): JsonObject {
   for (const name of MODEL_PROPERTY_NAMES) {
     const isInteger = name === "origin_xz" || name === "origin_y" || name === "tint" || name.startsWith("s");
     const range: readonly [number, number] = name === "origin_xz"
-      ? [0, 4194303] : name === "origin_y" ? [0, 4095] : name === "tint"
+      ? [0, 4194303] : name === "origin_y" ? [0, 4194303] : name === "tint"
         ? [0, 16777215] : name.startsWith("s") ? [0, 16777215] : [-400, 400];
     properties[`sable:${name}`] = property(isInteger ? "int" : "float", range);
   }
@@ -267,35 +267,46 @@ function decodeExpression(format: "dense" | "sparse", slot: number, bits: number
   return `math.mod(math.floor(v.s${word} / ${2 ** shift}), ${2 ** (bits + 1)})`;
 }
 
-function preAnimation(model: CompiledModel, format: "dense" | "sparse"): string[] {
-  const bits = stateBits(model);
-  const result = [
-    "v.pose_ready = q.property('sable:origin_y') >= 2048;",
+function poseMolang(): string[] {
+  return [
+    "v.pose_ready = math.mod(q.property('sable:origin_y'), 4096) >= 2048;",
     "v.pitch = v.pose_ready ? (v.pose_initialized ? math.lerprotate(v.pitch, q.property('sable:pitch'), q.delta_time/0.05) : q.property('sable:pitch')) : 0;",
     "v.yaw = v.pose_ready ? (v.pose_initialized ? math.lerprotate(v.yaw, q.property('sable:yaw'), q.delta_time/0.05) : q.property('sable:yaw')) : 0;",
     "v.roll = v.pose_ready ? (v.pose_initialized ? math.lerprotate(v.roll, q.property('sable:roll'), q.delta_time/0.05) : q.property('sable:roll')) : 0;",
     "v.pose_initialized = v.pose_ready;",
-    `v.sparse = ${format === "sparse" ? 1 : 0};`,
-    `v.layout_width = ${DENSE_WIDTH};`,
-    `v.layout_depth = ${DENSE_DEPTH};`,
-    "v.layout_plane = v.layout_width * v.layout_depth;",
     "v.tint = q.property('sable:tint');"
   ];
-  if (hasFoliageTint(model)) {
-    result.push(
-      "v.tint_0 = math.mod(math.floor(v.tint / 1), 32);",
-      "v.tint_1 = math.mod(math.floor(v.tint / 32), 32);",
-      "v.tint_2 = math.mod(math.floor(v.tint / 1024), 32);",
-      "v.tint_3 = math.mod(math.floor(v.tint / 32768), 32);",
-      "v.tint_state = math.floor(v.tint / 1048576);",
-      "v.tint_uniform = v.tint_state == 7;",
-      "v.tint_axis_z = v.tint_state >= 8;",
-      "v.tint_kind = v.tint_uniform ? 1 : math.mod(v.tint_state, 8);",
-      "v.tint_pixel_u = math.mod(v.tint, 256);",
-      "v.tint_pixel_v = math.mod(math.floor(v.tint / 256), 256);"
-    );
-  }
-  for (let index = 0; index < 26; index++) result.push(`v.s${index} = q.property('sable:s${index}');`);
+}
+
+function tintDecodeMolang(): string[] {
+  return [
+    "v.tint_0 = math.mod(math.floor(v.tint / 1), 32);",
+    "v.tint_1 = math.mod(math.floor(v.tint / 32), 32);",
+    "v.tint_2 = math.mod(math.floor(v.tint / 1024), 32);",
+    "v.tint_3 = math.mod(math.floor(v.tint / 32768), 32);",
+    "v.tint_state = math.floor(v.tint / 1048576);",
+    "v.tint_uniform = v.tint_state == 7;",
+    "v.tint_axis_z = v.tint_state >= 8;",
+    "v.tint_kind = v.tint_uniform ? 1 : math.mod(v.tint_state, 8);",
+    "v.tint_pixel_u = math.mod(v.tint, 256);",
+    "v.tint_pixel_v = math.mod(math.floor(v.tint / 256), 256);"
+  ];
+}
+
+function wordReadMolang(): string[] {
+  return Array.from({ length: 26 }, (_, index) => `v.s${index} = q.property('sable:s${index}');`);
+}
+
+function preAnimation(model: CompiledModel, format: "dense" | "sparse"): string[] {
+  const bits = stateBits(model);
+  const result = [
+    ...poseMolang(),
+    "v.layout_width = 1 + math.mod(math.floor(q.property('sable:origin_y') / 4096), 32);",
+    "v.layout_depth = 1 + math.floor(q.property('sable:origin_y') / 131072);",
+    "v.layout_plane = v.layout_width * v.layout_depth;"
+  ];
+  if (hasFoliageTint(model)) result.push(...tintDecodeMolang());
+  result.push(...wordReadMolang());
   for (let slot = 0; slot < slotCountOf(format); slot++) {
     result.push(`v.c${slot} = ${decodeExpression(format, slot, bits)};`);
   }
@@ -438,17 +449,30 @@ function channelGeometry(
  * per block along the gradient axis, and the render controller's uv_anim maps
  * that ramp onto the encoded climate span.
  */
-function colormapGeometry(
-  model: CompiledModel,
-  key: string,
-  axis: "x" | "z"
-): JsonObject {
+function uniqueModelCubeShapes(model: CompiledModel): JsonObject[] {
   const shapes = new Map<string, JsonObject>();
   for (const channel of modelChannels(model)) {
     for (const cube of channel.cubes) {
       shapes.set(JSON.stringify([cube.origin, cube.size]), cube);
     }
   }
+  return [...shapes.values()];
+}
+
+function colormapCube(cube: JsonObject, uv: number): JsonObject {
+  return {
+    origin: cube.origin,
+    size: cube.size,
+    uv: Object.fromEntries(FULL_FACES.map(face => [face, { uv: [uv, uv], uv_size: [16, 16] }]))
+  };
+}
+
+function colormapGeometry(
+  model: CompiledModel,
+  key: string,
+  axis: "x" | "z"
+): JsonObject {
+  const shapes = uniqueModelCubeShapes(model);
   const bones: JsonObject[] = [...rootBoneChain()];
   for (let slot = 0; slot < DENSE_SLOT_COUNT; slot++) {
     const coordinate = axis === "x"
@@ -459,11 +483,7 @@ function colormapGeometry(
       name: `slot_${slot}`,
       parent: "model_offset",
       pivot: [0, -16, 0],
-      cubes: [...shapes.values()].map(cube => ({
-        origin: cube.origin,
-        size: cube.size,
-        uv: Object.fromEntries(FULL_FACES.map(face => [face, { uv: [uv, uv], uv_size: [16, 16] }]))
-      }))
+      cubes: shapes.map(cube => colormapCube(cube, uv))
     });
   }
   return {
@@ -500,7 +520,7 @@ export function createFancyAnimation(model: CompiledModel, format: "dense" | "sp
     model_offset: {
       position: [
         "(math.mod(q.property('sable:origin_xz'), 2048) - 1024) * 16",
-        "(q.property('sable:origin_y') - 1024) * 16",
+        "(math.mod(q.property('sable:origin_y'), 2048) - 1024) * 16",
         "-(math.floor(q.property('sable:origin_xz') / 2048) - 1024) * 16"
       ]
     }
@@ -639,6 +659,277 @@ export function createFancyRenderController(model: CompiledModel, format: "dense
     }
   }
   return { format_version: "1.10.0", render_controllers: controllers };
+}
+
+interface PoolPlaces {
+  readonly xSpan: number;
+  readonly ySpan: number;
+  readonly zSpan: number;
+  readonly familyPlace: number;
+  readonly occupiedPlace: number;
+}
+
+function poolPlaces(pool: CompiledPool): PoolPlaces {
+  const xSpan = 2 ** pool.xBits;
+  const ySpan = 2 ** pool.yBits;
+  const zSpan = 2 ** pool.zBits;
+  const familyPlace = xSpan * ySpan * zSpan;
+  const statePlace = familyPlace * 2 ** pool.familyBits;
+  return {
+    familyPlace,
+    occupiedPlace: statePlace * 2 ** pool.stateBits,
+    xSpan,
+    ySpan,
+    zSpan
+  };
+}
+
+function poolKeyName(pool: CompiledPool): string {
+  return `sable_pool_${pool.name}`;
+}
+
+function poolFoliageMembers(pool: CompiledPool): number[] {
+  return pool.members.flatMap((member, family) => hasFoliageTint(member) ? [family] : []);
+}
+
+function poolMaterialKind(member: CompiledModel): "opaque" | "alpha" | "color" {
+  if (member.material === "opaque") return "opaque";
+  return member.material === "alpha_test" ? "alpha" : "color";
+}
+
+function poolSlotCondition(slot: number, family: number): string {
+  return `(v.o${slot} > 0) && (v.f${slot} == ${family})`;
+}
+
+export function createPoolClientEntity(pool: CompiledPool): JsonObject {
+  const key = poolKeyName(pool);
+  const places = poolPlaces(pool);
+  const foliage = poolFoliageMembers(pool);
+  const materials: JsonObject = {};
+  const textures: JsonObject = {};
+  const geometry: JsonObject = {};
+  const renderControllers: unknown[] = [];
+  pool.members.forEach((member, family) => {
+    materials[poolMaterialKind(member)] = member.material === "opaque"
+      ? "opaque_block"
+      : member.material === "alpha_test" ? "alpha_block" : "alpha_block_color";
+    for (const channel of modelChannels(member)) {
+      textures[`m${family}_${channel.name}`] = channel.texture;
+      geometry[`m${family}_${channel.name}`] = `geometry.${key}.m${family}_${channel.name}`;
+      renderControllers.push(`controller.render.${key}.m${family}_${channel.name}`);
+    }
+  });
+  if (foliage.length > 0) {
+    materials.tint_multiply = "tint_multiply";
+    Object.assign(textures, COLORMAP_TEXTURES);
+    geometry.tint = `geometry.${key}.tint`;
+    for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
+      renderControllers.push({
+        [`controller.render.${key}.tint_multiply_${slot}`]: `v.tint_kind >= 1 && v.o${slot} > 0`
+      });
+    }
+  }
+  const preAnimation = [...poseMolang()];
+  if (foliage.length > 0) preAnimation.push(...tintDecodeMolang());
+  preAnimation.push(...wordReadMolang());
+  for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
+    preAnimation.push(`v.o${slot} = math.floor(v.s${slot} / ${places.occupiedPlace});`);
+    preAnimation.push(
+      `v.f${slot} = math.mod(math.floor(v.s${slot} / ${places.familyPlace}), ${2 ** pool.familyBits});`
+    );
+    if (pool.stateBits > 0) {
+      preAnimation.push(
+        `v.st${slot} = math.mod(math.floor(v.s${slot} / ${places.familyPlace * 2 ** pool.familyBits}), ${2 ** pool.stateBits});`
+      );
+    }
+  }
+  return {
+    format_version: "1.20.30",
+    "minecraft:client_entity": {
+      description: {
+        identifier: pool.entityTypeId,
+        materials,
+        textures,
+        geometry,
+        render_controllers: renderControllers,
+        animations: { transform: `animation.${key}.transform` },
+        scripts: {
+          initialize: ["v.pose_initialized = 0;"],
+          animate: ["transform"],
+          pre_animation: preAnimation
+        }
+      }
+    }
+  };
+}
+
+export function createPoolGeometry(pool: CompiledPool): JsonObject {
+  const key = poolKeyName(pool);
+  const geometries: JsonObject[] = [];
+  pool.members.forEach((member, family) => {
+    const rotation = slotBoneRotation(member);
+    for (const channel of modelChannels(member)) {
+      const withLid = member.model.type === "chest" && channel.name === "default";
+      const bones: JsonObject[] = [...rootBoneChain()];
+      for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
+        bones.push({
+          name: `slot_${slot}`,
+          parent: "model_offset",
+          pivot: [0, -16, 0],
+          ...(rotation ? { rotation } : {}),
+          cubes: structuredClone(channel.cubes) as unknown[]
+        });
+        if (withLid) {
+          bones.push({
+            name: `lid_${slot}`,
+            parent: `slot_${slot}`,
+            pivot: [0, -11, 7],
+            cubes: [{ origin: [-7, -11, -7], size: [14, 5, 14], uv: [0, 0] }]
+          });
+        }
+      }
+      geometries.push({
+        description: {
+          identifier: `geometry.${key}.m${family}_${channel.name}`,
+          texture_width: 16,
+          texture_height: 16,
+          visible_bounds_width: 128,
+          visible_bounds_height: 128,
+          visible_bounds_offset: [0, 0, 0]
+        },
+        bones
+      });
+    }
+  });
+  const foliage = poolFoliageMembers(pool);
+  if (foliage.length > 0) {
+    const bones: JsonObject[] = [...rootBoneChain()];
+    for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
+      bones.push({ name: `slot_${slot}`, parent: "model_offset", pivot: [0, -16, 0] });
+      for (const family of foliage) {
+        bones.push({
+          name: `tint_m${family}_${slot}`,
+          parent: `slot_${slot}`,
+          pivot: [0, -16, 0],
+          cubes: uniqueModelCubeShapes(pool.members[family]!).map(cube => colormapCube(cube, 0))
+        });
+      }
+    }
+    geometries.push({
+      description: {
+        identifier: `geometry.${key}.tint`,
+        texture_width: 16,
+        texture_height: 16,
+        visible_bounds_width: 128,
+        visible_bounds_height: 128,
+        visible_bounds_offset: [0, 0, 0]
+      },
+      bones
+    });
+  }
+  return { format_version: "1.16.0", "minecraft:geometry": geometries };
+}
+
+export function createPoolAnimation(pool: CompiledPool): JsonObject {
+  const key = poolKeyName(pool);
+  const places = poolPlaces(pool);
+  const bones: JsonObject = {
+    root: { rotation: ["-q.body_x_rotation", "-q.body_y_rotation", 0], scale: "v.pose_ready" },
+    pitch: { rotation: ["v.pitch", 0, 0] },
+    roll: { rotation: [0, 0, "-v.roll"] },
+    yaw: { rotation: [0, "-v.yaw", 0] },
+    model_offset: {
+      position: [
+        "(math.mod(q.property('sable:origin_xz'), 2048) - 1024) * 16",
+        "(math.mod(q.property('sable:origin_y'), 2048) - 1024) * 16",
+        "-(math.floor(q.property('sable:origin_xz') / 2048) - 1024) * 16"
+      ]
+    }
+  };
+  const hasLids = pool.members.some(member => member.model.type === "chest");
+  for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
+    bones[`slot_${slot}`] = {
+      position: [
+        `math.mod(v.s${slot}, ${places.xSpan}) * 16`,
+        `math.mod(math.floor(v.s${slot} / ${places.xSpan}), ${places.ySpan}) * 16`,
+        `-math.mod(math.floor(v.s${slot} / ${places.xSpan * places.ySpan}), ${places.zSpan}) * 16`
+      ],
+      scale: `v.o${slot}`
+    };
+    if (hasLids) {
+      bones[`lid_${slot}`] = {
+        rotation: [`-90 * math.clamp(v.st${slot}, 0, 1)`, 0, 0]
+      };
+    }
+  }
+  return {
+    format_version: "1.8.0",
+    animations: { [`animation.${key}.transform`]: { bones, loop: true } }
+  };
+}
+
+export function createPoolRenderController(pool: CompiledPool): JsonObject {
+  const key = poolKeyName(pool);
+  const places = poolPlaces(pool);
+  const controllers: JsonObject = {};
+  pool.members.forEach((member, family) => {
+    const withLid = member.model.type === "chest";
+    for (const channel of modelChannels(member)) {
+      const visibility: JsonObject[] = [{ "*": false }];
+      for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
+        visibility.push({ [`slot_${slot}`]: poolSlotCondition(slot, family) });
+        if (withLid && channel.name === "default") {
+          visibility.push({ [`lid_${slot}`]: poolSlotCondition(slot, family) });
+        }
+      }
+      controllers[`controller.render.${key}.m${family}_${channel.name}`] = {
+        geometry: `Geometry.m${family}_${channel.name}`,
+        light_color_multiplier: 0.88,
+        materials: [{ "*": `Material.${poolMaterialKind(member)}` }],
+        textures: [`Texture.m${family}_${channel.name}`],
+        part_visibility: visibility,
+        ...(hasFixedTint(member) ? bakedFixedColor(member) : {})
+      };
+    }
+  });
+  const foliage = poolFoliageMembers(pool);
+  for (let slot = 0; slot < SPARSE_SLOT_COUNT && foliage.length > 0; slot++) {
+    const gradientX = `(math.mod(v.s${slot}, ${places.xSpan}) / ${places.xSpan})`;
+    const gradientZ = `(math.mod(math.floor(v.s${slot} / ${places.xSpan * places.ySpan}), ${places.zSpan}) / ${places.zSpan})`;
+    controllers[`controller.render.${key}.tint_multiply_${slot}`] = {
+      arrays: { textures: { "Array.colormaps": COLORMAP_TEXTURE_ARRAY } },
+      geometry: "Geometry.tint",
+      materials: [{ "*": "Material.tint_multiply" }],
+      textures: ["Array.colormaps[math.max(0, (v.tint_kind) - 1)]"],
+      uv_anim: {
+        offset: [
+          `v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * (v.tint_axis_z ? ${gradientZ} : ${gradientX}))`,
+          `v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? ${gradientZ} : ${gradientX}))`
+        ],
+        scale: [
+          `v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / (v.tint_axis_z ? ${places.zSpan} : ${places.xSpan}))`,
+          `v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / (v.tint_axis_z ? ${places.zSpan} : ${places.xSpan}))`
+        ]
+      },
+      part_visibility: [
+        { "*": false },
+        ...foliage.map(family => ({ [`tint_m${family}_${slot}`]: poolSlotCondition(slot, family) }))
+      ]
+    };
+  }
+  return { format_version: "1.10.0", render_controllers: controllers };
+}
+
+function bakedFixedColor(member: CompiledModel): JsonObject {
+  const value = Number.parseInt(member.tint!.color!.slice(1), 16);
+  return {
+    color: {
+      r: Math.floor(value / 65536) / 255,
+      g: Math.floor(value / 256) % 256 / 255,
+      b: value % 256 / 255,
+      a: 1
+    }
+  };
 }
 
 export function createVanillaClientEntity(): JsonObject {
