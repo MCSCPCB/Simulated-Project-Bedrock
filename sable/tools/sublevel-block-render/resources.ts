@@ -23,34 +23,41 @@ import {
 
 type JsonObject = Record<string, unknown>;
 
-// One row of 32 palette cells, 8 pixels each: the quantized tint coordinates
-// land inside their cell with bilinear filtering, like TreePhysics' fixed map.
-const FIXED_COLORMAP_WIDTH = 256;
-const FIXED_COLORMAP_HEIGHT = 8;
+// A 32x32 grid of 8-pixel cells: the quantized tint coordinates land inside
+// their cell with bilinear filtering, like TreePhysics' fixed map. Row 0 holds
+// the registry's fixed tint palette; the fixed-foliage biomes keep the exact
+// cells and colors the TreePhysics sampler addresses.
+const FIXED_COLORMAP_SIZE = 256;
 const FIXED_COLORMAP_CELL = 8;
+const FIXED_FOLIAGE_BIOME_CELLS: readonly { readonly u: number; readonly v: number; readonly color: string }[] = [
+  { u: 8, v: 16, color: "#B6DB61" },
+  { u: 23, v: 16, color: "#878D76" }
+];
 
 function fixedColormapTga(palette: readonly string[]): Buffer {
   const header = Buffer.alloc(18);
   header[2] = 2;
-  header.writeUInt16LE(FIXED_COLORMAP_WIDTH, 12);
-  header.writeUInt16LE(FIXED_COLORMAP_HEIGHT, 14);
+  header.writeUInt16LE(FIXED_COLORMAP_SIZE, 12);
+  header.writeUInt16LE(FIXED_COLORMAP_SIZE, 14);
   header[16] = 32;
   header[17] = 0x28;
-  const pixels = Buffer.alloc(FIXED_COLORMAP_WIDTH * FIXED_COLORMAP_HEIGHT * 4, 0xff);
-  for (let cell = 0; cell < palette.length; cell++) {
-    const color = palette[cell];
-    if (!color) continue;
+  const pixels = Buffer.alloc(FIXED_COLORMAP_SIZE * FIXED_COLORMAP_SIZE * 4, 0xff);
+  const paint = (cellU: number, cellV: number, color: string): void => {
     const value = Number.parseInt(color.slice(1), 16);
-    for (let y = 0; y < FIXED_COLORMAP_HEIGHT; y++) {
-      for (let x = cell * FIXED_COLORMAP_CELL; x < (cell + 1) * FIXED_COLORMAP_CELL; x++) {
-        const offset = (y * FIXED_COLORMAP_WIDTH + x) * 4;
+    for (let y = cellV * FIXED_COLORMAP_CELL; y < (cellV + 1) * FIXED_COLORMAP_CELL; y++) {
+      for (let x = cellU * FIXED_COLORMAP_CELL; x < (cellU + 1) * FIXED_COLORMAP_CELL; x++) {
+        const offset = (y * FIXED_COLORMAP_SIZE + x) * 4;
         pixels[offset] = value % 256;
         pixels[offset + 1] = Math.floor(value / 256) % 256;
         pixels[offset + 2] = Math.floor(value / 65536);
         pixels[offset + 3] = 0xff;
       }
     }
+  };
+  for (let cell = 0; cell < palette.length; cell++) {
+    if (palette[cell]) paint(cell, 0, palette[cell]!);
   }
+  for (const cell of FIXED_FOLIAGE_BIOME_CELLS) paint(cell.u, cell.v, cell.color);
   return Buffer.concat([header, pixels]);
 }
 

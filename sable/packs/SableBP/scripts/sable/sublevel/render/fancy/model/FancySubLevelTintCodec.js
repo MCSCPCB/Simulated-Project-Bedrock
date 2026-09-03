@@ -1,18 +1,29 @@
 const FOLIAGE_COLORMAP_DEFAULT = 1;
+const FOLIAGE_COLORMAP_SWAMP = 2;
+const FOLIAGE_COLORMAP_MANGROVE_SWAMP = 3;
 const FOLIAGE_COLORMAP_FIXED = 6;
-const TINT_COORDINATE_BASE = 32;
+const FOLIAGE_TINT_COORDINATE_STEPS = 31;
+const TINT_COORDINATE_BASE = FOLIAGE_TINT_COORDINATE_STEPS + 1;
 const TINT_KIND_PLACE = TINT_COORDINATE_BASE ** 4;
 const TINT_AXIS_Z_PLACE = 8 * TINT_KIND_PLACE;
 const TINT_UNIFORM_STATE = 7;
 const TINT_TEXTURE_SIZE = 256;
-const DEFAULT_SUBLEVEL_FOLIAGE_TINT = Object.freeze({
-  gradientAxis: "x",
-  mapKind: FOLIAGE_COLORMAP_DEFAULT,
-  uAtLocalOrigin: 0.2,
-  uPerLocalX: 0,
-  vAtLocalOrigin: 0.68,
-  vPerLocalZ: 0
-});
+function climateToColormapUv(baseTemperature, baseDownfall) {
+  const temperature = clamp(baseTemperature);
+  const rainfall = clamp(baseDownfall) * temperature;
+  return { u: 1 - temperature, v: 1 - rainfall };
+}
+const DEFAULT_SUBLEVEL_FOLIAGE_TINT = (() => {
+  const uv = climateToColormapUv(0.8, 0.4);
+  return Object.freeze({
+    gradientAxis: "x",
+    mapKind: FOLIAGE_COLORMAP_DEFAULT,
+    uAtLocalOrigin: uv.u,
+    uPerLocalX: 0,
+    vAtLocalOrigin: uv.v,
+    vPerLocalZ: 0
+  });
+})();
 function packFancySubLevelTint(packed, foliage = DEFAULT_SUBLEVEL_FOLIAGE_TINT) {
   const tint = packed.tint;
   if (!tint) return 0;
@@ -42,7 +53,7 @@ function sampleV(field, z) {
   return clamp(field.vAtLocalOrigin + field.vPerLocalZ * z);
 }
 function quantize(value) {
-  return Math.round(clamp(value) * 31);
+  return Math.round(clamp(value) * FOLIAGE_TINT_COORDINATE_STEPS);
 }
 function textureCoordinate(value) {
   return Math.round(clamp(value) * (TINT_TEXTURE_SIZE - 1));
@@ -59,5 +70,10 @@ function isUniformField(field) {
 export {
   DEFAULT_SUBLEVEL_FOLIAGE_TINT,
   FOLIAGE_COLORMAP_DEFAULT,
+  FOLIAGE_COLORMAP_FIXED,
+  FOLIAGE_COLORMAP_MANGROVE_SWAMP,
+  FOLIAGE_COLORMAP_SWAMP,
+  FOLIAGE_TINT_COORDINATE_STEPS,
+  climateToColormapUv,
   packFancySubLevelTint
 };

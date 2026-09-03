@@ -2,21 +2,38 @@ import type { SubLevelFoliageTint } from "../../../SubLevel.js";
 import type { PackedFancySubLevelModel } from "./FancySubLevelModelLayout.js";
 
 export const FOLIAGE_COLORMAP_DEFAULT = 1;
-const FOLIAGE_COLORMAP_FIXED = 6;
-const TINT_COORDINATE_BASE = 32;
+export const FOLIAGE_COLORMAP_SWAMP = 2;
+export const FOLIAGE_COLORMAP_MANGROVE_SWAMP = 3;
+export const FOLIAGE_COLORMAP_FIXED = 6;
+export const FOLIAGE_TINT_COORDINATE_STEPS = 31;
+const TINT_COORDINATE_BASE = FOLIAGE_TINT_COORDINATE_STEPS + 1;
 const TINT_KIND_PLACE = TINT_COORDINATE_BASE ** 4;
 const TINT_AXIS_Z_PLACE = 8 * TINT_KIND_PLACE;
 const TINT_UNIFORM_STATE = 7;
 const TINT_TEXTURE_SIZE = 256;
 
-export const DEFAULT_SUBLEVEL_FOLIAGE_TINT: SubLevelFoliageTint = Object.freeze({
-  gradientAxis: "x",
-  mapKind: FOLIAGE_COLORMAP_DEFAULT,
-  uAtLocalOrigin: 0.2,
-  uPerLocalX: 0,
-  vAtLocalOrigin: 0.68,
-  vPerLocalZ: 0
-});
+export function climateToColormapUv(
+  baseTemperature: number,
+  baseDownfall: number
+): { u: number; v: number } {
+  const temperature = clamp(baseTemperature);
+  const rainfall = clamp(baseDownfall) * temperature;
+  return { u: 1 - temperature, v: 1 - rainfall };
+}
+
+export const DEFAULT_SUBLEVEL_FOLIAGE_TINT: SubLevelFoliageTint = (() => {
+  // Keep the renderer-side default independent from the biome climate table.
+  // These are the generated Bedrock plains climate values.
+  const uv = climateToColormapUv(0.8, 0.4);
+  return Object.freeze({
+    gradientAxis: "x" as const,
+    mapKind: FOLIAGE_COLORMAP_DEFAULT,
+    uAtLocalOrigin: uv.u,
+    uPerLocalX: 0,
+    vAtLocalOrigin: uv.v,
+    vPerLocalZ: 0
+  });
+})();
 
 export function packFancySubLevelTint(
   packed: PackedFancySubLevelModel,
@@ -64,7 +81,7 @@ function sampleV(field: SubLevelFoliageTint, z: number): number {
 }
 
 function quantize(value: number): number {
-  return Math.round(clamp(value) * 31);
+  return Math.round(clamp(value) * FOLIAGE_TINT_COORDINATE_STEPS);
 }
 
 function textureCoordinate(value: number): number {

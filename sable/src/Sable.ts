@@ -1,4 +1,5 @@
 export { SubLevelRenderer } from "./sublevel/render/SubLevelRenderer.js";
+export { captureSubLevelFoliageTint } from "./render/dynamic_biome/DynamicBiomeTintSampler.js";
 export {
   BLOCK_CARRIER_CAPACITY,
   BLOCK_CARRIER_ENTITY_TYPE_ID,
