@@ -13,11 +13,18 @@ export interface FancySubLevelModelPool {
   readonly stateBits: number;
 }
 export type FancySubLevelFacing = "north" | "east" | "south" | "west";
-export type FancySubLevelFace = FancySubLevelFacing | "up";
+
+export type FancySubLevelAxis = "y" | "x" | "z";
 
 export interface FullBlockModelDescription {
   readonly type: "full_block";
   readonly textures: Readonly<Record<"up" | "down" | FancySubLevelFacing, string>>;
+}
+
+export interface PillarModelDescription {
+  readonly type: "pillar" | "creaking_heart";
+  readonly textures: Readonly<{ side: string; top: string }>;
+  readonly axis: FancySubLevelAxis;
 }
 
 export interface ChestModelDescription {
@@ -26,17 +33,23 @@ export interface ChestModelDescription {
   readonly facing: FancySubLevelFacing;
 }
 
+export interface BeeNestModelDescription {
+  readonly type: "bee_nest";
+  readonly textures: Readonly<{ down: string; up: string; front: string; side: string }>;
+  readonly direction: number;
+}
+
 export interface CocoaModelDescription {
   readonly type: "cocoa";
   readonly texture: string;
-  readonly facing: FancySubLevelFacing;
+  readonly direction: number;
   readonly age: 0 | 1 | 2;
 }
 
 export interface VineModelDescription {
   readonly type: "vine";
   readonly texture: string;
-  readonly faces: readonly FancySubLevelFace[];
+  readonly faces: readonly FancySubLevelFacing[];
 }
 
 export interface SingleTextureModelDescription {
@@ -47,7 +60,6 @@ export interface SingleTextureModelDescription {
 export interface MangrovePropaguleModelDescription {
   readonly type: "mangrove_propagule";
   readonly texture: string;
-  readonly hanging: boolean;
   readonly stage: number;
 }
 
@@ -58,13 +70,15 @@ export interface PaleHangingMossModelDescription {
 }
 
 export interface RootModelDescription {
-  readonly type: "mangrove_roots" | "muddy_mangrove_roots";
+  readonly type: "mangrove_roots";
   readonly textures: Readonly<{ top: string; side: string }>;
 }
 
 export type FancySubLevelModelDescription =
   | FullBlockModelDescription
+  | PillarModelDescription
   | ChestModelDescription
+  | BeeNestModelDescription
   | CocoaModelDescription
   | VineModelDescription
   | SingleTextureModelDescription
@@ -131,9 +145,9 @@ export interface CompiledBlockRenderRegistration {
   readonly states: readonly string[];
   readonly variants: readonly {
     readonly condition: CompiledCondition;
-    readonly model: CompiledFancySubLevelModel;
+    readonly model: CompiledFancySubLevelModel | null;
   }[];
-  readonly default: CompiledFancySubLevelModel;
+  readonly default: CompiledFancySubLevelModel | null;
 }
 
 export type CompiledBlockRenderRegistry = Readonly<

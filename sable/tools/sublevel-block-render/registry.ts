@@ -3,9 +3,8 @@ import { readFile } from "node:fs/promises";
 import { parseCondition, type ConditionNode } from "./condition.ts";
 
 const MODEL_TYPES = new Set([
-  "full_block", "chest", "cocoa", "vine", "hanging_roots",
-  "mangrove_propagule", "pale_hanging_moss", "mangrove_roots",
-  "muddy_mangrove_roots"
+  "full_block", "pillar", "chest", "bee_nest", "cocoa", "vine", "hanging_roots",
+  "mangrove_propagule", "pale_hanging_moss", "mangrove_roots", "creaking_heart"
 ]);
 const MATERIALS = new Set(["opaque", "alpha_test", "alpha_test_tint", "opaque_tint"]);
 const TINT_MATERIALS = new Set(["alpha_test_tint", "opaque_tint"]);
@@ -120,8 +119,8 @@ export function modelRuntimeStateBits(model: Record<string, unknown>): number {
 const POOL_MEMBER_CAP = 32;
 export interface CompiledRegistryEntry {
   readonly states: readonly string[];
-  readonly variants: readonly { readonly condition: ConditionNode; readonly model: CompiledModel }[];
-  readonly default: CompiledModel;
+  readonly variants: readonly { readonly condition: ConditionNode; readonly model: CompiledModel | null }[];
+  readonly default: CompiledModel | null;
 }
 export type CompiledRegistry = Readonly<Record<string, CompiledRegistryEntry>>;
 
@@ -138,7 +137,7 @@ export async function readAndCompileRegistry(file: string): Promise<{
     Object.values(compiled).flatMap(entry => [
       entry.default,
       ...entry.variants.map(variant => variant.model)
-    ]).map(model => [model.key, model] as const)
+    ]).flatMap(model => model ? [[model.key, model] as const] : [])
   ).values()];
   const pools = partitionPools(models);
   const fixedTintPalette: string[] = [];
@@ -216,7 +215,8 @@ function partitionPools(models: readonly CompiledModel[]): CompiledPool[] {
 /** The runtime registry omits the packaging fields the script bundle never reads. */
 export function toRuntimeRegistry(compiled: CompiledRegistry): Record<string, unknown> {
   const strippedByKey = new Map<string, unknown>();
-  const strip = (model: CompiledModel): unknown => {
+  const strip = (model: CompiledModel | null): unknown => {
+    if (!model) return null;
     const cached = strippedByKey.get(model.key);
     if (cached) return cached;
     const stripped = {
@@ -266,7 +266,7 @@ export function compileRegistry(raw: RawRegistry): CompiledRegistry {
     const blockName = blockShortName(blockId);
     const directory = `${entry.category}/${blockName}`;
     const poolKey = entry.domain ?? entry.category;
-    const obtain = (definition: RawRenderDefinition, path: string, suffix: string): CompiledModel => (
+    const obtain = (definition: RawRenderDefinition, path: string, suffix: string): CompiledModel | null => (
       obtainModel(modelsByKey, usedNames, paletteByColor, entry.materials, definition, path, blockName, directory, poolKey, suffix)
     );
     // The default resolves first so the plain block name lands on the default model.
@@ -295,12 +295,17 @@ function obtainModel(
   directory: string,
   poolKey: string,
   suffix: string
-): CompiledModel {
+): CompiledModel | null {
   if (!definition || !definition.model || typeof definition.model !== "object") {
     throw new Error(`${path}: model is required.`);
   }
   const model = structuredClone(definition.model) as Record<string, unknown>;
   const type = model.type;
+  // A vanilla model routes the matching block states to the hand-held route.
+  if (type === "vanilla") {
+    if (definition.tint) throw new Error(`${path}: vanilla models take no tint.`);
+    return null;
+  }
   if (typeof type !== "string" || !MODEL_TYPES.has(type)) throw new Error(`${path}: unsupported model.type.`);
   validateModel(model, path);
   const tint = validateTint(material, definition.tint, path, paletteByColor);
@@ -370,6 +375,20 @@ function blockShortName(blockId: string): string {
   return sanitizeNameToken(stateShortName(blockId));
 }
 
+const AXES = new Set(["y", "x", "z"]);
+const VINE_FACES = new Set(["south", "west", "north", "east"]);
+
+function validateSideTop(model: Record<string, unknown>, path: string): void {
+  const textures = model.textures;
+  if (!textures || typeof textures !== "object") throw new Error(`${path}: side/top textures required.`);
+  validateResource((textures as Record<string, unknown>).side, `${path}.model.textures.side`);
+  validateResource((textures as Record<string, unknown>).top, `${path}.model.textures.top`);
+}
+
+function validateDirection(value: unknown, path: string): void {
+  if (![0, 1, 2, 3].includes(value as number)) throw new Error(`${path}: direction must be 0..3.`);
+}
+
 function validateModel(model: Record<string, unknown>, path: string): void {
   const type = model.type;
   if (type === "full_block") {
@@ -378,23 +397,37 @@ function validateModel(model: Record<string, unknown>, path: string): void {
     for (const face of FULL_FACES) validateResource((textures as Record<string, unknown>)[face], `${path}.model.textures.${face}`);
     return;
   }
+  if (type === "pillar" || type === "creaking_heart") {
+    validateSideTop(model, path);
+    if (!AXES.has(String(model.axis))) throw new Error(`${path}: axis must be y, x or z.`);
+    return;
+  }
   if (type === "chest") {
     validateResource(model.texture, `${path}.model.texture`);
     if (!DIRECTIONS.has(String(model.facing))) throw new Error(`${path}: invalid chest facing.`);
     return;
   }
+  if (type === "bee_nest") {
+    const textures = model.textures;
+    if (!textures || typeof textures !== "object") throw new Error(`${path}: bee_nest textures required.`);
+    for (const face of ["down", "up", "front", "side"]) {
+      validateResource((textures as Record<string, unknown>)[face], `${path}.model.textures.${face}`);
+    }
+    validateDirection(model.direction, path);
+    return;
+  }
   if (type === "cocoa") {
     validateResource(model.texture, `${path}.model.texture`);
-    if (!DIRECTIONS.has(String(model.facing))) throw new Error(`${path}: invalid cocoa facing.`);
+    validateDirection(model.direction, path);
     if (![0, 1, 2].includes(model.age as number)) throw new Error(`${path}: invalid cocoa age.`);
     return;
   }
   if (type === "vine") {
     validateResource(model.texture, `${path}.model.texture`);
-    if (!Array.isArray(model.faces) || model.faces.length === 0 || new Set(model.faces).size !== model.faces.length) {
-      throw new Error(`${path}: vine faces must be a non-empty unique array.`);
+    if (!Array.isArray(model.faces) || new Set(model.faces).size !== model.faces.length) {
+      throw new Error(`${path}: vine faces must be a unique array.`);
     }
-    for (const face of model.faces) if (![...DIRECTIONS, "up"].includes(String(face))) throw new Error(`${path}: invalid vine face.`);
+    for (const face of model.faces) if (!VINE_FACES.has(String(face))) throw new Error(`${path}: invalid vine face.`);
     return;
   }
   if (type === "hanging_roots" || type === "pale_hanging_moss") {
@@ -404,16 +437,12 @@ function validateModel(model: Record<string, unknown>, path: string): void {
   }
   if (type === "mangrove_propagule") {
     validateResource(model.texture, `${path}.model.texture`);
-    if (typeof model.hanging !== "boolean" || !Number.isInteger(model.stage)) throw new Error(`${path}: propagule hanging/stage required.`);
-    if ((model.stage as number) < 0 || (model.stage as number) > 4) throw new Error(`${path}: invalid propagule stage.`);
+    if (!Number.isInteger(model.stage) || (model.stage as number) < 0 || (model.stage as number) > 4) {
+      throw new Error(`${path}: invalid propagule stage.`);
+    }
     return;
   }
-  if (type === "mangrove_roots" || type === "muddy_mangrove_roots") {
-    const textures = model.textures;
-    if (!textures || typeof textures !== "object") throw new Error(`${path}: root textures required.`);
-    validateResource((textures as Record<string, unknown>).top, `${path}.model.textures.top`);
-    validateResource((textures as Record<string, unknown>).side, `${path}.model.textures.side`);
-  }
+  if (type === "mangrove_roots") validateSideTop(model, path);
 }
 
 function validateTint(

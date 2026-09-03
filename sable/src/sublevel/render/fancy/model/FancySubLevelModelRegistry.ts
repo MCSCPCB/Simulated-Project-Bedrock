@@ -33,9 +33,12 @@ export function resolveFancySubLevelBlock(
 ): FancySubLevelBlock | undefined {
   const registration = blockRenderRegistry[block.typeId];
   if (!registration) return undefined;
-  const selected = registration.variants.find(variant => (
-    evaluateCondition(variant.condition, block.states)
-  ))?.model ?? registration.default;
+  const variant = registration.variants.find(entry => (
+    evaluateCondition(entry.condition, block.states)
+  ));
+  const selected = variant ? variant.model : registration.default;
+  // A null model routes this state combination to the hand-held route.
+  if (!selected) return undefined;
   const model = materializeModel(selected);
   return { block, model, state: model.state?.dimensions[0]?.value ?? 0 };
 }

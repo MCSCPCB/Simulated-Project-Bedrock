@@ -21,7 +21,9 @@ const MISSING_MODEL = {
 function resolveFancySubLevelBlock(block) {
   const registration = blockRenderRegistry[block.typeId];
   if (!registration) return void 0;
-  const selected = registration.variants.find((variant) => evaluateCondition(variant.condition, block.states))?.model ?? registration.default;
+  const variant = registration.variants.find((entry) => evaluateCondition(entry.condition, block.states));
+  const selected = variant ? variant.model : registration.default;
+  if (!selected) return void 0;
   const model = materializeModel(selected);
   return { block, model, state: model.state?.dimensions[0]?.value ?? 0 };
 }

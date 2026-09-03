@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import type { CompiledModel, CompiledPool } from "./registry.ts";
 import { CARRIER_SEAT_COUNT } from "../../src/sublevel/render/SubLevelRenderData.ts";
 
@@ -41,6 +42,28 @@ const COLORMAP_TEXTURES: Readonly<Record<string, string>> = {
 };
 
 const COLORMAP_TEXTURE_ARRAY = Object.keys(COLORMAP_TEXTURES).map(name => `Texture.${name}`);
+
+// Slot geometry library: bone subtrees lifted verbatim from the proven
+// TreePhysics fragment resources; "{s}" expands to the slot index.
+interface LibraryBone {
+  readonly name: string;
+  readonly parent?: string;
+  readonly pivot?: readonly number[];
+  readonly rotation?: readonly number[];
+  readonly cubes?: readonly JsonObject[];
+}
+interface LibraryChannel {
+  readonly textureRole: string;
+  readonly textureSize: readonly [number, number];
+  readonly bones: readonly LibraryBone[];
+}
+type ModelGeometryLibrary = Readonly<Record<string, Readonly<Record<string, {
+  readonly channels: Readonly<Record<string, LibraryChannel>>;
+}>>>>;
+
+const MODEL_GEOMETRY = JSON.parse(
+  readFileSync(new URL("./model-geometry.json", import.meta.url), "utf8")
+) as ModelGeometryLibrary;
 
 const RAW_JSON_NUMBER_PREFIX = "__sable_raw_json_number__:";
 
@@ -153,7 +176,9 @@ export function createFancyEntity(identifier: string): JsonObject {
 interface ModelChannel {
   readonly name: string;
   readonly texture: string;
-  readonly cubes: readonly JsonObject[];
+  readonly textureSize: readonly [number, number];
+  readonly bones: readonly LibraryBone[];
+  readonly wrapperRotation?: readonly [number, number, number];
 }
 
 function faceUvMap(faces: readonly FullFace[]): JsonObject {
@@ -162,84 +187,142 @@ function faceUvMap(faces: readonly FullFace[]): JsonObject {
   return uv;
 }
 
-function fullBlockChannels(description: JsonObject): ModelChannel[] {
-  const textures = description.textures as Record<FullFace, string>;
-  const byTexture = new Map<string, FullFace[]>();
-  for (const face of FULL_FACES) {
-    const faces = byTexture.get(textures[face]);
-    if (faces) faces.push(face);
-    else byTexture.set(textures[face], [face]);
-  }
-  return [...byTexture].map(([texture, faces]) => ({
-    name: faces[0]!,
-    texture,
-    cubes: [{ origin: [-8, -24, -8], size: [16, 16, 16], uv: faceUvMap(faces) }]
-  }));
-}
-
-function rootChannels(description: JsonObject): ModelChannel[] {
-  const textures = description.textures as { top: string; side: string };
-  const pillars: readonly (readonly [number, number])[] = [[-8, -8], [3, -8], [-8, 3], [3, 3]];
-  const cubesFor = (faces: readonly FullFace[]): JsonObject[] => pillars.map(([x, z]) => ({
-    origin: [x, -24, z],
-    size: [5, 16, 5],
-    uv: faceUvMap(faces)
-  }));
-  return [
-    { name: "side", texture: textures.side, cubes: cubesFor(["north", "south", "east", "west"]) },
-    { name: "top", texture: textures.top, cubes: cubesFor(["up", "down"]) }
-  ];
-}
-
-function defaultChannelCubes(model: CompiledModel): JsonObject[] {
-  const description = model.model as JsonObject;
-  if (description.type === "chest") {
-    return [{ origin: [-7, -24, -7], size: [14, 10, 14], uv: [0, 19] }];
-  }
-  if (description.type === "cocoa") {
-    const age = Number(description.age);
-    const size = [6, 8, 10][age] ?? 6;
-    const depth = [5, 7, 9][age] ?? 5;
-    const offset = { north: [0, 0, -5], south: [0, 0, 5], east: [5, 0, 0], west: [-5, 0, 0] }[String(description.facing)] ?? [0, 0, 0];
-    return [{ origin: [-size / 2 + offset[0]!, -20 + offset[1]!, -depth / 2 + offset[2]!], size: [size, size, depth], uv: [0, 0] }];
-  }
-  if (description.type === "vine") {
-    const faces = description.faces as string[];
-    const result: JsonObject[] = [];
-    if (faces.includes("north")) result.push({ origin: [-8, -24, -7.99], size: [16, 16, 0.01], uv: [0, 0] });
-    if (faces.includes("south")) result.push({ origin: [-8, -24, 7.98], size: [16, 16, 0.01], uv: [0, 0] });
-    if (faces.includes("east")) result.push({ origin: [7.98, -24, -8], size: [0.01, 16, 16], uv: [0, 0] });
-    if (faces.includes("west")) result.push({ origin: [-7.99, -24, -8], size: [0.01, 16, 16], uv: [0, 0] });
-    if (faces.includes("up")) result.push({ origin: [-8, -23.99, -8], size: [16, 0.01, 16], uv: [0, 0] });
-    return result;
-  }
-  if (description.type === "hanging_roots" || description.type === "pale_hanging_moss") {
-    return [
-      { origin: [-8, -24, -0.01], size: [16, 16, 0.02], uv: [0, 0] },
-      { origin: [-0.01, -24, -8], size: [0.02, 16, 16], uv: [0, 0] }
-    ];
-  }
-  if (description.type === "mangrove_propagule") {
-    const height = description.hanging ? 4 + Number(description.stage) * 2 : 10;
-    return [
-      { origin: [-1, -24, -1], size: [2, height, 2], uv: [0, 0] },
-      { origin: [-4, -24 + height - 2, -0.01], size: [8, 4, 0.02], uv: [0, 0] },
-      { origin: [-0.01, -24 + height - 2, -4], size: [0.02, 4, 8], uv: [0, 0] }
-    ];
-  }
-  return [{ origin: [-8, -24, -8], size: [16, 16, 16], uv: [0, 0] }];
+function libraryChannels(type: string, variant: string): Readonly<Record<string, LibraryChannel>> {
+  const channels = MODEL_GEOMETRY[type]?.[variant]?.channels;
+  if (!channels) throw new Error(`Model geometry library is missing ${type}/${variant}.`);
+  return channels;
 }
 
 function modelChannels(model: CompiledModel): ModelChannel[] {
   const description = model.model as JsonObject;
-  if (description.type === "full_block") return fullBlockChannels(description);
-  if (description.type === "mangrove_roots" || description.type === "muddy_mangrove_roots") {
-    return rootChannels(description);
+  const type = String(description.type);
+  if (type === "full_block") {
+    const textures = description.textures as Record<FullFace, string>;
+    const byTexture = new Map<string, FullFace[]>();
+    for (const face of FULL_FACES) {
+      const faces = byTexture.get(textures[face]);
+      if (faces) faces.push(face);
+      else byTexture.set(textures[face], [face]);
+    }
+    return [...byTexture].map(([texture, faces]) => ({
+      name: faces[0]!,
+      texture,
+      textureSize: [16, 16],
+      bones: [{
+        name: "slot_{s}",
+        pivot: [0, -16, 0],
+        cubes: [{ origin: [-8, -24, -8], size: [16, 16, 16], uv: faceUvMap(faces) }]
+      }]
+    }));
+  }
+  if (type === "pillar" || type === "creaking_heart") {
+    const textures = description.textures as { side: string; top: string };
+    const variant = type === "creaking_heart" ? String(description.axis) : "default";
+    const wrapper = type === "pillar" ? pillarWrapperRotation(String(description.axis)) : undefined;
+    return Object.entries(libraryChannels(type, variant)).map(([name, channel]) => ({
+      name,
+      texture: name === "top" ? textures.top : textures.side,
+      textureSize: channel.textureSize,
+      bones: channel.bones,
+      ...(wrapper ? { wrapperRotation: wrapper } : {})
+    }));
+  }
+  if (type === "bee_nest") {
+    const textures = description.textures as Record<"down" | "up" | "front" | "side", string>;
+    const wrapper = beeNestWrapperRotation(Number(description.direction));
+    return Object.entries(libraryChannels(type, "default")).map(([name, channel]) => ({
+      name,
+      texture: textures[name as "down" | "up" | "front" | "side"],
+      textureSize: channel.textureSize,
+      bones: channel.bones,
+      ...(wrapper ? { wrapperRotation: wrapper } : {})
+    }));
+  }
+  if (type === "mangrove_roots") {
+    const textures = description.textures as { side: string; top: string };
+    return Object.entries(libraryChannels(type, "default")).map(([name, channel]) => ({
+      name,
+      texture: name === "top" ? textures.top : textures.side,
+      textureSize: channel.textureSize,
+      bones: channel.bones
+    }));
   }
   const texture = typeof description.texture === "string"
     ? description.texture
     : "textures/blocks/missing_tile";
-  return [{ name: "default", texture, cubes: defaultChannelCubes(model) }];
+  if (type === "chest") {
+    const channel = libraryChannels(type, "default").default!;
+    const turn = QUARTER_TURN_BY_DIRECTION[String(description.facing)] ?? 0;
+    return [{
+      name: "default",
+      texture,
+      textureSize: channel.textureSize,
+      bones: channel.bones,
+      wrapperRotation: [0, 180 + turn * 90, 0]
+    }];
+  }
+  if (type === "cocoa") {
+    const channel = libraryChannels(type, String(description.age)).default!;
+    const direction = Number(description.direction);
+    return [{
+      name: "default",
+      texture,
+      textureSize: channel.textureSize,
+      bones: channel.bones,
+      ...(direction ? { wrapperRotation: [0, direction * 90, 0] } : {})
+    }];
+  }
+  if (type === "vine") {
+    const channel = libraryChannels(type, "default").default!;
+    const faces = new Set((description.faces as string[]).map(face => `vine_${face}_{s}`));
+    return [{
+      name: "default",
+      texture,
+      textureSize: channel.textureSize,
+      bones: channel.bones.filter(bone => bone.name === "slot_{s}" || faces.has(bone.name))
+    }];
+  }
+  if (type === "mangrove_propagule") {
+    const channel = libraryChannels(type, String(description.stage)).default!;
+    return [{ name: "default", texture, textureSize: channel.textureSize, bones: channel.bones }];
+  }
+  const channel = libraryChannels(type, "default").default!;
+  return [{ name: "default", texture, textureSize: channel.textureSize, bones: channel.bones }];
+}
+
+function pillarWrapperRotation(axis: string): readonly [number, number, number] | undefined {
+  if (axis === "x") return [0, 0, 90];
+  if (axis === "z") return [90, 0, 0];
+  return undefined;
+}
+
+function beeNestWrapperRotation(direction: number): readonly [number, number, number] | undefined {
+  const modelDirection = direction === 0 ? 0 : 4 - direction;
+  const yaw = (modelDirection - 2) * 90;
+  return yaw === 0 ? undefined : [0, yaw, 0];
+}
+
+function instantiateBones(
+  channel: Pick<ModelChannel, "bones" | "wrapperRotation">,
+  slot: number,
+  parent: string,
+  namePrefix = ""
+): JsonObject[] {
+  return channel.bones.map((bone, index) => {
+    const record: JsonObject = { name: namePrefix + bone.name.replaceAll("{s}", String(slot)) };
+    record.parent = bone.parent
+      ? namePrefix + bone.parent.replaceAll("{s}", String(slot))
+      : parent;
+    if (bone.pivot) record.pivot = bone.pivot;
+    const rotation = index === 0 ? channel.wrapperRotation ?? bone.rotation : bone.rotation;
+    if (rotation) record.rotation = rotation;
+    if (bone.cubes) record.cubes = bone.cubes;
+    return record;
+  });
+}
+
+function channelBoneNames(channel: Pick<ModelChannel, "bones">, slot: number, namePrefix = ""): string[] {
+  return channel.bones.map(bone => namePrefix + bone.name.replaceAll("{s}", String(slot)));
 }
 
 function isTintMaterial(model: CompiledModel): boolean {
@@ -254,15 +337,25 @@ function hasFixedTint(model: CompiledModel): boolean {
   return isTintMaterial(model) && model.tint?.method === "fixed";
 }
 
-function slotBoneRotation(model: CompiledModel): readonly [number, number, number] | undefined {
-  const description = model.model as JsonObject;
-  if (description.type !== "chest") return undefined;
-  const turn = QUARTER_TURN_BY_DIRECTION[String(description.facing)] ?? 0;
-  return turn === 0 ? undefined : [0, turn * -90, 0];
+function baseMaterial(model: CompiledModel): string {
+  if (model.material === "opaque") return "opaque_block";
+  return model.model.type === "chest" ? "alpha_block" : "alpha_block_color";
+}
+
+// Mirrors TreePhysics: leaf-style cutout blocks render without the shared
+// 0.88 light multiplier, every other fragment controller keeps it.
+function lightColorMultiplier(model: CompiledModel): JsonObject {
+  return model.model.type === "full_block" && model.material !== "opaque"
+    ? {}
+    : { light_color_multiplier: 0.88 };
+}
+
+function isChestModel(model: CompiledModel): boolean {
+  return model.model.type === "chest";
 }
 
 function stateBits(model: CompiledModel): number {
-  return model.model.type === "chest" ? 1 : 0;
+  return isChestModel(model) ? 1 : 0;
 }
 
 function modelKeyName(model: CompiledModel, format: "dense" | "sparse"): string {
@@ -311,6 +404,18 @@ function wordReadMolang(): string[] {
   return Array.from({ length: 26 }, (_, index) => `v.s${index} = q.property('sable:s${index}');`);
 }
 
+/** The chest lid eases open and closed with the TreePhysics timing curve. */
+function lidEasingMolang(slotCount: number, openCondition: (slot: number) => string): string[] {
+  const result: string[] = [];
+  for (let slot = 0; slot < slotCount; slot++) {
+    result.push(
+      `v.lid_${slot} = v.lids_initialized ? math.clamp(v.lid_${slot} + (${openCondition(slot)} ? 2 : -2) * q.delta_time, 0, 1) : (${openCondition(slot)});`
+    );
+  }
+  result.push("v.lids_initialized = 1;");
+  return result;
+}
+
 function preAnimation(model: CompiledModel, format: "dense" | "sparse"): string[] {
   const bits = stateBits(model);
   const result = [
@@ -323,6 +428,9 @@ function preAnimation(model: CompiledModel, format: "dense" | "sparse"): string[
   result.push(...wordReadMolang());
   for (let slot = 0; slot < slotCountOf(format); slot++) {
     result.push(`v.c${slot} = ${decodeExpression(format, slot, bits)};`);
+  }
+  if (isChestModel(model)) {
+    result.push(...lidEasingMolang(slotCountOf(format), slot => `v.c${slot} > 1`));
   }
   return result;
 }
@@ -348,13 +456,13 @@ export function createFancyClientEntity(model: CompiledModel, format: "dense" | 
   const channels = modelChannels(model);
   const animations: JsonObject = { transform: `animation.${key}.transform` };
   const animate: unknown[] = ["transform"];
-  if (model.model.type === "chest") {
-    animations.state = `animation.${key}.state`;
-    animate.push("state");
+  const initialize = ["v.pose_initialized = 0;", "v.pose_ready = 0;"];
+  if (isChestModel(model)) {
+    animations.lid_pose = `animation.${key}.lid_pose`;
+    animate.push("lid_pose");
+    initialize.push("v.lids_initialized = 0;");
   }
-  const materials: JsonObject = {
-    default: model.material === "opaque" ? "opaque_block" : "alpha_block_color"
-  };
+  const materials: JsonObject = { default: baseMaterial(model) };
   if (isTintMaterial(model)) materials.tint_multiply = "tint_multiply";
   const textures: JsonObject = {};
   for (const channel of channels) textures[channel.name] = channel.texture;
@@ -386,7 +494,7 @@ export function createFancyClientEntity(model: CompiledModel, format: "dense" | 
         render_controllers: renderControllers,
         animations,
         scripts: {
-          initialize: ["v.pose_initialized = 0;", "v.pose_ready = 0;"],
+          initialize,
           animate,
           pre_animation: preAnimation(model, format)
         }
@@ -405,78 +513,57 @@ function rootBoneChain(): JsonObject[] {
   ];
 }
 
-function slotBones(
-  model: CompiledModel,
-  format: "dense" | "sparse",
-  cubes: readonly JsonObject[],
-  withLid: boolean
-): JsonObject[] {
-  const rotation = slotBoneRotation(model);
-  const bones: JsonObject[] = [];
-  for (let slot = 0; slot < slotCountOf(format); slot++) {
-    bones.push({
-      name: `slot_${slot}`,
-      parent: "model_offset",
-      pivot: [0, -16, 0],
-      ...(rotation ? { rotation } : {}),
-      cubes: structuredClone(cubes) as unknown[]
-    });
-    if (withLid) {
-      bones.push({
-        name: `lid_${slot}`,
-        parent: `slot_${slot}`,
-        pivot: [0, -11, 7],
-        cubes: [{ origin: [-7, -11, -7], size: [14, 5, 14], uv: [0, 0] }]
-      });
-    }
-  }
-  return bones;
+function geometryDescription(identifier: string, textureSize: readonly [number, number]): JsonObject {
+  return {
+    identifier,
+    texture_width: textureSize[0],
+    texture_height: textureSize[1],
+    visible_bounds_width: 128,
+    visible_bounds_height: 128,
+    visible_bounds_offset: [0, 0, 0]
+  };
 }
 
 function channelGeometry(
-  model: CompiledModel,
   format: "dense" | "sparse",
   key: string,
   channel: ModelChannel
 ): JsonObject {
+  const bones: JsonObject[] = [...rootBoneChain()];
+  for (let slot = 0; slot < slotCountOf(format); slot++) {
+    bones.push(...instantiateBones(channel, slot, "model_offset"));
+  }
   return {
-    description: {
-      identifier: `geometry.${key}.${channel.name}`,
-      texture_width: 16,
-      texture_height: 16,
-      visible_bounds_width: 128,
-      visible_bounds_height: 128,
-      visible_bounds_offset: [0, 0, 0]
-    },
-    bones: [
-      ...rootBoneChain(),
-      ...slotBones(model, format, channel.cubes, model.model.type === "chest" && channel.name === "default")
-    ]
+    description: geometryDescription(`geometry.${key}.${channel.name}`, channel.textureSize),
+    bones
   };
 }
 
 /**
- * The multiply layer re-draws the base cubes with every face pointed at one
- * climate texel per slot: the sampled coordinate advances by 16 texture pixels
- * per block along the gradient axis, and the render controller's uv_anim maps
- * that ramp onto the encoded climate span.
+ * The multiply layer re-draws the model's bones with every face pointed at one
+ * climate texel per slot; the render controller's uv_anim maps that ramp onto
+ * the encoded climate span.
  */
-function uniqueModelCubeShapes(model: CompiledModel): JsonObject[] {
-  const shapes = new Map<string, JsonObject>();
-  for (const channel of modelChannels(model)) {
-    for (const cube of channel.cubes) {
-      shapes.set(JSON.stringify([cube.origin, cube.size]), cube);
+function colormapClimateBones(channels: readonly ModelChannel[], slot: number, uv: number): JsonObject[] {
+  const bones: JsonObject[] = [];
+  channels.forEach((channel, index) => {
+    const prefix = channels.length > 1 ? `c${index}_` : "";
+    for (const bone of instantiateBones(channel, slot, "model_offset", prefix)) {
+      const cubes = bone.cubes as JsonObject[] | undefined;
+      if (cubes) {
+        bone.cubes = cubes.map(cube => ({
+          origin: cube.origin,
+          size: cube.size,
+          uv: Object.fromEntries(Object.keys(cube.uv as JsonObject).map(face => [
+            face,
+            { uv: [uv, uv], uv_size: [16, 16] }
+          ]))
+        }));
+      }
+      bones.push(bone);
     }
-  }
-  return [...shapes.values()];
-}
-
-function colormapCube(cube: JsonObject, uv: number): JsonObject {
-  return {
-    origin: cube.origin,
-    size: cube.size,
-    uv: Object.fromEntries(FULL_FACES.map(face => [face, { uv: [uv, uv], uv_size: [16, 16] }]))
-  };
+  });
+  return bones;
 }
 
 function colormapGeometry(
@@ -484,29 +571,16 @@ function colormapGeometry(
   key: string,
   axis: "x" | "z"
 ): JsonObject {
-  const shapes = uniqueModelCubeShapes(model);
+  const channels = modelChannels(model);
   const bones: JsonObject[] = [...rootBoneChain()];
   for (let slot = 0; slot < DENSE_SLOT_COUNT; slot++) {
     const coordinate = axis === "x"
       ? slot % DENSE_WIDTH
       : Math.floor(slot / DENSE_WIDTH) % DENSE_DEPTH;
-    const uv = coordinate * 16;
-    bones.push({
-      name: `slot_${slot}`,
-      parent: "model_offset",
-      pivot: [0, -16, 0],
-      cubes: shapes.map(cube => colormapCube(cube, uv))
-    });
+    bones.push(...colormapClimateBones(channels, slot, coordinate * 16));
   }
   return {
-    description: {
-      identifier: `geometry.${key}.colormap_${axis}`,
-      texture_width: DENSE_WIDTH * 16,
-      texture_height: DENSE_DEPTH * 16,
-      visible_bounds_width: 128,
-      visible_bounds_height: 128,
-      visible_bounds_offset: [0, 0, 0]
-    },
+    description: geometryDescription(`geometry.${key}.colormap_${axis}`, [DENSE_WIDTH * 16, DENSE_DEPTH * 16]),
     bones
   };
 }
@@ -514,7 +588,7 @@ function colormapGeometry(
 export function createFancyGeometry(model: CompiledModel, format: "dense" | "sparse"): JsonObject {
   const key = modelKeyName(model, format);
   const geometries: JsonObject[] = modelChannels(model).map(channel => (
-    channelGeometry(model, format, key, channel)
+    channelGeometry(format, key, channel)
   ));
   if (isTintMaterial(model) && format === "dense") {
     geometries.push(colormapGeometry(model, key, "x"), colormapGeometry(model, key, "z"));
@@ -538,58 +612,56 @@ export function createFancyAnimation(model: CompiledModel, format: "dense" | "sp
     }
   };
   for (let slot = 0; slot < slotCountOf(format); slot++) {
-    const pos = slotPosition(format, slot);
     bones[`slot_${slot}`] = {
-      position: pos,
+      position: slotPosition(format, slot),
       scale: `v.c${slot} > 0`
     };
-    if (model.model.type === "chest") {
-      bones[`lid_${slot}`] = {
-        rotation: [`-90 * math.clamp(v.c${slot} - 1, 0, 1)`, 0, 0]
-      };
-    }
   }
   const animations: JsonObject = {
     [`animation.${key}.transform`]: { bones, loop: true }
   };
-  if (model.model.type === "chest") {
-    animations[`animation.${key}.state`] = { bones: { root: {} }, loop: true };
+  if (isChestModel(model)) {
+    const lidBones: JsonObject = {};
+    for (let slot = 0; slot < slotCountOf(format); slot++) {
+      lidBones[`lid_${slot}`] = {
+        rotation: [`-90 * (1 - (1 - v.lid_${slot}) * (1 - v.lid_${slot}) * (1 - v.lid_${slot}))`, 0, 0]
+      };
+    }
+    animations[`animation.${key}.lid_pose`] = { bones: lidBones, loop: true };
   }
   return { format_version: "1.8.0", animations };
 }
 
 function slotVisibility(
-  model: CompiledModel,
   format: "dense" | "sparse",
   channel: ModelChannel
 ): JsonObject[] {
   const visibility: JsonObject[] = [{ "*": false }];
-  const withLid = model.model.type === "chest" && channel.name === "default";
   for (let slot = 0; slot < slotCountOf(format); slot++) {
-    visibility.push({ [`slot_${slot}`]: `(v.c${slot} > 0)` });
-    if (withLid) visibility.push({ [`lid_${slot}`]: `(v.c${slot} > 0)` });
+    for (const name of channelBoneNames(channel, slot)) {
+      visibility.push({ [name]: `(v.c${slot} > 0)` });
+    }
   }
   return visibility;
 }
 
-// Mirrors TreePhysics: leaf-style cutout blocks render without the shared
-// 0.88 light multiplier, every other fragment controller keeps it.
-function lightColorMultiplier(model: CompiledModel): JsonObject {
-  return model.model.type === "full_block" && model.material !== "opaque"
-    ? {}
-    : { light_color_multiplier: 0.88 };
-}
-
 function denseColormapController(
   model: CompiledModel,
-  format: "dense" | "sparse",
-  key: string,
-  channel: ModelChannel
+  channels: readonly ModelChannel[]
 ): JsonObject {
+  const visibility: JsonObject[] = [{ "*": false }];
+  for (let slot = 0; slot < DENSE_SLOT_COUNT; slot++) {
+    channels.forEach((channel, index) => {
+      const prefix = channels.length > 1 ? `c${index}_` : "";
+      for (const name of channelBoneNames(channel, slot, prefix)) {
+        visibility.push({ [name]: `(v.c${slot} > 0)` });
+      }
+    });
+  }
   return {
     arrays: {
       geometries: {
-        "Array.colormap": [`Geometry.colormap_x`, `Geometry.colormap_z`]
+        "Array.colormap": ["Geometry.colormap_x", "Geometry.colormap_z"]
       },
       textures: { "Array.colormaps": COLORMAP_TEXTURE_ARRAY }
     },
@@ -606,7 +678,7 @@ function denseColormapController(
         "v.tint_uniform ? 0 : (((v.tint_3) - (v.tint_1)) * 255 / 7936)"
       ]
     },
-    part_visibility: slotVisibility(model, format, channel)
+    part_visibility: visibility
   };
 }
 
@@ -629,7 +701,10 @@ function sparseColormapController(channel: ModelChannel, slot: number): JsonObje
         `v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / ${SPARSE_SIZE})`
       ]
     },
-    part_visibility: [{ "*": false }, { [`slot_${slot}`]: `(v.c${slot} > 0)` }]
+    part_visibility: [
+      { "*": false },
+      ...channelBoneNames(channel, slot).map(name => ({ [name]: `(v.c${slot} > 0)` }))
+    ]
   };
 }
 
@@ -643,7 +718,7 @@ export function createFancyRenderController(model: CompiledModel, format: "dense
       ...lightColorMultiplier(model),
       materials: [{ "*": "Material.default" }],
       textures: [`Texture.${channel.name}`],
-      part_visibility: slotVisibility(model, format, channel)
+      part_visibility: slotVisibility(format, channel)
     };
   }
   if (isTintMaterial(model)) {
@@ -651,12 +726,7 @@ export function createFancyRenderController(model: CompiledModel, format: "dense
       throw new Error(`Model ${model.key} uses a tint material with multiple texture channels.`);
     }
     if (format === "dense") {
-      controllers[`controller.render.${key}.tint_multiply`] = denseColormapController(
-        model,
-        format,
-        key,
-        channels[0]!
-      );
+      controllers[`controller.render.${key}.tint_multiply`] = denseColormapController(model, channels);
     } else {
       for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
         controllers[`controller.render.${key}.tint_multiply_${slot}`] = sparseColormapController(
@@ -708,8 +778,9 @@ function poolTintMembers(pool: CompiledPool): number[] {
   return pool.members.flatMap((member, family) => isTintMaterial(member) ? [family] : []);
 }
 
-function poolMaterialKind(member: CompiledModel): "opaque" | "color" {
-  return member.material === "opaque" ? "opaque" : "color";
+function poolMaterialKind(member: CompiledModel): "opaque" | "cutout" | "color" {
+  if (member.material === "opaque") return "opaque";
+  return member.model.type === "chest" ? "cutout" : "color";
 }
 
 function poolSlotCondition(slot: number, family: number): string {
@@ -721,21 +792,20 @@ export function createPoolClientEntity(pool: CompiledPool): JsonObject {
   const places = poolPlaces(pool);
   const foliage = poolFoliageMembers(pool);
   const fixed = poolFixedMembers(pool);
+  const chestMembers = pool.members.flatMap((member, family) => isChestModel(member) ? [family] : []);
   const materials: JsonObject = {};
   const textures: JsonObject = {};
   const geometry: JsonObject = {};
   const renderControllers: unknown[] = [];
   pool.members.forEach((member, family) => {
-    materials[poolMaterialKind(member)] = member.material === "opaque"
-      ? "opaque_block"
-      : "alpha_block_color";
+    materials[poolMaterialKind(member)] = baseMaterial(member);
     for (const channel of modelChannels(member)) {
       textures[`m${family}_${channel.name}`] = channel.texture;
       geometry[`m${family}_${channel.name}`] = `geometry.${key}.m${family}_${channel.name}`;
       renderControllers.push(`controller.render.${key}.m${family}_${channel.name}`);
     }
   });
-  if (foliage.length > 0 || fixed.length > 0) {
+  if (poolTintMembers(pool).length > 0) {
     materials.tint_multiply = "tint_multiply";
     Object.assign(textures, COLORMAP_TEXTURES);
     geometry.tint = `geometry.${key}.tint`;
@@ -750,19 +820,30 @@ export function createPoolClientEntity(pool: CompiledPool): JsonObject {
   for (const family of fixed) {
     renderControllers.push(`controller.render.${key}.tint_multiply_m${family}`);
   }
-  const preAnimation = [...poseMolang()];
-  if (foliage.length > 0) preAnimation.push(...tintDecodeMolang());
-  preAnimation.push(...wordReadMolang());
+  const initialize = ["v.pose_initialized = 0;", "v.pose_ready = 0;"];
+  const animations: JsonObject = { transform: `animation.${key}.transform` };
+  const animate: unknown[] = ["transform"];
+  if (chestMembers.length > 0) {
+    animations.lid_pose = `animation.${key}.lid_pose`;
+    animate.push("lid_pose");
+    initialize.push("v.lids_initialized = 0;");
+  }
+  const preAnimationLines = [...poseMolang()];
+  if (foliage.length > 0) preAnimationLines.push(...tintDecodeMolang());
+  preAnimationLines.push(...wordReadMolang());
   for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
-    preAnimation.push(`v.o${slot} = math.floor(v.s${slot} / ${places.occupiedPlace});`);
-    preAnimation.push(
+    preAnimationLines.push(`v.o${slot} = math.floor(v.s${slot} / ${places.occupiedPlace});`);
+    preAnimationLines.push(
       `v.f${slot} = math.mod(math.floor(v.s${slot} / ${places.familyPlace}), ${2 ** pool.familyBits});`
     );
     if (pool.stateBits > 0) {
-      preAnimation.push(
+      preAnimationLines.push(
         `v.st${slot} = math.mod(math.floor(v.s${slot} / ${places.familyPlace * 2 ** pool.familyBits}), ${2 ** pool.stateBits});`
       );
     }
+  }
+  if (chestMembers.length > 0) {
+    preAnimationLines.push(...lidEasingMolang(SPARSE_SLOT_COUNT, slot => `v.st${slot} >= 1`));
   }
   return {
     format_version: "1.20.30",
@@ -773,11 +854,11 @@ export function createPoolClientEntity(pool: CompiledPool): JsonObject {
         textures,
         geometry,
         render_controllers: renderControllers,
-        animations: { transform: `animation.${key}.transform` },
+        animations,
         scripts: {
-          initialize: ["v.pose_initialized = 0;", "v.pose_ready = 0;"],
-          animate: ["transform"],
-          pre_animation: preAnimation
+          initialize,
+          animate,
+          pre_animation: preAnimationLines
         }
       }
     }
@@ -788,36 +869,13 @@ export function createPoolGeometry(pool: CompiledPool): JsonObject {
   const key = poolKeyName(pool);
   const geometries: JsonObject[] = [];
   pool.members.forEach((member, family) => {
-    const rotation = slotBoneRotation(member);
     for (const channel of modelChannels(member)) {
-      const withLid = member.model.type === "chest" && channel.name === "default";
       const bones: JsonObject[] = [...rootBoneChain()];
       for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
-        bones.push({
-          name: `slot_${slot}`,
-          parent: "model_offset",
-          pivot: [0, -16, 0],
-          ...(rotation ? { rotation } : {}),
-          cubes: structuredClone(channel.cubes) as unknown[]
-        });
-        if (withLid) {
-          bones.push({
-            name: `lid_${slot}`,
-            parent: `slot_${slot}`,
-            pivot: [0, -11, 7],
-            cubes: [{ origin: [-7, -11, -7], size: [14, 5, 14], uv: [0, 0] }]
-          });
-        }
+        bones.push(...instantiateBones(channel, slot, "model_offset"));
       }
       geometries.push({
-        description: {
-          identifier: `geometry.${key}.m${family}_${channel.name}`,
-          texture_width: 16,
-          texture_height: 16,
-          visible_bounds_width: 128,
-          visible_bounds_height: 128,
-          visible_bounds_offset: [0, 0, 0]
-        },
+        description: geometryDescription(`geometry.${key}.m${family}_${channel.name}`, channel.textureSize),
         bones
       });
     }
@@ -828,27 +886,36 @@ export function createPoolGeometry(pool: CompiledPool): JsonObject {
     for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
       bones.push({ name: `slot_${slot}`, parent: "model_offset", pivot: [0, -16, 0] });
       for (const family of tintMembers) {
-        bones.push({
-          name: `tint_m${family}_${slot}`,
-          parent: `slot_${slot}`,
-          pivot: [0, -16, 0],
-          cubes: uniqueModelCubeShapes(pool.members[family]!).map(cube => colormapCube(cube, 0))
+        const channels = modelChannels(pool.members[family]!);
+        channels.forEach((channel, index) => {
+          const prefix = `t${family}_${channels.length > 1 ? `c${index}_` : ""}`;
+          for (const bone of colormapTintBones(channel, slot, prefix)) bones.push(bone);
         });
       }
     }
     geometries.push({
-      description: {
-        identifier: `geometry.${key}.tint`,
-        texture_width: 16,
-        texture_height: 16,
-        visible_bounds_width: 128,
-        visible_bounds_height: 128,
-        visible_bounds_offset: [0, 0, 0]
-      },
+      description: geometryDescription(`geometry.${key}.tint`, [16, 16]),
       bones
     });
   }
   return { format_version: "1.16.0", "minecraft:geometry": geometries };
+}
+
+function colormapTintBones(channel: ModelChannel, slot: number, prefix: string): JsonObject[] {
+  return instantiateBones(channel, slot, `slot_${slot}`, prefix).map(bone => {
+    const cubes = bone.cubes as JsonObject[] | undefined;
+    if (cubes) {
+      bone.cubes = cubes.map(cube => ({
+        origin: cube.origin,
+        size: cube.size,
+        uv: Object.fromEntries(Object.keys(cube.uv as JsonObject).map(face => [
+          face,
+          { uv: [0, 0], uv_size: [16, 16] }
+        ]))
+      }));
+    }
+    return bone;
+  });
 }
 
 export function createPoolAnimation(pool: CompiledPool): JsonObject {
@@ -867,7 +934,7 @@ export function createPoolAnimation(pool: CompiledPool): JsonObject {
       ]
     }
   };
-  const hasLids = pool.members.some(member => member.model.type === "chest");
+  const hasLids = pool.members.some(isChestModel);
   for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
     bones[`slot_${slot}`] = {
       position: [
@@ -877,16 +944,18 @@ export function createPoolAnimation(pool: CompiledPool): JsonObject {
       ],
       scale: `v.o${slot}`
     };
-    if (hasLids) {
-      bones[`lid_${slot}`] = {
-        rotation: [`-90 * math.clamp(v.st${slot}, 0, 1)`, 0, 0]
+  }
+  const animations: JsonObject = { [`animation.${key}.transform`]: { bones, loop: true } };
+  if (hasLids) {
+    const lidBones: JsonObject = {};
+    for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
+      lidBones[`lid_${slot}`] = {
+        rotation: [`-90 * (1 - (1 - v.lid_${slot}) * (1 - v.lid_${slot}) * (1 - v.lid_${slot}))`, 0, 0]
       };
     }
+    animations[`animation.${key}.lid_pose`] = { bones: lidBones, loop: true };
   }
-  return {
-    format_version: "1.8.0",
-    animations: { [`animation.${key}.transform`]: { bones, loop: true } }
-  };
+  return { format_version: "1.8.0", animations };
 }
 
 export function createPoolRenderController(pool: CompiledPool): JsonObject {
@@ -894,13 +963,11 @@ export function createPoolRenderController(pool: CompiledPool): JsonObject {
   const places = poolPlaces(pool);
   const controllers: JsonObject = {};
   pool.members.forEach((member, family) => {
-    const withLid = member.model.type === "chest";
     for (const channel of modelChannels(member)) {
       const visibility: JsonObject[] = [{ "*": false }];
       for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
-        visibility.push({ [`slot_${slot}`]: poolSlotCondition(slot, family) });
-        if (withLid && channel.name === "default") {
-          visibility.push({ [`lid_${slot}`]: poolSlotCondition(slot, family) });
+        for (const name of channelBoneNames(channel, slot)) {
+          visibility.push({ [name]: poolSlotCondition(slot, family) });
         }
       }
       controllers[`controller.render.${key}.m${family}_${channel.name}`] = {
@@ -916,6 +983,16 @@ export function createPoolRenderController(pool: CompiledPool): JsonObject {
   for (let slot = 0; slot < SPARSE_SLOT_COUNT && foliage.length > 0; slot++) {
     const gradientX = `(math.mod(v.s${slot}, ${places.xSpan}) / ${places.xSpan})`;
     const gradientZ = `(math.mod(math.floor(v.s${slot} / ${places.xSpan * places.ySpan}), ${places.zSpan}) / ${places.zSpan})`;
+    const visibility: JsonObject[] = [{ "*": false }];
+    for (const family of foliage) {
+      const channels = modelChannels(pool.members[family]!);
+      channels.forEach((channel, index) => {
+        const prefix = `t${family}_${channels.length > 1 ? `c${index}_` : ""}`;
+        for (const name of channelBoneNames(channel, slot, prefix)) {
+          visibility.push({ [name]: poolSlotCondition(slot, family) });
+        }
+      });
+    }
     controllers[`controller.render.${key}.tint_multiply_${slot}`] = {
       arrays: { textures: { "Array.colormaps": COLORMAP_TEXTURE_ARRAY } },
       geometry: "Geometry.tint",
@@ -931,10 +1008,7 @@ export function createPoolRenderController(pool: CompiledPool): JsonObject {
           `v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / (v.tint_axis_z ? ${places.zSpan} : ${places.xSpan}))`
         ]
       },
-      part_visibility: [
-        { "*": false },
-        ...foliage.map(family => ({ [`tint_m${family}_${slot}`]: poolSlotCondition(slot, family) }))
-      ]
+      part_visibility: visibility
     };
   }
   for (const family of poolFixedMembers(pool)) {
@@ -942,8 +1016,14 @@ export function createPoolRenderController(pool: CompiledPool): JsonObject {
     // sample covers every slot of that member.
     const palette = (pool.members[family]!.tint as { palette: number }).palette;
     const visibility: JsonObject[] = [{ "*": false }];
+    const channels = modelChannels(pool.members[family]!);
     for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
-      visibility.push({ [`tint_m${family}_${slot}`]: poolSlotCondition(slot, family) });
+      channels.forEach((channel, index) => {
+        const prefix = `t${family}_${channels.length > 1 ? `c${index}_` : ""}`;
+        for (const name of channelBoneNames(channel, slot, prefix)) {
+          visibility.push({ [name]: poolSlotCondition(slot, family) });
+        }
+      });
     }
     controllers[`controller.render.${key}.tint_multiply_m${family}`] = {
       geometry: "Geometry.tint",

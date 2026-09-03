@@ -73,18 +73,22 @@ type BlockRenderRegistration = {
 
 ### 模型
 
-`model.type` 决定几何形态，其余字段随类型而定。贴图路径使用资源包相对路径，不带扩展名。
+`model.type` 决定几何形态，其余字段随类型而定。几何、UV 与朝向旋转全部取自经过验证的几何库，与原版表现一致。贴图路径使用资源包相对路径，不带扩展名。
 
 | 类型 | 字段 | 说明 |
 | --- | --- | --- |
 | `full_block` | `textures.up/down/north/south/east/west` | 完整立方体，六面可绑定各自贴图；相同贴图的面自动合并为同一渲染通道。 |
-| `chest` | `texture`、`facing` | 箱体加箱盖，按 `facing`（`north/east/south/west`）旋转。提供运行时 `open: 0..1` 状态维度。 |
-| `cocoa` | `texture`、`facing`、`age` | 可可果，`age` 取 `0..2`。 |
-| `vine` | `texture`、`faces` | 藤蔓平面组合，`faces` 为 `north/south/east/west/up` 的非空子集。 |
-| `hanging_roots` | `texture` | 垂根交叉平面。 |
-| `pale_hanging_moss` | `texture`、`tip` | 苍白垂须，`tip` 为布尔值。 |
-| `mangrove_propagule` | `texture`、`hanging`、`stage` | 红树胎生苗，`stage` 取 `0..4`。 |
-| `mangrove_roots` / `muddy_mangrove_roots` | `textures.top`、`textures.side` | 根系柱体，端面与侧面分别绑定贴图。 |
+| `pillar` | `textures.side/top`、`axis` | 柱状方块（原木、木头、泥泞红树根）。`axis` 取 `y/x/z`，水平朝向为整体旋转，贴图方向与原版一致；全皮方块把 `top` 指向侧面贴图即可。 |
+| `chest` | `texture`、`facing` | 箱体、箱盖与锁，使用 64×64 实体图集（`textures/entity/chest/normal`），按 `facing`（`north/east/south/west`）旋转。提供运行时 `open: 0..1` 状态维度，箱盖带开合缓动。 |
+| `bee_nest` | `textures.down/up/front/side`、`direction` | 蜂巢式方向方块，`direction` 取 `0..3`，front 面随方向旋转。 |
+| `cocoa` | `texture`、`direction`、`age` | 可可果，含果柄，`age` 取 `0..2`，`direction` 取 `0..3`。 |
+| `vine` | `texture`、`faces` | 藤蔓面组合，`faces` 为 `south/west/north/east` 的子集，空数组表示不渲染。 |
+| `hanging_roots` | `texture` | 45° 斜置交叉平面。 |
+| `pale_hanging_moss` | `texture`、`tip` | 苍白垂须，与垂根同几何，`tip` 变体换贴图。 |
+| `mangrove_propagule` | `texture`、`stage` | 红树胎生苗（悬挂形态），`stage` 取 `0..4`；非悬挂状态请用 `vanilla` 回退。 |
+| `mangrove_roots` | `textures.side/top` | 红树根板壳结构，侧面与端面分别绑定贴图。 |
+| `creaking_heart` | `textures.side/top`、`axis` | 绞刑木之心，三轴专用几何。 |
+| `vanilla` | 无 | 该状态组合不走 fancy，回退到逐方块手持路线。 |
 
 ### 染色
 
