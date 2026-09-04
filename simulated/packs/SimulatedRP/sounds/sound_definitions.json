@@ -1,6 +1,24 @@
 {
   "format_version": "1.14.0",
   "sound_definitions": {
+    "ui.achievement.challenge_complete": {
+        "category": "ui",
+        "sounds": [
+            {
+                "name": "sounds/ui/achievement/challenge_complete",
+                "load_on_low_memory": true
+            }
+        ]
+    },
+    "ui.achievement.woosh": {
+        "category": "ui",
+        "sounds": [
+            {
+                "name": "sounds/ui/achievement/woosh",
+                "load_on_low_memory": false
+            }
+        ]
+    },
     "block.physics_assembler.assemble": {
       "category": "block",
       "subtitle": "subtitles.block.physics_assembler.assemble",

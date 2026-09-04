@@ -1,5 +1,7 @@
 {
     "ui_defs": [
-        "ui/simulated/physics_assembler.json"
+        "ui/simulated/block_screen/physics_assembler.json",
+        "ui/simulated/hud_screen/tip_actionbar.json",
+        "ui/simulated/hud_screen/achievement_toast.json"
     ]
 }

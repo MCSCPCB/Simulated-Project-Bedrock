@@ -15,7 +15,9 @@ simulated.gui.hold_tip.hold_to_disassemble=按住并拖拽以拆卸
 simulated.gui.hold_tip.hold_and_click_to_assemble=按住并拖拽，然后点击空处以组装
 simulated.gui.hold_tip.hold_and_click_to_disassemble=按住并拖拽，然后点击空处以拆卸
 
-#advancement.simulated.applied_kinematics=应用动力
+advancements.toast.task=§e进度已达成！
+advancement.chat.task=%s取得了进度%s
+advancement.simulated.applied_kinematics=应用动力
 #advancement.simulated.applied_kinematics.desc=获得物理结构的核心组件——物理组装器
 
 #simulated.ponder.physics_assembler_block_properties.header=方块的物理属性

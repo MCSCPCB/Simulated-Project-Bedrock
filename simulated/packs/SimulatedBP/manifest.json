@@ -11,7 +11,7 @@
         "description": "pack.description",
         "uuid": "8d58f9b5-4e65-4e5e-9f8d-5a6f9f8c1e21",
         "version": "1.0.0",
-        "min_engine_version": "1.26.30"
+        "min_engine_version": "1.26.40"
     },
     "modules": [
         {
@@ -30,11 +30,11 @@
     "dependencies": [
         {
             "module_name": "@minecraft/server",
-            "version": "2.6.0"
+            "version": "2.9.0"
         },
         {
             "module_name": "@minecraft/server-ui",
-            "version": "2.0.0"
+            "version": "2.1.0"
         },
         {
             "uuid": "31eeb6c9-1e43-4931-8bdc-55b32dddf2e4",

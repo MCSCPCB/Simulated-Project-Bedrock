@@ -1,0 +1,202 @@
+{
+    "namespace": "hud",
+    "toasty": {
+        "type": "panel",
+        "anchor_from": "top_right",
+        "anchor_to": "top_right",
+        "size": [
+            "100%",
+            "100%c"
+        ],
+        "max_size": [
+            "100%",
+            "50%"
+        ],
+        "controls": [
+            {
+                "stack_panel": {
+                    "type": "stack_panel",
+                    "anchor_from": "top_right",
+                    "anchor_to": "top_right",
+                    "use_child_anchors": true,
+                    "factory": {
+                        "name": "chat_item_factory",
+                        "max_children_size": 50,
+                        "control_ids": {
+                            "chat_item": "achievement_stacked@hud.achievement_stacked"
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "achievement_animation_in": {
+        "anim_type": "offset",
+        "easing": "out_quart",
+        "duration": 1.0,
+        "from": [
+            "14% + 180px",
+            30
+        ],
+        "to": [
+            0,
+            30
+        ],
+        "next": "@hud.achievement_animation_stay"
+    },
+    "achievement_animation_stay": {
+        "anim_type": "wait",
+        "duration": 6.7,
+        "next": "@hud.achievement_animation_out"
+    },
+    "achievement_animation_out": {
+        "anim_type": "offset",
+        "easing": "in_quart",
+        "duration": 1.0,
+        "from": [
+            0,
+            30
+        ],
+        "to": [
+            "14% + 180px",
+            30
+        ],
+        "destroy_at_end": "chat_grid_item"
+    },
+    "achievement_element": {
+        "layer": 1,
+        "type": "image",
+        "texture": "textures/ui/achievement_temp",
+        "anims": [
+            "@hud.achievement_animation_in"
+        ],
+        "$when_draw|default": "unknown",
+        "$content_text|default": "Unknown",
+        "$achievement_text|default": "Unknown",
+        "$achievement_icon|default": "textures/ui/crafting",
+        "clips_children": true,
+        "anchor_from": "bottom_right",
+        "anchor_to": "bottom_right",
+        "offset": [
+            0,
+            33
+        ],
+        "size": [
+            163,
+            33
+        ],
+        "uv_size": [
+            163,
+            32
+        ],
+        "$uv|default": [
+            0,
+            0
+        ],
+        "uv": "$uv",
+        "controls": [
+            {
+                "achievement_icon_texture": {
+                    "type": "image",
+                    "texture": "$achievement_icon",
+                    "layer": 3,
+                    "anchor_from": "right_middle",
+                    "anchor_to": "right_middle",
+                    "offset": [
+                        "-84.0%",
+                        "-2.4%"
+                    ],
+                    "size": [
+                        19,
+                        19
+                    ]
+                }
+            },
+            {
+                "achievement_title": {
+                    "type": "label",
+                    "color": "$main_header_text_color",
+                    "layer": 2,
+                    "shadow": true,
+                    "offset": [
+                        "18%",
+                        -5
+                    ],
+                    "text": "$achievement_text",
+                    "size": [
+                        "default",
+                        12
+                    ],
+                    "max_size": [
+                        "100%",
+                        "100%"
+                    ],
+                    "anchor_from": "left_middle",
+                    "anchor_to": "left_middle"
+                }
+            },
+            {
+                "achievement_content_texts": {
+                    "type": "label",
+                    "shadow": true,
+                    "anchor_from": "left_middle",
+                    "anchor_to": "left_middle",
+                    "color": "$main_header_text_color",
+                    "text": "$content_text",
+                    "layer": 2,
+                    "offset": [
+                        "18%",
+                        5
+                    ]
+                }
+            }
+        ],
+        "bindings": [
+            {
+                "binding_name": "#chat_text",
+                "binding_name_override": "#text",
+                "binding_type": "collection",
+                "binding_collection_name": "chat_text_grid",
+                "binding_condition": "once"
+            },
+            {
+                "binding_type": "view",
+                "source_property_name": "((('%.10s' * #text) = 'bob.toast;') and ((#text - ('%.10s' * #text)) = $when_draw))", //这个bob.toast不能改（再次强调
+                "target_property_name": "#visible"
+            }
+        ]
+    },
+    //成就实例注册
+    "achievement_stacked": {
+        "type": "panel",
+        "anchor_from": "top_right",
+        "anchor_to": "top_right",
+        "size": [
+            "100%c",
+            "100%c"
+        ],
+        "controls": [
+            {
+                "pudding": {
+                    "type": "panel",
+                    "size": [
+                        0,
+                        2
+                    ]
+                }
+            },
+            {
+                "simulated.achievement.applied_kinematics@hud.achievement_element": {
+                    "$when_draw": "simulated.achievement.applied_kinematics",
+                    "$uv": [
+                        0,
+                        0
+                    ],
+                    "$achievement_icon": "textures/ui/simulated/advancements/physics_assembler",
+                    "$achievement_text": "advancements.toast.task",
+                    "$content_text": "advancement.simulated.applied_kinematics"
+                }
+            }
+        ]
+    }
+}

@@ -1,111 +1,49 @@
 {
-    "namespace": "hud",
+  "namespace": "hud",
 
-    "default_actionbar_message": {
-        "type": "panel",
-        "size": ["100%c", "100%c"],
-        "controls": [
-            {
-                "message": {
-                    "type": "label",
-                    "anchor_from": "center",
-                    "anchor_to": "center",
-                    "color": "$tool_tip_text",
-                    "layer": 31,
-                    "text": "$actionbar_text",
-                    "localize": false,
-                    "alpha": "@hud.anim_actionbar_text_alpha_out"
+  "chat_label": {
+    "modifications": [
+      {
+        "array_name": "bindings",
+        "operation": "insert_back",
+        "value": {
+          "binding_type": "view",
+          "source_property_name": "(not (('%.10s' * #text) = 'bob.toast;'))",
+          "target_property_name": "#visible"
+        }
+      }
+    ]
+  },
+
+  "root_panel": {
+    "modifications": [
+      {
+        "array_name": "controls",
+        "operation": "insert_front",
+        "value": [
+          {
+            "toast_panel@hud.toasty": {}
+          }
+        ]
+      },
+      {
+        "array_name": "controls",
+        "operation": "replace",
+        "control_name": "hud_actionbar_text_area",
+        "value": [
+          {
+            "hud_actionbar_text_area": {
+              "type": "panel",
+              "factory": {
+                "name": "hud_actionbar_text_factory",
+                "control_ids": {
+                  "hud_actionbar_text": "hud_actionbar_text@hud.simulated_hud_actionbar_text"
                 }
+              }
             }
+          }
         ]
-    },
-
-    "simulated_hold_tip_actionbar_message": {
-        "type": "panel",
-        "size": ["100%c", "100%c"],
-        "$text": "$actionbar_text",
-        "$text_to_display": "($text - 'simulated.hold_tip:' - 'simulated.hold_tip.steady:' - 'simulated.hold_tip.fade:')",
-        "$alpha|default": 1,
-        "variables": [
-            {
-                "requires": "(not (($text - 'simulated.hold_tip:') = $text))",
-                "$alpha": "@hud.anim_simulated_hold_tip_fade_in"
-            },
-            {
-                "requires": "(not (($text - 'simulated.hold_tip.steady:') = $text))",
-                "$alpha": 1
-            },
-            {
-                "requires": "(not (($text - 'simulated.hold_tip.fade:') = $text))",
-                "$alpha": "@hud.anim_simulated_hold_tip_fade_out"
-            }
-        ],
-        "controls": [
-            {
-                "message": {
-                    "type": "label",
-                    "anchor_from": "center",
-                    "anchor_to": "center",
-                    "color": [1, 1, 1],
-                    "shadow": true,
-                    "layer": 31,
-                    "text": "$text_to_display",
-                    "localize": false,
-                    "alpha": "$alpha"
-                }
-            }
-        ]
-    },
-
-    "hud_actionbar_text": {
-        "type": "image",
-        "$text": "$actionbar_text",
-        "$texture|default": "textures/ui/hud_tip_text_background",
-        "$alpha|default": "@hud.anim_actionbar_text_background_alpha_out",
-        "$message_panel|default": "hud.default_actionbar_message",
-        "$anchor_from|default": "center",
-        "$anchor_to|default": "center",
-        "$offset|default": [0, "50%-68px"],
-        "$size|default": ["100%c + 12px", "100%c + 5px"],
-        "variables": [
-            {
-                "requires": "(not (($text - 'simulated.hold_tip:') = $text)) or not (($text - 'simulated.hold_tip.steady:') = $text) or not (($text - 'simulated.hold_tip.fade:') = $text)",
-                "$texture": "textures/ui/simulated/empty",
-                "$alpha": 1,
-                "$message_panel": "hud.simulated_hold_tip_actionbar_message",
-                "$anchor_from": "bottom_middle",
-                "$anchor_to": "bottom_middle",
-                "$offset": [0, -87],
-                "$size": ["100%c", "100%c"]
-            }
-        ],
-        "texture": "$texture",
-        "size": "$size",
-        "offset": "$offset",
-        "anchor_from": "$anchor_from",
-        "anchor_to": "$anchor_to",
-        "alpha": "$alpha",
-        "controls": [
-            {
-                "panel@$message_panel": {}
-            }
-        ]
-    },
-
-    "anim_simulated_hold_tip_fade_in": {
-        "anim_type": "alpha",
-        "easing": "linear",
-        "duration": 0.25,
-        "from": 0,
-        "to": 1
-    },
-
-    "anim_simulated_hold_tip_fade_out": {
-        "anim_type": "alpha",
-        "easing": "linear",
-        "duration": 0.25,
-        "from": 1,
-        "to": 0
-    }
-
+      }
+    ]
+  }
 }

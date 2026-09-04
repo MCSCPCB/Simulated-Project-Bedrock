@@ -1,0 +1,17 @@
+{
+    "namespace": "chat",
+
+    "messages_text": {
+        "modifications": [
+            {
+                "array_name": "bindings",
+                "operation": "insert_back",
+                "value": {
+                    "binding_type": "view",
+                    "source_property_name": "(not (('%.10s' * #text) = 'bob.toast;'))",
+                    "target_property_name": "#visible"
+                }
+            }
+        ]
+    }
+}
