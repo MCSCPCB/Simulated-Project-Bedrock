@@ -4,7 +4,6 @@ import {
 } from "./SubLevelOutlineGeometry.js";
 const BREAK_OVERLAY_CENTER_HEIGHT = 0.375;
 const RAY_REFRESH_TICKS = 2;
-const BLOCK_CONFIRMATION_TICKS = 50;
 const VIEW_DIRECTION_EPSILON_SQUARED = 1e-10;
 const BREAK_OVERLAY_TRANSFORM_EPSILON_SQUARED = EPSILON_1E8;
 function hasViewDirectionChanged(previous, current) {
@@ -15,9 +14,6 @@ function hasViewDirectionChanged(previous, current) {
 }
 function vectorComponentsEqual(left, right) {
   return left.x === right.x && left.y === right.y && left.z === right.z;
-}
-function shouldEnterBlockPreview(mode, stableTicks, viewChanged) {
-  return mode === "structure" && (viewChanged || stableTicks >= BLOCK_CONFIRMATION_TICKS);
 }
 function shouldRefreshOutlineRay(mode, ticksSinceRefresh, viewChanged, subLevelMoving) {
   return viewChanged || (mode === "block" ? subLevelMoving : ticksSinceRefresh >= RAY_REFRESH_TICKS);
@@ -85,7 +81,6 @@ export {
   hasViewDirectionChanged,
   isPlayerHeadInsideSubLevelPlacement,
   resolvePlacementCardinalDirection,
-  shouldEnterBlockPreview,
   shouldRefreshOutlineRay,
   vectorComponentsEqual
 };

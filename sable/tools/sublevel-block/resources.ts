@@ -90,6 +90,56 @@ const CATEGORY_SKELETON_ROOTS = [
   "SableRP/render_controllers/sable/sublevel"
 ] as const;
 
+// Localized display names: packs, the interaction proxy block, and every
+// projection entity (the chest storage entity keeps its container identity).
+const TEXT_LANGUAGES = ["en_US", "zh_CN"] as const;
+const STATIC_ENTITY_TYPE_IDS = [
+  "sable:block",
+  "sable:block_carrier",
+  "sable:fancy_model_carrier",
+  "sable:block_outline",
+  "sable:block_crack"
+] as const;
+
+function collectTextTargets(
+  models: readonly CompiledModel[],
+  pools: readonly CompiledPool[],
+  targets: Map<string, string | Buffer>
+): void {
+  const entityTypeIds = [
+    ...STATIC_ENTITY_TYPE_IDS,
+    ...models.flatMap(model => [model.denseEntityTypeId, model.sparseEntityTypeId]),
+    ...pools.map(pool => pool.entityTypeId)
+  ];
+  const languagesJson = `${JSON.stringify([...TEXT_LANGUAGES], null, 2)}\n`;
+  const packLines: Record<(typeof TEXT_LANGUAGES)[number], { bp: string[]; rp: string[] }> = {
+    en_US: {
+      bp: ["pack.name=Sable Behavior Pack 1.0.0", "pack.description=Made by: MINECRAFT-SCPCB"],
+      rp: ["pack.name=Sable Resource Pack 1.0.0", "pack.description=Made by: MINECRAFT-SCPCB"]
+    },
+    zh_CN: {
+      bp: ["pack.name=Sable 行为包 1.0.0", "pack.description=作者：MINECRAFT-SCPCB"],
+      rp: ["pack.name=Sable 资源包 1.0.0", "pack.description=作者：MINECRAFT-SCPCB"]
+    }
+  };
+  const structureName = { en_US: "Structure", zh_CN: "结构" } as const;
+  const chestName = { en_US: "Chest", zh_CN: "箱子" } as const;
+  for (const language of TEXT_LANGUAGES) {
+    const rpLines = [
+      ...packLines[language].rp,
+      "",
+      `tile.sable:interaction_target.name=${structureName[language]}`,
+      "",
+      `entity.sable:chest.name=${chestName[language]}`,
+      ...entityTypeIds.map(typeId => `entity.${typeId}.name=${structureName[language]}`)
+    ];
+    targets.set(`SableBP/texts/${language}.lang`, `${packLines[language].bp.join("\n")}\n`);
+    targets.set(`SableRP/texts/${language}.lang`, `${rpLines.join("\n")}\n`);
+  }
+  targets.set("SableBP/texts/languages.json", languagesJson);
+  targets.set("SableRP/texts/languages.json", languagesJson);
+}
+
 function entityMaterials(): JsonObject {
   return {
     materials: {
@@ -251,6 +301,7 @@ export async function writeSablePacks(
 
   targets.set("SableRP/materials/entity.material", jsonText(entityMaterials()));
   targets.set("SableRP/textures/colormap/foliage_fixed.tga", fixedColormapTga(fixedTintPalette));
+  collectTextTargets(models, pools, targets);
 
   await collectFunctionalResourceTargets(targets);
   collectDestructParticleTargets(models, targets);

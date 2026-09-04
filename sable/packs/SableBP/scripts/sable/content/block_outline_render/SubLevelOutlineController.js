@@ -5,23 +5,15 @@ import {
   system,
   world
 } from "@minecraft/server";
-import {
-  SUBLEVEL_OUTLINE_EDGE_CAPACITY,
-  createAabbOutline,
-  createSubLevelOutlineShapeFromTopology,
-  createSubLevelOutlineTopology
-} from "./SubLevelOutlineGeometry.js";
+import { createAabbOutline } from "./SubLevelOutlineGeometry.js";
 import {
   BREAK_OVERLAY_TRANSFORM_EPSILON_SQUARED,
   RAY_REFRESH_TICKS,
   breakOverlayLocation,
   createBlockPreviewTransform,
-  createEdgeWriteExpression,
-  edgeSignature,
   hasViewDirectionChanged,
   isPlayerHeadInsideSubLevelPlacement,
   resolvePlacementCardinalDirection,
-  shouldEnterBlockPreview,
   shouldRefreshOutlineRay,
   vectorComponentsEqual
 } from "./SubLevelOutlineMolang.js";
@@ -63,7 +55,6 @@ const OUTLINE_FADE_TICKS = 5;
 const INITIAL_OUTLINE_REVEAL_DELAY_TICKS = 4;
 const OUTLINE_ENTITY_READY_DELAY_TICKS = 2;
 const BREAK_OVERLAY_INITIAL_POSE_DELAY_TICKS = 1;
-const OUTLINE_TRANSFORM_ANIMATION = "animation.sable.block_outline.write_edges";
 const DEFAULT_BLOCK_HARDNESS = 1;
 class SubLevelOutlineController {
   #players;
@@ -127,12 +118,13 @@ class SubLevelOutlineController {
     if (!this.#startupCleanupComplete) return;
     this.#miningProgress.prune(currentTick);
     this.#tickBreakOverlays(currentTick);
-    for (const player of this.#players.sneakingPlayers()) this.#tickPlayer(player, currentTick);
+    const tickedPlayerIds = /* @__PURE__ */ new Set();
+    for (const player of this.#players.players()) {
+      tickedPlayerIds.add(player.id);
+      this.#tickPlayer(player, currentTick);
+    }
     for (const playerId of this.#states.keys()) {
-      if (this.#players.hasSneakingPlayer(playerId)) continue;
-      const player = this.#players.get(playerId);
-      if (player) this.#tickPlayer(player, currentTick);
-      else this.clearPlayer(playerId, false);
+      if (!tickedPlayerIds.has(playerId)) this.clearPlayer(playerId, false);
     }
     this.#finishFades(currentTick);
   }
@@ -252,7 +244,6 @@ class SubLevelOutlineController {
       this.clearPlayer(player.id, false);
       return;
     }
-    const sneaking = player.isSneaking;
     const state = this.#states.get(player.id) ?? {
       lastRayTick: currentTick - RAY_REFRESH_TICKS
     };
@@ -286,10 +277,6 @@ class SubLevelOutlineController {
     }
     const result = state.rayCache?.result;
     if (!result) {
-      if (!sneaking) {
-        this.clearPlayer(player.id, false);
-        return;
-      }
       this.#clearInteractionTargets(player.id);
       if (state.activeSubLevelId !== void 0) {
         this.#releaseViewer(player.id, state.activeSubLevelId, false);
@@ -301,15 +288,6 @@ class SubLevelOutlineController {
     }
     this.#syncInteractionTargets(player, result, refresh || state.interactionTargetDirty === true);
     state.interactionTargetDirty = false;
-    if (!sneaking) {
-      if (state.activeSubLevelId !== void 0) {
-        this.#releaseViewer(player.id, state.activeSubLevelId, false);
-      }
-      state.activeSubLevelId = void 0;
-      state.mode = void 0;
-      state.shapeSignature = void 0;
-      return;
-    }
     const targetKey = blockKey(result.hit.block.localLocation);
     if (state.activeSubLevelId !== result.handle.id) {
       if (state.activeSubLevelId !== void 0) {
@@ -320,21 +298,11 @@ class SubLevelOutlineController {
         return;
       }
       state.activeSubLevelId = result.handle.id;
-      state.candidateBlockKey = targetKey;
-      state.candidateSinceTick = currentTick;
-      state.mode = "structure";
-      state.shapeSignature = void 0;
-    } else if (state.candidateBlockKey !== targetKey) {
-      state.candidateBlockKey = targetKey;
-      state.candidateSinceTick = currentTick;
-      if (state.mode === "block") state.shapeSignature = void 0;
-    }
-    if (shouldEnterBlockPreview(
-      state.mode,
-      currentTick - (state.candidateSinceTick ?? currentTick),
-      viewChanged
-    )) {
+      state.targetBlockKey = targetKey;
       state.mode = "block";
+      state.shapeSignature = void 0;
+    } else if (state.targetBlockKey !== targetKey) {
+      state.targetBlockKey = targetKey;
       state.shapeSignature = void 0;
     }
     this.#updateViewerShape(player, state, result);
@@ -361,9 +329,7 @@ class SubLevelOutlineController {
         handle,
         contentRevision: handle.contentRevision,
         entity,
-        outlineTopology: void 0,
         readyTick: system.currentTick + OUTLINE_ENTITY_READY_DELAY_TICKS,
-        shapeCache: /* @__PURE__ */ new Map(),
         viewers: /* @__PURE__ */ new Map()
       };
       this.#records.set(handle.id, record);
@@ -559,62 +525,28 @@ class SubLevelOutlineController {
     if (system.currentTick < record.readyTick) return;
     if (record.contentRevision !== result.handle.contentRevision) {
       record.contentRevision = result.handle.contentRevision;
-      record.outlineTopology = void 0;
-      record.shapeCache.clear();
       state.shapeSignature = void 0;
     }
-    if (state.mode === "block") {
-      const item = selectedItem(player);
-      const target = result.hit.block.localLocation;
-      const normal = result.hit.localNormal;
-      const signature = `b|${record.contentRevision}:${blockKey(target)}:${normal.x},${normal.y},${normal.z}:${item?.typeId ?? ""}`;
-      if (signature === state.shapeSignature) return;
-      const blockPlacement = item ? this.#getPlacementTarget(result, item) : void 0;
-      const locations = blockPlacement ? [target, blockPlacement] : [target];
-      const edges = createAabbOutline(locations);
-      if (edges.length === 0) return;
-      const preview = createBlockPreviewTransform(
-        target,
-        blockPlacement,
-        result.handle.outlineAnchorLocal
-      );
-      player.setPropertyOverrideForEntity(record.entity, OUTLINE_BLOCK_PREVIEW_PROPERTY, true);
-      player.setPropertyOverrideForEntity(record.entity, OUTLINE_PREVIEW_X_PROPERTY, preview.x);
-      player.setPropertyOverrideForEntity(record.entity, OUTLINE_PREVIEW_Y_PROPERTY, preview.y);
-      player.setPropertyOverrideForEntity(record.entity, OUTLINE_PREVIEW_Z_PROPERTY, preview.z);
-      player.setPropertyOverrideForEntity(record.entity, OUTLINE_PREVIEW_SIDE_PROPERTY, preview.side);
-      state.shapeSignature = signature;
-      return;
-    }
-    const targetKey = blockKey(result.hit.block.localLocation);
-    const cacheKey = `${record.contentRevision}:${targetKey}`;
-    let cached = record.shapeCache.get(cacheKey);
-    if (!cached) {
-      record.outlineTopology ??= createSubLevelOutlineTopology(
-        result.handle.blocks,
-        SUBLEVEL_OUTLINE_EDGE_CAPACITY
-      );
-      const edges = createSubLevelOutlineShapeFromTopology(
-        record.outlineTopology,
-        result.hit.block.localLocation,
-        SUBLEVEL_OUTLINE_EDGE_CAPACITY
-      )?.edges ?? [];
-      const anchorSignature = blockKey(result.handle.outlineAnchorLocal);
-      cached = {
-        edges,
-        signature: `${record.contentRevision}:${anchorSignature}:${edgeSignature(edges)}`
-      };
-      record.shapeCache.set(cacheKey, cached);
-    }
-    if (cached.edges.length === 0) return;
-    if (cached.signature === state.shapeSignature) return;
-    player.setPropertyOverrideForEntity(record.entity, OUTLINE_BLOCK_PREVIEW_PROPERTY, false);
-    record.entity.playAnimation(OUTLINE_TRANSFORM_ANIMATION, {
-      nextState: "none",
-      players: [player],
-      stopExpression: createEdgeWriteExpression(cached.edges, result.handle.outlineAnchorLocal)
-    });
-    state.shapeSignature = cached.signature;
+    const item = selectedItem(player);
+    const target = result.hit.block.localLocation;
+    const normal = result.hit.localNormal;
+    const signature = `b|${record.contentRevision}:${blockKey(target)}:${normal.x},${normal.y},${normal.z}:${item?.typeId ?? ""}`;
+    if (signature === state.shapeSignature) return;
+    const blockPlacement = item ? this.#getPlacementTarget(result, item) : void 0;
+    const locations = blockPlacement ? [target, blockPlacement] : [target];
+    const edges = createAabbOutline(locations);
+    if (edges.length === 0) return;
+    const preview = createBlockPreviewTransform(
+      target,
+      blockPlacement,
+      result.handle.outlineAnchorLocal
+    );
+    player.setPropertyOverrideForEntity(record.entity, OUTLINE_BLOCK_PREVIEW_PROPERTY, true);
+    player.setPropertyOverrideForEntity(record.entity, OUTLINE_PREVIEW_X_PROPERTY, preview.x);
+    player.setPropertyOverrideForEntity(record.entity, OUTLINE_PREVIEW_Y_PROPERTY, preview.y);
+    player.setPropertyOverrideForEntity(record.entity, OUTLINE_PREVIEW_Z_PROPERTY, preview.z);
+    player.setPropertyOverrideForEntity(record.entity, OUTLINE_PREVIEW_SIDE_PROPERTY, preview.side);
+    state.shapeSignature = signature;
   }
   #getPlacementTarget(result, itemStack) {
     if (!BlockTypes.get(itemStack.typeId)) return void 0;

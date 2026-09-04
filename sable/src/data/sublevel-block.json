@@ -2572,6 +2572,7 @@
       "materials": "alpha_test",
       "category": "functional/chests_and_containers",
       "hardness": 2.5,
+      "placeable": true,
       "states": [
         "minecraft:cardinal_direction"
       ],
@@ -2877,6 +2878,7 @@
       "materials": "alpha_test",
       "category": "nature/plants_and_flowers",
       "hardness": 0.2,
+      "passable": true,
       "support": "above_solid",
       "states": [],
       "variants": [],
@@ -2922,6 +2924,7 @@
       "materials": "alpha_test",
       "category": "nature/saplings",
       "hardness": 0.2,
+      "passable": true,
       "support": "above_leaf",
       "states": [
         "minecraft:hanging",
@@ -2979,6 +2982,7 @@
       "materials": "alpha_test",
       "category": "nature/plants_and_flowers",
       "hardness": 0.2,
+      "passable": true,
       "support": "moss_column",
       "states": [
         "minecraft:tip"
@@ -3013,6 +3017,7 @@
       "materials": "alpha_test_tint",
       "category": "nature/plants_and_flowers",
       "hardness": 0.2,
+      "passable": true,
       "support": "vine_faces",
       "states": [
         "minecraft:vine_direction_bits"
@@ -3256,6 +3261,7 @@
     "minecraft:creaking_heart": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis",
         "minecraft:creaking_heart_state"

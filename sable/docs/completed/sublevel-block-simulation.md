@@ -53,7 +53,9 @@
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| `hardness` | number，可选，默认 1 | 原版硬度，驱动挖掘时间。现有方块按原版值补齐（原木 2、树叶 0.2、箱子 2.5、蜂巢 0.3、其余附着 0.2） |
+| `hardness` | number，可选，默认 1 | 原版硬度，驱动挖掘时间。现有方块按原版值补齐（原木/绞刑木之心 2、树叶 0.2、箱子 2.5、蜂巢 0.3、其余附着 0.2） |
+| `placeable` | boolean，可选，默认 false | 玩家可手持该方块放置到子世界上（当前仅箱子） |
+| `passable` | boolean，可选，默认 false | 交互射线穿透该方块；捕获与放置时落为 `collisionResponse: false`（藤蔓、垂根、苔须、胎生苗；树叶不属于此类） |
 | `support` | 枚举，可选，默认 `none` | 附着支撑规则：`none`／`facing_log`（可可）／`above_solid`（垂根）／`above_leaf`（胎生苗：仅 `hanging` 态需上方叶，非悬挂恒支撑）／`moss_column`（苔须列＋tip 重算）／`vine_faces`（逐面支撑＋位重算）。宿主类别数据驱动：`facing_log` 认 `building/logs_and_wood`，`above_leaf` 认 `nature/leaves` |
 
 规则语义在源码中固定，方块→规则映射全在数据；新增使用现有规则集的方块仅需一条注册数据。

@@ -83,11 +83,26 @@ export function registerChestSubLevelBehavior(context: ChestSubLevelBehaviorCont
         localLocation => event.handle.localPointToWorld(localLocation)
       );
     },
-    onSubLevelRemoved: ownerId => {
+    onSubLevelRemoved: (ownerId, handle) => {
       const bindings = bindingsByOwner.get(ownerId);
       if (!bindings) return;
       bindingsByOwner.delete(ownerId);
+      // Teardown settles remaining storages so their contents drop natively;
+      // a storage that can no longer settle is discarded instead.
       for (const binding of bindings.values()) {
+        try {
+          if (handle.isValid) {
+            containers.settleStorages(
+              ownerId,
+              [binding],
+              handle.dimension,
+              localLocation => handle.localPointToWorld(localLocation)
+            );
+            continue;
+          }
+        } catch {
+          // Fall through to the discard path below.
+        }
         try {
           containers.discardStorage(binding.storageId);
         } catch {

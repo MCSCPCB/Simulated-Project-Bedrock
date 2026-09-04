@@ -51,6 +51,8 @@ export function hasFancySubLevelRegistration(typeId: string): boolean {
 export function getSubLevelBlockRegistration(typeId: string): {
   readonly category: string;
   readonly hardness?: number;
+  readonly placeable?: boolean;
+  readonly passable?: boolean;
   readonly support?: import("./FancySubLevelModel.js").SubLevelSupportRule;
 } | undefined {
   const registration = blockRegistry[typeId];
@@ -58,6 +60,8 @@ export function getSubLevelBlockRegistration(typeId: string): {
   return {
     category: registration.category,
     hardness: registration.hardness,
+    placeable: registration.placeable,
+    passable: registration.passable,
     support: registration.support
   };
 }

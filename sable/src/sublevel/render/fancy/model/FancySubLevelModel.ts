@@ -152,6 +152,8 @@ export type SubLevelSupportRule =
 export interface CompiledBlockRegistration {
   readonly category: string;
   readonly hardness?: number;
+  readonly placeable?: boolean;
+  readonly passable?: boolean;
   readonly support?: SubLevelSupportRule;
   readonly states: readonly string[];
   readonly variants: readonly {

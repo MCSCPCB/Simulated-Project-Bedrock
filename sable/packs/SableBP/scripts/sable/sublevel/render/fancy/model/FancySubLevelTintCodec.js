@@ -40,23 +40,20 @@ function packFancySubLevelTint(packed, foliage = DEFAULT_SUBLEVEL_FOLIAGE_TINT) 
   const minimumZ = packed.anchorLocalLocation.z - 0.5;
   const maximumX = minimumX + width;
   const maximumZ = minimumZ + depth;
-  const u0 = quantize(sampleU(foliage, minimumX));
-  const u1 = quantize(sampleU(foliage, maximumX));
-  const v0 = quantize(sampleV(foliage, minimumZ));
-  const v1 = quantize(sampleV(foliage, maximumZ));
-  return u0 + v0 * TINT_COORDINATE_BASE + u1 * TINT_COORDINATE_BASE ** 2 + v1 * TINT_COORDINATE_BASE ** 3 + clampMapKind(foliage.mapKind) * TINT_KIND_PLACE + (foliage.gradientAxis === "z" ? TINT_AXIS_Z_PLACE : 0);
-}
-function sampleU(field, x) {
-  return clamp(field.uAtLocalOrigin + field.uPerLocalX * x);
-}
-function sampleV(field, z) {
-  return clamp(field.vAtLocalOrigin + field.vPerLocalZ * z);
+  const axis = foliage.gradientAxis;
+  const minimum = axis === "x" ? minimumX : minimumZ;
+  const maximum = axis === "x" ? maximumX : maximumZ;
+  const u0 = quantize(foliage.uAtLocalOrigin + foliage.uPerLocalX * minimum);
+  const u1 = quantize(foliage.uAtLocalOrigin + foliage.uPerLocalX * maximum);
+  const v0 = quantize(foliage.vAtLocalOrigin + foliage.vPerLocalZ * minimum);
+  const v1 = quantize(foliage.vAtLocalOrigin + foliage.vPerLocalZ * maximum);
+  return u0 + v0 * TINT_COORDINATE_BASE + u1 * TINT_COORDINATE_BASE ** 2 + v1 * TINT_COORDINATE_BASE ** 3 + clampMapKind(foliage.mapKind) * TINT_KIND_PLACE + (axis === "z" ? TINT_AXIS_Z_PLACE : 0);
 }
 function quantize(value) {
   return Math.round(clamp(value) * FOLIAGE_TINT_COORDINATE_STEPS);
 }
 function textureCoordinate(value) {
-  return Math.round(clamp(value) * (TINT_TEXTURE_SIZE - 1));
+  return Math.floor(clamp(value) * (TINT_TEXTURE_SIZE - 1));
 }
 function clamp(value) {
   return Math.max(0, Math.min(1, value));

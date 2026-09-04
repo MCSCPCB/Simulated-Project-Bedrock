@@ -56,11 +56,23 @@ function registerChestSubLevelBehavior(context) {
         (localLocation) => event.handle.localPointToWorld(localLocation)
       );
     },
-    onSubLevelRemoved: (ownerId) => {
+    onSubLevelRemoved: (ownerId, handle) => {
       const bindings = bindingsByOwner.get(ownerId);
       if (!bindings) return;
       bindingsByOwner.delete(ownerId);
       for (const binding of bindings.values()) {
+        try {
+          if (handle.isValid) {
+            containers.settleStorages(
+              ownerId,
+              [binding],
+              handle.dimension,
+              (localLocation) => handle.localPointToWorld(localLocation)
+            );
+            continue;
+          }
+        } catch {
+        }
         try {
           containers.discardStorage(binding.storageId);
         } catch {

@@ -63,6 +63,8 @@ export interface RawBlockRegistration {
   readonly category: string;
   readonly domain?: string;
   readonly hardness?: number;
+  readonly placeable?: boolean;
+  readonly passable?: boolean;
   readonly support?: string;
   readonly states: readonly string[];
   readonly variants: readonly RawVariant[];
@@ -128,6 +130,8 @@ const POOL_MEMBER_CAP = 32;
 export interface CompiledRegistryEntry {
   readonly category: string;
   readonly hardness?: number;
+  readonly placeable?: boolean;
+  readonly passable?: boolean;
   readonly support?: string;
   readonly states: readonly string[];
   readonly variants: readonly { readonly condition: ConditionNode; readonly model: CompiledModel | null }[];
@@ -245,6 +249,8 @@ export function toRuntimeRegistry(compiled: CompiledRegistry): Record<string, un
   return Object.fromEntries(Object.entries(compiled).map(([blockId, entry]) => [blockId, {
     category: entry.category,
     ...(entry.hardness !== undefined ? { hardness: entry.hardness } : {}),
+    ...(entry.placeable !== undefined ? { placeable: entry.placeable } : {}),
+    ...(entry.passable !== undefined ? { passable: entry.passable } : {}),
     ...(entry.support !== undefined ? { support: entry.support } : {}),
     states: entry.states,
     variants: entry.variants.map(variant => ({
@@ -275,6 +281,12 @@ export function compileRegistry(raw: RawRegistry): CompiledRegistry {
     if (entry.hardness !== undefined && (!Number.isFinite(entry.hardness) || entry.hardness < 0)) {
       throw new Error(`${blockId}: hardness must be a non-negative finite number.`);
     }
+    if (entry.placeable !== undefined && typeof entry.placeable !== "boolean") {
+      throw new Error(`${blockId}: placeable must be a boolean when present.`);
+    }
+    if (entry.passable !== undefined && typeof entry.passable !== "boolean") {
+      throw new Error(`${blockId}: passable must be a boolean when present.`);
+    }
     if (entry.support !== undefined && !SUPPORT_RULES.has(entry.support)) {
       throw new Error(`${blockId}: unsupported support rule.`);
     }
@@ -302,6 +314,8 @@ export function compileRegistry(raw: RawRegistry): CompiledRegistry {
     result[blockId] = {
       category: entry.category,
       ...(entry.hardness !== undefined ? { hardness: entry.hardness } : {}),
+      ...(entry.placeable !== undefined ? { placeable: entry.placeable } : {}),
+      ...(entry.passable !== undefined ? { passable: entry.passable } : {}),
       ...(entry.support !== undefined ? { support: entry.support } : {}),
       states: [...entry.states],
       variants,

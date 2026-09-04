@@ -35,6 +35,8 @@ type BlockRegistration = {
   category: string;
   domain?: string;
   hardness?: number;
+  placeable?: boolean;
+  passable?: boolean;
   support?: "none" | "facing_log" | "above_solid" | "above_leaf" | "moss_column" | "vine_faces";
   states: string[];
   variants: { condition: string; model: ModelDescription; tint?: TintDescription }[];
@@ -50,6 +52,8 @@ type BlockRegistration = {
 | `category` | `string` | 方块所属分类路径，决定产物目录位置与默认共享池，必须取自「分类树」。 |
 | `domain` | `string` | 可选。覆盖共享池的划分键；省略时回落到 `category`。仅在方块不适合与同类目共池时使用。 |
 | `hardness` | `number` | 可选，默认 `1`。原版硬度，驱动挖掘时间与攻击折算击数。 |
+| `placeable` | `boolean` | 可选，默认 `false`。玩家可手持该方块放置到子世界上。 |
+| `passable` | `boolean` | 可选，默认 `false`。交互射线穿透该方块（藤蔓、垂根等可穿透植物；树叶不属于此类）。 |
 | `support` | `string` | 可选，默认 `none`。附着支撑规则，取值见「支撑规则」。 |
 | `states` | `string[]` | 该记录会读取的方块状态名列表，使用带命名空间的完整写法。`condition` 中引用的状态都必须在此声明。 |
 | `variants` | `object[]` | 按声明顺序求值的条件变体，第一个条件为真的变体生效。 |

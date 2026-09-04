@@ -7,7 +7,6 @@ import {
 
 const BREAK_OVERLAY_CENTER_HEIGHT = 0.375;
 const RAY_REFRESH_TICKS = 2;
-const BLOCK_CONFIRMATION_TICKS = 50;
 const VIEW_DIRECTION_EPSILON_SQUARED = 1e-10;
 const BREAK_OVERLAY_TRANSFORM_EPSILON_SQUARED = EPSILON_1E8;
 
@@ -29,11 +28,7 @@ export function vectorComponentsEqual(left: Vector3, right: Vector3): boolean {
   return left.x === right.x && left.y === right.y && left.z === right.z;
 }
 
-export function shouldEnterBlockPreview(mode: "structure" | "block" | undefined, stableTicks: number, viewChanged: boolean): boolean {
-  return mode === "structure" && (viewChanged || stableTicks >= BLOCK_CONFIRMATION_TICKS);
-}
-
-export function shouldRefreshOutlineRay(mode: "structure" | "block" | undefined, ticksSinceRefresh: number, viewChanged: boolean, subLevelMoving: boolean): boolean {
+export function shouldRefreshOutlineRay(mode: "block" | undefined, ticksSinceRefresh: number, viewChanged: boolean, subLevelMoving: boolean): boolean {
   return viewChanged || (mode === "block" ? subLevelMoving : ticksSinceRefresh >= RAY_REFRESH_TICKS);
 }
 

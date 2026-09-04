@@ -1,3 +1,4 @@
+import { getSubLevelBlockRegistration } from "../sublevel/render/fancy/model/FancySubLevelModelRegistry.js";
 const LEGACY_LOG_ITEMS = {
   acacia: "minecraft:acacia_log",
   birch: "minecraft:birch_log",
@@ -27,6 +28,9 @@ function captureSubLevelBlock(block, origin) {
     states,
     typeId
   };
+  if (getSubLevelBlockRegistration(typeId)?.passable === true) {
+    captured.collisionResponse = false;
+  }
   const itemTypeId = heldItemTypeId(typeId, states);
   if (itemTypeId !== typeId) captured.itemTypeId = itemTypeId;
   const rotation = heldBlockRotation(states);

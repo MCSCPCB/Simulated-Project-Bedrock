@@ -36,7 +36,7 @@ world.beforeEvents.playerInteractWithBlock.subscribe(event => {
       );
       player.sendMessage(
         `§a已实体化子世界 §f${managed.id}§a：${managed.blockCount} 方块 / ${managed.entityCount} 实体。`
-        + "§7 直接攻击可挖掘，手持方块可放置，蹲下瞄准可查看描边。"
+        + "§7 直接攻击可挖掘，手持方块可放置，瞄准可查看描边。"
       );
     } catch (error) {
       player.sendMessage(`§c子世界创建失败：${error instanceof Error ? error.message : String(error)}`);

@@ -37,7 +37,7 @@ import {
   spawnSubLevelBlockDestructParticle
 } from "../../content/particle/SubLevelBlockParticles.js";
 import {
-  hasFancySubLevelRegistration
+  getSubLevelBlockRegistration
 } from "../../sublevel/render/fancy/model/FancySubLevelModelRegistry.js";
 import {
   blockLocationKey,
@@ -282,7 +282,7 @@ export class ServerSubLevelContainer {
     dimension.playSound(sound.sound, position, { pitch: sound.pitch, volume: sound.volume });
   }
 
-  /** The default place pipeline: registered blocks only, behaviors included. */
+  /** The default place pipeline: placeable registrations only, behaviors included. */
   placeBlockForPlayerEdit(
     player: Player,
     itemStack: ItemStack,
@@ -293,7 +293,7 @@ export class ServerSubLevelContainer {
   ): boolean {
     const record = this.#recordsByHandleId.get(handle.id);
     if (!record || record.removed || !handle.isValid) return false;
-    if (!hasFancySubLevelRegistration(itemStack.typeId)) return false;
+    if (getSubLevelBlockRegistration(itemStack.typeId)?.placeable !== true) return false;
     if (handle.getBlockAtLocalLocation(placement)) return false;
     const placed = buildPlacedBlock(player, itemStack.typeId, placement, cardinalDirection);
     if (!placed) return false;
@@ -418,7 +418,10 @@ function buildPlacedBlock(
   return {
     localLocation: { ...placement },
     states,
-    typeId
+    typeId,
+    ...(getSubLevelBlockRegistration(typeId)?.passable === true
+      ? { collisionResponse: false }
+      : {})
   };
 }
 

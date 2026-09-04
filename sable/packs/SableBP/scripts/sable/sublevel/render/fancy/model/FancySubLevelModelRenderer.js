@@ -141,9 +141,10 @@ class FancySubLevelModelRenderer {
     return true;
   }
   attachAuxiliaryRider(entity) {
-    if (!entity.isValid) return false;
-    const carrier = this.#carriers.find((value) => !value.dedicatedToPersistentRiders && value.entity.isValid && value.auxiliaryRiderIds.size === 0 && value.modelIds.size < FANCY_MODEL_CARRIER_CAPACITY);
-    if (!carrier?.entity.getComponent("minecraft:rideable")?.addRider(entity)) return false;
+    if (!entity.isValid || this.#carriers.length === 0) return false;
+    const carrier = this.#carriers.find((value) => !value.dedicatedToPersistentRiders);
+    if (!carrier || !carrier.entity.isValid || carrier.auxiliaryRiderIds.size > 0 || carrier.modelIds.size >= FANCY_MODEL_CARRIER_CAPACITY) return false;
+    if (!carrier.entity.getComponent("minecraft:rideable")?.addRider(entity)) return false;
     carrier.auxiliaryRiderIds.add(entity.id);
     this.#syncAuxiliaryRotation(entity);
     return true;

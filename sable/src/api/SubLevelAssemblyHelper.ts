@@ -1,5 +1,6 @@
 import type { Block, Vector3 } from "@minecraft/server";
 import type { SubLevelBlock, SubLevelBlockMapColor } from "../sublevel/SubLevel.js";
+import { getSubLevelBlockRegistration } from "../sublevel/render/fancy/model/FancySubLevelModelRegistry.js";
 
 // The legacy multi-variant blocks have no obtainable item form; the hand-held
 // route displays their modern counterpart instead.
@@ -24,9 +25,10 @@ const LEGACY_LEAF_ITEMS: Readonly<Record<string, string>> = {
 /**
  * Captures one world block into the sub-level block form the render routes
  * consume: full permutation states, the hand-held item mapping, the
- * state-driven hand-held rotation and the custom-block map color. `origin` is
- * the world position of the sub-level's local origin. Physics fields are the
- * caller's concern and stay unset.
+ * state-driven hand-held rotation, the custom-block map color and the
+ * registry-declared interaction passability. `origin` is the world position of
+ * the sub-level's local origin. Physics fields are the caller's concern and
+ * stay unset.
  */
 export function captureSubLevelBlock(block: Block, origin: Vector3): SubLevelBlock {
   const permutation = block.permutation;
@@ -43,6 +45,9 @@ export function captureSubLevelBlock(block: Block, origin: Vector3): SubLevelBlo
     states,
     typeId
   };
+  if (getSubLevelBlockRegistration(typeId)?.passable === true) {
+    captured.collisionResponse = false;
+  }
   const itemTypeId = heldItemTypeId(typeId, states);
   if (itemTypeId !== typeId) captured.itemTypeId = itemTypeId;
   const rotation = heldBlockRotation(states);
