@@ -1,4 +1,4 @@
-import { BIOME_FOLIAGE_CLIMATES } from "../../data/BiomeFoliageClimates.js";
+import { BIOME_FOLIAGE_CLIMATES } from "../../data/vanilla/colormap/BiomeFoliageClimates.js";
 import { resolveFancySubLevelBlock } from "../../sublevel/render/fancy/model/FancySubLevelModelRegistry.js";
 import {
   DEFAULT_SUBLEVEL_FOLIAGE_TINT,

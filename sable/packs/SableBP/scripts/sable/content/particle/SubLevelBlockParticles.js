@@ -1,7 +1,7 @@
 import {
   MolangVariableMap
 } from "@minecraft/server";
-import { sampleVanillaFoliageColor } from "../../data/FoliageColorMap.js";
+import { sampleVanillaFoliageColor } from "../../data/vanilla/colormap/FoliageColorMap.js";
 import { resolveFancySubLevelBlock } from "../../sublevel/render/fancy/model/FancySubLevelModelRegistry.js";
 import {
   DEFAULT_SUBLEVEL_FOLIAGE_TINT,

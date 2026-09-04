@@ -6,7 +6,7 @@ import {
   VANILLA_BLOCK_PLACE_SOUND_EVENT_INDICES,
   VANILLA_BLOCK_PLACE_SOUND_EVENTS,
   type GeneratedBlockSoundEvent
-} from "../../data/BlockSoundEvents.js";
+} from "../../data/vanilla/sounds/BlockSoundEvents.js";
 
 const DEFAULT_BLOCK_BREAK_EVENT = ["dig.wood", 0.8, 1, 1, 1] as const;
 const DEFAULT_BLOCK_HIT_EVENT = ["hit.wood", 0.5, 0.5, 0.23, 0.23] as const;

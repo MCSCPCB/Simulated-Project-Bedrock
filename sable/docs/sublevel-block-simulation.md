@@ -16,8 +16,8 @@
 
 | sable 目标 | TreePhysics 来源 | 说明 |
 | --- | --- | --- |
-| `src/data/BlockSoundEvents.ts` | data/BlockSoundEvent.ts | 原版方块音效生成表；剔除 TREE_FALL/JUMP/LAND/STEP 等物理姿态类，保留 BREAK/PLACE/HIT |
-| `src/data/FoliageColorMap.ts` | data/FoliageColorMap.ts | 原版 foliage 色图采样表（粒子取色用） |
+| `src/data/vanilla/sounds/BlockSoundEvents.ts` | data/BlockSoundEvent.ts | 原版方块音效生成表；剔除 TREE_FALL/JUMP/LAND/STEP 等物理姿态类，保留 BREAK/PLACE/HIT |
+| `src/data/vanilla/colormap/FoliageColorMap.ts` | data/FoliageColorMap.ts | 原版 foliage 色图采样表（粒子取色用） |
 | `src/content/sublevel_sounds/SubLevelBlockSounds.ts` | data/BlockSound.ts | 挖掘/放置/命中音效解析；叶类兜底改查注册表模型材质（alpha_test 全立方≈叶） |
 | `src/content/punching/SubLevelBlockPermissions.ts` | editing/Permissions.ts | 原版挖掘/放置权限、工具耐久 |
 | `src/content/punching/SubLevelMiningTime.ts` | felling/MiningTime.ts + Speed.ts | 铁傀儡锚定的攻击折算、硬度→挖掘时间、斧速与效率附魔；硬度改由注册表 `hardness` 提供 |

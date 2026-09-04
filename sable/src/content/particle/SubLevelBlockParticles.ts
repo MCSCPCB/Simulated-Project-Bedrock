@@ -9,7 +9,7 @@ import {
   type Dimension,
   type Vector3
 } from "@minecraft/server";
-import { sampleVanillaFoliageColor } from "../../data/FoliageColorMap.js";
+import { sampleVanillaFoliageColor } from "../../data/vanilla/colormap/FoliageColorMap.js";
 import type {
   SubLevelBlock,
   SubLevelBlockMapColor,
