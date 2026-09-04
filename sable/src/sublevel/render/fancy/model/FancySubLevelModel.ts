@@ -141,7 +141,18 @@ export interface CompiledFancySubLevelModel {
   readonly pool?: FancySubLevelModelPool;
 }
 
+export type SubLevelSupportRule =
+  | "none"
+  | "facing_log"
+  | "above_solid"
+  | "above_leaf"
+  | "moss_column"
+  | "vine_faces";
+
 export interface CompiledBlockRenderRegistration {
+  readonly category: string;
+  readonly hardness?: number;
+  readonly support?: SubLevelSupportRule;
   readonly states: readonly string[];
   readonly variants: readonly {
     readonly condition: CompiledCondition;

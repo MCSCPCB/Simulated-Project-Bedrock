@@ -62,10 +62,18 @@ export interface RawBlockRegistration {
   readonly materials: string;
   readonly category: string;
   readonly domain?: string;
+  readonly hardness?: number;
+  readonly support?: string;
   readonly states: readonly string[];
   readonly variants: readonly RawVariant[];
   readonly default: RawRenderDefinition;
 }
+
+// Attachment support rules the runtime resolver implements; the registry only
+// maps blocks onto them.
+const SUPPORT_RULES = new Set([
+  "none", "facing_log", "above_solid", "above_leaf", "moss_column", "vine_faces"
+]);
 export interface RawVariant extends RawRenderDefinition { readonly condition: string; }
 export interface RawRenderDefinition {
   readonly model: Record<string, unknown>;
@@ -118,6 +126,9 @@ export function modelRuntimeStateBits(model: Record<string, unknown>): number {
 
 const POOL_MEMBER_CAP = 32;
 export interface CompiledRegistryEntry {
+  readonly category: string;
+  readonly hardness?: number;
+  readonly support?: string;
   readonly states: readonly string[];
   readonly variants: readonly { readonly condition: ConditionNode; readonly model: CompiledModel | null }[];
   readonly default: CompiledModel | null;
@@ -232,6 +243,9 @@ export function toRuntimeRegistry(compiled: CompiledRegistry): Record<string, un
     return stripped;
   };
   return Object.fromEntries(Object.entries(compiled).map(([blockId, entry]) => [blockId, {
+    category: entry.category,
+    ...(entry.hardness !== undefined ? { hardness: entry.hardness } : {}),
+    ...(entry.support !== undefined ? { support: entry.support } : {}),
     states: entry.states,
     variants: entry.variants.map(variant => ({
       condition: variant.condition,
@@ -258,6 +272,12 @@ export function compileRegistry(raw: RawRegistry): CompiledRegistry {
     if (entry.domain !== undefined && (typeof entry.domain !== "string" || entry.domain.trim().length === 0)) {
       throw new Error(`${blockId}: domain must be a non-empty string when present.`);
     }
+    if (entry.hardness !== undefined && (!Number.isFinite(entry.hardness) || entry.hardness < 0)) {
+      throw new Error(`${blockId}: hardness must be a non-negative finite number.`);
+    }
+    if (entry.support !== undefined && !SUPPORT_RULES.has(entry.support)) {
+      throw new Error(`${blockId}: unsupported support rule.`);
+    }
     if (!Array.isArray(entry.states) || new Set(entry.states).size !== entry.states.length) {
       throw new Error(`${blockId}: states must be a unique array.`);
     }
@@ -279,7 +299,14 @@ export function compileRegistry(raw: RawRegistry): CompiledRegistry {
         model: obtain(variant, `${blockId}.variants[${index}]`, conditionSuffix(condition))
       };
     });
-    result[blockId] = { states: [...entry.states], variants, default: defaultModel };
+    result[blockId] = {
+      category: entry.category,
+      ...(entry.hardness !== undefined ? { hardness: entry.hardness } : {}),
+      ...(entry.support !== undefined ? { support: entry.support } : {}),
+      states: [...entry.states],
+      variants,
+      default: defaultModel
+    };
   }
   return result;
 }

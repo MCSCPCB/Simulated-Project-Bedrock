@@ -62,7 +62,7 @@ type ModelGeometryLibrary = Readonly<Record<string, Readonly<Record<string, {
 }>>>>;
 
 const MODEL_GEOMETRY = JSON.parse(
-  readFileSync(new URL("./model-geometry.json", import.meta.url), "utf8")
+  readFileSync(new URL("../../src/data/reference/model-geometry.json", import.meta.url), "utf8")
 ) as ModelGeometryLibrary;
 
 const RAW_JSON_NUMBER_PREFIX = "__sable_raw_json_number__:";

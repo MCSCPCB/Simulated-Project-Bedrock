@@ -47,6 +47,21 @@ export function hasFancySubLevelRegistration(typeId: string): boolean {
   return blockRenderRegistry[typeId] !== undefined;
 }
 
+/** Block-level registry facts the interaction layer consumes. */
+export function getSubLevelBlockRegistration(typeId: string): {
+  readonly category: string;
+  readonly hardness?: number;
+  readonly support?: import("./FancySubLevelModel.js").SubLevelSupportRule;
+} | undefined {
+  const registration = blockRenderRegistry[typeId];
+  if (!registration) return undefined;
+  return {
+    category: registration.category,
+    hardness: registration.hardness,
+    support: registration.support
+  };
+}
+
 /** Represents a block that neither normal route can express. */
 export function resolveMissingFancySubLevelBlock(block: SubLevelBlock): FancySubLevelBlock {
   const model = materializeModel(MISSING_MODEL);

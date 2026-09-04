@@ -8,7 +8,7 @@ Fancy 路线按注册表逐方块渲染：已注册的方块由框架编译出�
 
 ### 注册表文件
 
-唯一的人工维护入口是 `sable/src/data/sublevel-block-render.json`：
+唯一的人工维护入口是 `sable/src/data/sublevel-block.json`：
 
 ```json
 {
@@ -24,10 +24,12 @@ Fancy 路线按注册表逐方块渲染：已注册的方块由框架编译出�
 ### 注册记录
 
 ```ts
-type BlockRenderRegistration = {
+type BlockRegistration = {
   materials: "opaque" | "alpha_test" | "alpha_test_tint" | "opaque_tint";
   category: string;
   domain?: string;
+  hardness?: number;
+  support?: "none" | "facing_log" | "above_solid" | "above_leaf" | "moss_column" | "vine_faces";
   states: string[];
   variants: { condition: string; model: ModelDescription; tint?: TintDescription }[];
   default: { model: ModelDescription; tint?: TintDescription };
@@ -39,6 +41,8 @@ type BlockRenderRegistration = {
 | `materials` | 该方块所有模型使用的渲染材质，见下表。 |
 | `category` | 方块所属分类路径，决定生成产物的目录位置与默认共享池，必须取自固定分类树。 |
 | `domain` | 可选。覆盖共享池的划分键；省略时回落到 `category`。仅在特殊方块不适合与同类目共池时使用。 |
+| `hardness` | 可选，默认 `1`。原版硬度，驱动挖掘时间与攻击折算击数。 |
+| `support` | 可选，默认 `none`。附着支撑规则：`facing_log`（朝向面须为原木类）、`above_solid`（上方须为实体宿主）、`above_leaf`（`hanging` 态时上方须为树叶，非悬挂恒支撑）、`moss_column`（同类列支撑并重算 `tip`）、`vine_faces`（逐面支撑并重算方向位）。宿主类别按 `category` 判定。 |
 | `states` | 该记录会读取的方块状态名列表，使用带命名空间的完整写法。`condition` 中引用的状态都必须在此声明。 |
 | `variants` | 按声明顺序求值的条件变体。第一个条件为真的变体生效。 |
 | `default` | 所有变体都不匹配时使用的兜底模型。 |

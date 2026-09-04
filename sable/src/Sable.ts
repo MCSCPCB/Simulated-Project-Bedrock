@@ -16,3 +16,70 @@ export type {
   SubLevelRenderBody
 } from "./sublevel/SubLevel.js";
 export type { SubLevelRenderData } from "./sublevel/render/SubLevelRenderData.js";
+export {
+  SubLevelInteractionSystem,
+  SubLevelInteractionHandle,
+  isSubLevelBlockCollidable,
+  isSubLevelBlockRaySolid
+} from "./sublevel/system/SubLevelInteractionSystem.js";
+export type {
+  SubLevelInteractionRaycastHit,
+  SubLevelInteractionRaycastOptions,
+  SubLevelInteractionRegistrationOptions
+} from "./sublevel/system/SubLevelInteractionSystem.js";
+export {
+  SubLevelPlayerInteractionController
+} from "./content/punching/SubLevelPlayerInteraction.js";
+export type {
+  SubLevelBlockInteractionHandler,
+  SubLevelEditAction
+} from "./content/punching/SubLevelPlayerInteraction.js";
+export {
+  BLOCK_CRACK_ENTITY_TYPE_ID,
+  BLOCK_OUTLINE_ENTITY_TYPE_ID,
+  INTERACTION_REACH
+} from "./content/block_outline_render/SubLevelOutlineController.js";
+export type {
+  SubLevelBlockBreakHandler,
+  SubLevelBlockMiningEffectHandler,
+  SubLevelBlockPlaceHandler,
+  SubLevelBlockPlacementEffectHandler,
+  SubLevelOutlineActionTarget,
+  SubLevelRaycastResult
+} from "./content/block_outline_render/SubLevelOutlineController.js";
+export {
+  CHEST_ENTITY_TYPE_ID,
+  SubLevelContainerInteractionController
+} from "./content/assembly/SubLevelContainerInteraction.js";
+export type {
+  SubLevelChestStorageBinding
+} from "./content/assembly/SubLevelContainerInteraction.js";
+export {
+  INTERACTION_TARGET_BLOCK_TYPE_ID
+} from "./content/block_placement/SubLevelInteractionTargetBlock.js";
+export {
+  resolveSubLevelBlockSupport
+} from "./content/block_properties/SubLevelBlockSupport.js";
+export {
+  resolveVanillaBlockBreakSound,
+  resolveVanillaBlockHitSound,
+  resolveVanillaBlockPlaceSound,
+  selectDominantVanillaBlockBreakSound
+} from "./content/sublevel_sounds/SubLevelBlockSounds.js";
+export {
+  getSubLevelMiningRequiredHits,
+  getSubLevelMiningTargetTicks
+} from "./content/punching/SubLevelMiningTime.js";
+export { mergeStackableItemDrops } from "./content/punching/SubLevelItemDrops.js";
+export type { PendingItemDrop } from "./content/punching/SubLevelItemDrops.js";
+export {
+  BLOCK_BREAK_PARTICLE_PROFILE,
+  BLOCK_HIT_PARTICLE_PROFILE,
+  spawnSubLevelBlockDestructParticle
+} from "./content/particle/SubLevelBlockParticles.js";
+export type { BlockParticleProfile } from "./content/particle/SubLevelBlockParticles.js";
+export { SubLevelStorage } from "./sublevel/storage/serialization/SubLevelStorage.js";
+export type {
+  SerializedSubLevelStructure
+} from "./sublevel/storage/serialization/SubLevelData.js";
+export { ActivePlayerRegistry } from "./api/player/ActivePlayerRegistry.js";

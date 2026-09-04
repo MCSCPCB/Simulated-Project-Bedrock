@@ -1,7 +1,11 @@
-import { mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rmdir, unlink, writeFile } from "node:fs/promises";
 import { dirname, join, posix, relative, sep } from "node:path";
 import { transform } from "esbuild";
 import { CATEGORY_TREE, type CompiledModel, type CompiledPool } from "./registry.ts";
+import {
+  collectDestructParticleTargets,
+  collectFunctionalResourceTargets
+} from "./functional-resources.ts";
 import {
   createCarrierEntity,
   createFancyClientEntity,
@@ -67,11 +71,14 @@ const REGISTRY_MODULE_PATH = "SableBP/scripts/sable/generated/sublevel-block-ren
 // Every file the tool writes lives inside one of these subtrees (plus the
 // individually named pack-level files below); nothing else is ever touched.
 const MANAGED_SUBTREES = [
+  "SableBP/blocks/sable",
   "SableBP/entities/sable/sublevel",
   "SableBP/scripts/sable",
   "SableRP/entity/sable/sublevel",
+  "SableRP/models/blocks/sable",
   "SableRP/models/entity/sable/sublevel",
   "SableRP/animations/sable/sublevel",
+  "SableRP/particles/sable",
   "SableRP/render_controllers/sable/sublevel"
 ] as const;
 
@@ -96,6 +103,15 @@ function entityMaterials(): JsonObject {
         "+samplerStates": [
           { samplerIndex: 0, textureWrap: "Clamp", textureFilter: "Bilinear" }
         ]
+      },
+      "block_crack_multiply:alpha_block_color": {
+        "+states": ["Blending", "DisableDepthWrite", "DisableAlphaWrite"],
+        depthFunc: "LessEqual",
+        blendSrc: "DestColor",
+        blendDst: "Zero"
+      },
+      "block_outline:entity_emissive_alpha": {
+        depthFunc: "Always"
       }
     }
   };
@@ -236,6 +252,9 @@ export async function writeSablePacks(
   targets.set("SableRP/materials/entity.material", jsonText(entityMaterials()));
   targets.set("SableRP/textures/colormap/foliage_fixed.tga", fixedColormapTga(fixedTintPalette));
 
+  await collectFunctionalResourceTargets(targets);
+  collectDestructParticleTargets(models, targets);
+
   await collectScriptTargets(srcRoot, runtimeRegistry, targets);
 
   for (const [relativePath, content] of targets) {
@@ -255,11 +274,49 @@ export async function writeSablePacks(
   }
 
   // Only stale files inside the tool's own subtrees are removed; everything
-  // else in the packs belongs to other owners and stays untouched.
+  // else in the packs belongs to other owners and stays untouched. Emptied
+  // per-block folders go with their files; the category skeleton stays.
+  const skeleton = new Set<string>();
+  for (const root of CATEGORY_SKELETON_ROOTS) {
+    for (const route of ["fancy", "vanilla"] as const) {
+      skeleton.add(join(packsRoot, root));
+      skeleton.add(join(packsRoot, root, route));
+      for (const [group, children] of Object.entries(CATEGORY_TREE)) {
+        skeleton.add(join(packsRoot, root, route, group));
+        for (const child of children) skeleton.add(join(packsRoot, root, route, group, child));
+      }
+    }
+  }
   for (const subtree of MANAGED_SUBTREES) {
     for (const path of await listFiles(join(packsRoot, subtree))) {
       const relativePath = relative(packsRoot, path).split(sep).join("/");
       if (!targets.has(relativePath)) await unlink(path);
     }
+    await removeEmptyDirectories(join(packsRoot, subtree), skeleton);
+  }
+}
+
+async function removeEmptyDirectories(root: string, keep: ReadonlySet<string>): Promise<boolean> {
+  let entries;
+  try {
+    entries = await readdir(root, { withFileTypes: true });
+  } catch {
+    return false;
+  }
+  let empty = true;
+  for (const entry of entries) {
+    const path = join(root, entry.name);
+    if (entry.isDirectory()) {
+      if (!await removeEmptyDirectories(path, keep)) empty = false;
+    } else {
+      empty = false;
+    }
+  }
+  if (!empty || keep.has(root)) return false;
+  try {
+    await rmdir(root);
+    return true;
+  } catch {
+    return false;
   }
 }

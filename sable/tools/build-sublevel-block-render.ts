@@ -5,7 +5,7 @@ import { readAndCompileRegistry, toRuntimeRegistry, type CompiledModel } from ".
 import { writeSablePacks } from "./sublevel-block-render/resources.ts";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const registryPath = join(root, "src", "data", "sublevel-block-render.json");
+const registryPath = join(root, "src", "data", "sublevel-block.json");
 const srcPath = join(root, "src");
 const packsPath = join(root, "packs");
 

@@ -4,6 +4,7 @@
     "minecraft:oak_log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -56,6 +57,7 @@
     "minecraft:spruce_log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -108,6 +110,7 @@
     "minecraft:birch_log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -160,6 +163,7 @@
     "minecraft:jungle_log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -212,6 +216,7 @@
     "minecraft:acacia_log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -264,6 +269,7 @@
     "minecraft:dark_oak_log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -316,6 +322,7 @@
     "minecraft:mangrove_log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -368,6 +375,7 @@
     "minecraft:cherry_log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -420,6 +428,7 @@
     "minecraft:pale_oak_log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -472,6 +481,7 @@
     "minecraft:stripped_oak_log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -524,6 +534,7 @@
     "minecraft:stripped_spruce_log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -576,6 +587,7 @@
     "minecraft:stripped_birch_log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -628,6 +640,7 @@
     "minecraft:stripped_jungle_log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -680,6 +693,7 @@
     "minecraft:stripped_acacia_log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -732,6 +746,7 @@
     "minecraft:stripped_dark_oak_log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -784,6 +799,7 @@
     "minecraft:stripped_mangrove_log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -836,6 +852,7 @@
     "minecraft:stripped_cherry_log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -888,6 +905,7 @@
     "minecraft:stripped_pale_oak_log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -940,6 +958,7 @@
     "minecraft:oak_wood": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -992,6 +1011,7 @@
     "minecraft:spruce_wood": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -1044,6 +1064,7 @@
     "minecraft:birch_wood": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -1096,6 +1117,7 @@
     "minecraft:jungle_wood": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -1148,6 +1170,7 @@
     "minecraft:acacia_wood": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -1200,6 +1223,7 @@
     "minecraft:dark_oak_wood": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -1252,6 +1276,7 @@
     "minecraft:mangrove_wood": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -1304,6 +1329,7 @@
     "minecraft:cherry_wood": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -1356,6 +1382,7 @@
     "minecraft:pale_oak_wood": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -1408,6 +1435,7 @@
     "minecraft:stripped_oak_wood": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -1460,6 +1488,7 @@
     "minecraft:stripped_spruce_wood": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -1512,6 +1541,7 @@
     "minecraft:stripped_birch_wood": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -1564,6 +1594,7 @@
     "minecraft:stripped_jungle_wood": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -1616,6 +1647,7 @@
     "minecraft:stripped_acacia_wood": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -1668,6 +1700,7 @@
     "minecraft:stripped_dark_oak_wood": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -1720,6 +1753,7 @@
     "minecraft:stripped_mangrove_wood": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -1772,6 +1806,7 @@
     "minecraft:stripped_cherry_wood": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -1824,6 +1859,7 @@
     "minecraft:stripped_pale_oak_wood": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:pillar_axis"
       ],
@@ -1876,6 +1912,7 @@
     "minecraft:log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:old_log_type",
         "minecraft:pillar_axis"
@@ -2028,6 +2065,7 @@
     "minecraft:log2": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
+      "hardness": 2,
       "states": [
         "minecraft:new_log_type",
         "minecraft:pillar_axis"
@@ -2114,6 +2152,7 @@
     "minecraft:oak_leaves": {
       "materials": "alpha_test_tint",
       "category": "nature/leaves",
+      "hardness": 0.2,
       "states": [],
       "variants": [],
       "default": {
@@ -2136,6 +2175,7 @@
     "minecraft:jungle_leaves": {
       "materials": "alpha_test_tint",
       "category": "nature/leaves",
+      "hardness": 0.2,
       "states": [],
       "variants": [],
       "default": {
@@ -2158,6 +2198,7 @@
     "minecraft:acacia_leaves": {
       "materials": "alpha_test_tint",
       "category": "nature/leaves",
+      "hardness": 0.2,
       "states": [],
       "variants": [],
       "default": {
@@ -2180,6 +2221,7 @@
     "minecraft:dark_oak_leaves": {
       "materials": "alpha_test_tint",
       "category": "nature/leaves",
+      "hardness": 0.2,
       "states": [],
       "variants": [],
       "default": {
@@ -2202,6 +2244,7 @@
     "minecraft:mangrove_leaves": {
       "materials": "alpha_test_tint",
       "category": "nature/leaves",
+      "hardness": 0.2,
       "states": [],
       "variants": [],
       "default": {
@@ -2224,6 +2267,7 @@
     "minecraft:spruce_leaves": {
       "materials": "alpha_test_tint",
       "category": "nature/leaves",
+      "hardness": 0.2,
       "states": [],
       "variants": [],
       "default": {
@@ -2247,6 +2291,7 @@
     "minecraft:birch_leaves": {
       "materials": "alpha_test_tint",
       "category": "nature/leaves",
+      "hardness": 0.2,
       "states": [],
       "variants": [],
       "default": {
@@ -2270,6 +2315,7 @@
     "minecraft:cherry_leaves": {
       "materials": "alpha_test",
       "category": "nature/leaves",
+      "hardness": 0.2,
       "states": [],
       "variants": [],
       "default": {
@@ -2289,6 +2335,7 @@
     "minecraft:pale_oak_leaves": {
       "materials": "alpha_test",
       "category": "nature/leaves",
+      "hardness": 0.2,
       "states": [],
       "variants": [],
       "default": {
@@ -2308,6 +2355,7 @@
     "minecraft:azalea_leaves": {
       "materials": "alpha_test",
       "category": "nature/leaves",
+      "hardness": 0.2,
       "states": [],
       "variants": [],
       "default": {
@@ -2327,6 +2375,7 @@
     "minecraft:flowering_azalea_leaves": {
       "materials": "alpha_test",
       "category": "nature/leaves",
+      "hardness": 0.2,
       "states": [],
       "variants": [],
       "default": {
@@ -2346,6 +2395,7 @@
     "minecraft:azalea_leaves_flowered": {
       "materials": "alpha_test",
       "category": "nature/leaves",
+      "hardness": 0.2,
       "states": [],
       "variants": [],
       "default": {
@@ -2365,6 +2415,7 @@
     "minecraft:leaves": {
       "materials": "alpha_test_tint",
       "category": "nature/leaves",
+      "hardness": 0.2,
       "states": [
         "minecraft:old_leaf_type"
       ],
@@ -2460,6 +2511,7 @@
     "minecraft:leaves2": {
       "materials": "alpha_test_tint",
       "category": "nature/leaves",
+      "hardness": 0.2,
       "states": [
         "minecraft:new_leaf_type"
       ],
@@ -2519,6 +2571,7 @@
     "minecraft:chest": {
       "materials": "alpha_test",
       "category": "functional/chests_and_containers",
+      "hardness": 2.5,
       "states": [
         "minecraft:cardinal_direction"
       ],
@@ -2567,6 +2620,8 @@
     "minecraft:bee_nest": {
       "materials": "opaque",
       "category": "nature/other_natural_blocks",
+      "hardness": 0.3,
+      "support": "none",
       "states": [
         "minecraft:direction",
         "minecraft:honey_level"
@@ -2693,6 +2748,8 @@
     "minecraft:cocoa": {
       "materials": "alpha_test",
       "category": "nature/crops",
+      "hardness": 0.2,
+      "support": "facing_log",
       "states": [
         "minecraft:direction",
         "minecraft:age"
@@ -2819,6 +2876,8 @@
     "minecraft:hanging_roots": {
       "materials": "alpha_test",
       "category": "nature/plants_and_flowers",
+      "hardness": 0.2,
+      "support": "above_solid",
       "states": [],
       "variants": [],
       "default": {
@@ -2862,6 +2921,8 @@
     "minecraft:mangrove_propagule": {
       "materials": "alpha_test",
       "category": "nature/saplings",
+      "hardness": 0.2,
+      "support": "above_leaf",
       "states": [
         "minecraft:hanging",
         "minecraft:propagule_stage"
@@ -2917,6 +2978,8 @@
     "minecraft:pale_hanging_moss": {
       "materials": "alpha_test",
       "category": "nature/plants_and_flowers",
+      "hardness": 0.2,
+      "support": "moss_column",
       "states": [
         "minecraft:tip"
       ],
@@ -2949,6 +3012,8 @@
     "minecraft:vine": {
       "materials": "alpha_test_tint",
       "category": "nature/plants_and_flowers",
+      "hardness": 0.2,
+      "support": "vine_faces",
       "states": [
         "minecraft:vine_direction_bits"
       ],

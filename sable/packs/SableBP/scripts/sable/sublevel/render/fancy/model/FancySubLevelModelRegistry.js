@@ -30,6 +30,15 @@ function resolveFancySubLevelBlock(block) {
 function hasFancySubLevelRegistration(typeId) {
   return blockRenderRegistry[typeId] !== void 0;
 }
+function getSubLevelBlockRegistration(typeId) {
+  const registration = blockRenderRegistry[typeId];
+  if (!registration) return void 0;
+  return {
+    category: registration.category,
+    hardness: registration.hardness,
+    support: registration.support
+  };
+}
 function resolveMissingFancySubLevelBlock(block) {
   const model = materializeModel(MISSING_MODEL);
   return { block, model, state: 0 };
@@ -88,6 +97,7 @@ function stateValue(states, name) {
   return separator >= 0 ? states[name.slice(separator + 1)] : states[`minecraft:${name}`];
 }
 export {
+  getSubLevelBlockRegistration,
   hasFancySubLevelRegistration,
   resolveFancySubLevelBlock,
   resolveMissingFancySubLevelBlock
