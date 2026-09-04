@@ -11,32 +11,23 @@
     "name": "pack.name",
     "description": "pack.description",
     "uuid": "d2e6a4d9-5f35-4d5f-8f9e-f8d3a6fb4d42",
-    "version": [
-      1,
-      0,
-      0
-    ],
+    "version": "1.0.0",
     "min_engine_version": "1.26.30"
   },
   "modules": [
     {
       "type": "resources",
       "uuid": "d6d7b1f9-c2b3-4d9a-8e14-3f4d8d4b5c21",
-      "version": [
-        1,
-        0,
-        0
-      ]
+      "version": "1.0.0"
     }
+  ],
+  "capabilities": [
+    "pbr"
   ],
   "dependencies": [
     {
       "uuid": "5bd1a5b8-6d6b-4c9f-9f31-33f2f5963501",
-      "version": [
-        1,
-        0,
-        0
-      ]
+      "version": "1.0.0"
     }
   ]
 }

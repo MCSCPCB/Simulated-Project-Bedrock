@@ -7,48 +7,30 @@
     "product_type": "addon"
   },
   "header": {
-    "pack_scope": "world",
     "name": "pack.name",
     "description": "pack.description",
     "uuid": "5bd1a5b8-6d6b-4c9f-9f31-33f2f5963501",
-    "version": [
-      1,
-      0,
-      0
-    ],
+    "version": "1.0.0",
     "min_engine_version": "1.26.30"
   },
   "modules": [
     {
       "type": "data",
       "uuid": "d98f571c-aab0-4d20-9b91-b8e8ac52f0bc",
-      "version": [
-        1,
-        0,
-        0
-      ]
+      "version": "1.0.0"
     },
     {
-      "description": "Sable script",
       "language": "javascript",
       "type": "script",
       "entry": "scripts/sable/Sable.js",
       "uuid": "4b8a31c2-2f5d-49cf-a9ae-8c0ee4c4e31f",
-      "version": [
-        1,
-        0,
-        0
-      ]
+      "version": "1.0.0"
     }
   ],
   "dependencies": [
     {
       "uuid": "d2e6a4d9-5f35-4d5f-8f9e-f8d3a6fb4d42",
-      "version": [
-        1,
-        0,
-        0
-      ]
+      "version": "1.0.0"
     },
     {
       "module_name": "@minecraft/server",
