@@ -50,6 +50,7 @@ interface LiveCarrier {
   readonly entity: Entity;
   readonly modelIds: Set<string>;
   readonly pendingRiderIds: Set<string>;
+  readonly persistentRiders: Map<string, Entity>;
   readonly persistentRiderIds: Set<string>;
 }
 
@@ -210,6 +211,7 @@ export class FancySubLevelModelRenderer implements SubLevelRenderData {
     carrier ??= this.#createCarrier(true);
     ejectCurrentVehicle(entity);
     if (!carrier.entity.getComponent("minecraft:rideable")?.addRider(entity)) return false;
+    carrier.persistentRiders.set(entity.id, entity);
     carrier.persistentRiderIds.add(entity.id);
     scheduleRiderMountConfirmation(
       carrier.entity,
@@ -239,6 +241,7 @@ export class FancySubLevelModelRenderer implements SubLevelRenderData {
       carrier.entity.getComponent("minecraft:rideable")?.ejectRider(entity);
     }
     carrier.pendingRiderIds.delete(entity.id);
+    carrier.persistentRiders.delete(entity.id);
     carrier.persistentRiderIds.delete(entity.id);
     if (!preserveEmptyCarrier) this.#removeEmptyCarrier(carrier, true);
   }
@@ -247,6 +250,22 @@ export class FancySubLevelModelRenderer implements SubLevelRenderData {
     for (const carrier of [...this.#carriers]) {
       if (carrier.dedicatedToPersistentRiders && carrier.persistentRiderIds.size === 0) {
         this.#removeEmptyCarrier(carrier, true);
+      }
+    }
+  }
+
+  transferPersistentRidersTo(target: SubLevelRenderData): void {
+    // Recreated projections need the same storage entities, including riders
+    // whose native mount confirmation is still pending.
+    const persistentRiders = this.#carriers.flatMap(carrier => (
+      [...carrier.persistentRiders.values()].filter(rider => rider.isValid)
+    ));
+    if (persistentRiders.length === 0) return;
+    for (const rider of persistentRiders) ejectCurrentVehicle(rider);
+    this.remove();
+    for (const rider of persistentRiders) {
+      if (!target.attachPersistentRider?.(rider)) {
+        throw new Error(`Could not reattach persistent sub-level entity ${rider.id}.`);
       }
     }
   }
@@ -312,8 +331,9 @@ export class FancySubLevelModelRenderer implements SubLevelRenderData {
     }
     const revision = ++this.#renderAnchorRevision;
     const persistentRiders = this.#carriers.flatMap(carrier => (
-      nativeRiders(carrier.entity).filter(rider => carrier.persistentRiderIds.has(rider.id))
+      [...carrier.persistentRiders.values()].filter(rider => rider.isValid)
     ));
+    for (const rider of persistentRiders) ejectCurrentVehicle(rider);
     this.remove();
     this.#resetPoseState(nextAnchor);
     this.#appendModels(packed.models);
@@ -499,6 +519,7 @@ export class FancySubLevelModelRenderer implements SubLevelRenderData {
       entity,
       modelIds: new Set(),
       pendingRiderIds: new Set(),
+      persistentRiders: new Map(),
       persistentRiderIds: new Set()
     };
     this.#carriers.push(carrier);

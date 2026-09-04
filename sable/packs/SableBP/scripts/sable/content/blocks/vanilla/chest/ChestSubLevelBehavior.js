@@ -1,12 +1,10 @@
 import { world } from "@minecraft/server";
-import { blockLocationKey } from "../../../../util/SableVector3Utils.js";
 const CHEST_ENTITY_TYPE_ID = "sable:chest";
 const CHEST_BLOCK_TYPE_ID = "minecraft:chest";
 const CHEST_CONTAINER_SIZE = 27;
 const CHEST_COLLISION_HEIGHT = 0.875;
 function registerChestSubLevelBehavior(context) {
   const containers = context.containers;
-  const bindingsByOwner = /* @__PURE__ */ new Map();
   containers.registerContainerProfile({
     blockTypeId: CHEST_BLOCK_TYPE_ID,
     modelType: "chest",
@@ -20,7 +18,10 @@ function registerChestSubLevelBehavior(context) {
     openSound: { id: "random.chestopen", pitch: 1, volume: 0.5 },
     closeSound: { id: "random.chestclosed", pitch: 1, volume: 0.5, delayTicks: 1 },
     onNativeDeath: (ownerId, binding) => {
-      bindingsByOwner.get(ownerId)?.delete(blockLocationKey(binding.localLocation));
+      context.onNativeDeath?.(ownerId, binding);
+    },
+    onUnexpectedRemoval: (ownerId, binding) => {
+      context.onUnexpectedRemoval?.(ownerId, binding);
     }
   });
   context.behaviors.register(CHEST_BLOCK_TYPE_ID, {
@@ -35,20 +36,11 @@ function registerChestSubLevelBehavior(context) {
     },
     onBlockAdded: (event) => {
       const binding = containers.createStorage(event.ownerId, event.handle, event.block.localLocation);
-      let bindings = bindingsByOwner.get(event.ownerId);
-      if (!bindings) {
-        bindings = /* @__PURE__ */ new Map();
-        bindingsByOwner.set(event.ownerId, bindings);
-      }
-      bindings.set(blockLocationKey(event.block.localLocation), binding);
       fillChestStorage(binding, event.worldData);
     },
     onBlockRemoved: (event) => {
-      const bindings = bindingsByOwner.get(event.ownerId);
-      const key = blockLocationKey(event.block.localLocation);
-      const binding = bindings?.get(key);
-      if (!bindings || !binding) return;
-      bindings.delete(key);
+      const binding = containers.getBinding(event.handle, event.block.localLocation);
+      if (!binding) return;
       containers.settleStorages(
         event.ownerId,
         [binding],
@@ -56,27 +48,15 @@ function registerChestSubLevelBehavior(context) {
         (localLocation) => event.handle.localPointToWorld(localLocation)
       );
     },
-    onSubLevelRemoved: (ownerId, handle) => {
-      const bindings = bindingsByOwner.get(ownerId);
-      if (!bindings) return;
-      bindingsByOwner.delete(ownerId);
-      for (const binding of bindings.values()) {
-        try {
-          if (handle.isValid) {
-            containers.settleStorages(
-              ownerId,
-              [binding],
-              handle.dimension,
-              (localLocation) => handle.localPointToWorld(localLocation)
-            );
-            continue;
-          }
-        } catch {
-        }
-        try {
-          containers.discardStorage(binding.storageId);
-        } catch {
-        }
+    onSubLevelRemoved: (ownerId, handle, reason) => {
+      if (reason !== "natural") return;
+      for (const binding of containers.getBindings(ownerId)) {
+        containers.settleStorages(
+          ownerId,
+          [binding],
+          handle.dimension,
+          (localLocation) => handle.localPointToWorld(localLocation)
+        );
       }
     }
   });

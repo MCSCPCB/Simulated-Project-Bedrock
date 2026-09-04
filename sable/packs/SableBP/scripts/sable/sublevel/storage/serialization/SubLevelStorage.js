@@ -19,7 +19,7 @@ class SubLevelStorage {
     this.#target = target;
     this.#manifestStore = this.#createStore(`${prefix}_manifest`);
   }
-  /** The ids of every persisted sub-level; an unreadable manifest reads empty. */
+  /** The ids of every persisted sub-level. */
   listSubLevelIds() {
     return [...this.#loadManifest().subLevelIds];
   }
@@ -53,7 +53,11 @@ class SubLevelStorage {
   }
   #loadManifest() {
     const raw = this.#manifestStore.load();
-    return isSubLevelStorageManifest(raw) ? raw : { subLevelIds: [] };
+    if (raw === void 0) return { subLevelIds: [] };
+    if (!isSubLevelStorageManifest(raw)) {
+      throw new Error("The stored sub-level manifest is invalid.");
+    }
+    return raw;
   }
   #recordStore(id) {
     let store = this.#recordStores.get(id);

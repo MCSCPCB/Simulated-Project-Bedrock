@@ -6,6 +6,7 @@
 import type { Dimension, Vector3 } from "@minecraft/server";
 import type { SubLevelBlock } from "../../sublevel/SubLevel.js";
 import type { SubLevelInteractionHandle } from "../../sublevel/system/SubLevelInteractionSystem.js";
+import type { SubLevelRemovalReason } from "../../sublevel/storage/SubLevelRemovalReason.js";
 
 /** A block still standing in the world, about to become a sub-level block. */
 export interface SubLevelBlockWorldCapture {
@@ -35,7 +36,11 @@ export interface SubLevelBlockBehavior {
   /** The block left a sub-level through the edit pipeline. */
   onBlockRemoved?(event: SubLevelBlockLifecycleEvent): void;
   /** The whole sub-level is being torn down; release per-owner state. */
-  onSubLevelRemoved?(ownerId: string, handle: SubLevelInteractionHandle): void;
+  onSubLevelRemoved?(
+    ownerId: string,
+    handle: SubLevelInteractionHandle,
+    reason: SubLevelRemovalReason
+  ): void;
 }
 
 export class SubLevelBlockBehaviorRegistry {

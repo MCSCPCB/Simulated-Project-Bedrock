@@ -59,6 +59,8 @@ export interface SubLevelContainerProfile {
   readonly closeSound?: SubLevelContainerSound & { readonly delayTicks: number };
   /** Retire owner-side state after a storage entity dies natively. */
   onNativeDeath?(ownerId: string, binding: SubLevelContainerStorageBinding): void;
+  /** Notify the owner when the storage entity disappears without native death. */
+  onUnexpectedRemoval?(ownerId: string, binding: SubLevelContainerStorageBinding): void;
 }
 
 interface ContainerStorageRecord {
@@ -138,6 +140,11 @@ export class SubLevelContainerInteractionController {
       const player = event.closeSource.entity;
       if (player?.typeId !== "minecraft:player") return;
       this.#closeContainer(player.id, event.entity);
+    });
+    world.beforeEvents.entityHurt.subscribe(event => {
+      if (!this.#profilesByEntityTypeId.has(event.hurtEntity.typeId)) return;
+      if (this.#settlingEntityIds.has(event.hurtEntity.id)) return;
+      event.cancel = true;
     });
     world.afterEvents.entityDie.subscribe(event => {
       if (!this.#profilesByEntityTypeId.has(event.deadEntity.typeId)) return;
@@ -306,6 +313,10 @@ export class SubLevelContainerInteractionController {
     record.attached = false;
     record.lastLocation = undefined;
     this.#invalidateRuntimeReferences(record);
+    record.profile?.onUnexpectedRemoval?.(record.ownerId, {
+      localLocation: { ...record.localLocation },
+      storageId: record.storageId
+    });
   }
 
   registerSavedBindings(ownerId: string, bindings: readonly SubLevelContainerStorageBinding[]): void {
@@ -320,7 +331,12 @@ export class SubLevelContainerInteractionController {
     if (this.#bindingRegistrationComplete) return;
     this.#bindingRegistrationComplete = true;
     for (const record of [...this.#recordByStorageId.values()]) {
-      if (record.claimed) continue;
+      if (record.claimed) {
+        if (record.handle?.isValid && !record.entity?.isValid) {
+          this.#ensureStorageEntity(record, record.handle);
+        }
+        continue;
+      }
       this.#removeRecordIndexes(record);
       if (record.entity?.isValid) record.entity.remove();
     }
@@ -344,6 +360,7 @@ export class SubLevelContainerInteractionController {
       }
       if (record.handle !== handle) record.attached = false;
       this.#setRecordHandle(record, handle);
+      this.#ensureStorageEntity(record, handle);
       this.#storageIdBySubLevelBlock.set(
         subLevelBlockKey(handle.id, binding.localLocation),
         binding.storageId
@@ -352,20 +369,23 @@ export class SubLevelContainerInteractionController {
     }
   }
 
-  /** Roll back runtime ownership when a restored sub-level fails before commit. */
-  rollbackSubLevelBinding(ownerId: string, handle: SubLevelInteractionHandle): void {
+  /** Release runtime ownership while preserving storage identity for restoration. */
+  unbindSubLevel(ownerId: string, handle: SubLevelInteractionHandle): void {
     for (const record of this.#recordByStorageId.values()) {
       if (record.ownerId !== ownerId || record.handle !== handle) continue;
-      if (record.attached && record.entity?.isValid && handle.isValid) {
-        handle.detachPersistentEntity(record.entity);
+      const entity = record.entity;
+      this.#invalidateRuntimeReferences(record);
+      record.pendingAttachTick = undefined;
+      if (entity?.isValid && handle.isValid) {
+        handle.detachPersistentEntity(entity);
+        entity.triggerEvent(this.#requireProfile(record).deactivateEvent);
       }
       this.#storageIdBySubLevelBlock.delete(
         subLevelBlockKey(handle.id, record.localLocation)
       );
       this.#setRecordHandle(record, undefined);
-      record.attached = false;
-      record.lastLocation = undefined;
     }
+    this.#removeUnusedStorageCarrier(handle);
   }
 
   createStorage(
@@ -384,17 +404,7 @@ export class SubLevelContainerInteractionController {
     );
     try {
       const storageId = entity.id;
-      entity.setDynamicProperty(STORAGE_ID_PROPERTY, storageId);
-      entity.setDynamicProperty(STORAGE_OWNER_PROPERTY, ownerId);
-      entity.setDynamicProperty(STORAGE_LOCATION_PROPERTY, { ...localLocation });
-      entity.nameTag = profile.nameTranslationKey;
-      entity.triggerEvent(profile.deactivateEvent);
-      const container = entity.getComponent("minecraft:inventory")?.container;
-      if (!container || container.size !== profile.containerSize) {
-        throw new Error(
-          `Container storage entity ${profile.storageEntityTypeId} does not expose a ${profile.containerSize}-slot inventory.`
-        );
-      }
+      initializeStorageEntity(entity, ownerId, storageId, localLocation, profile);
       const record: ContainerStorageRecord = {
         active: false,
         handle: undefined,
@@ -421,6 +431,29 @@ export class SubLevelContainerInteractionController {
       if (entity.isValid) entity.remove();
       throw error;
     }
+  }
+
+  /** Returns the persisted binding set currently owned by one sub-level. */
+  getBindings(ownerId: string): SubLevelContainerStorageBinding[] {
+    return [...this.#recordByStorageId.values()]
+      .filter(record => record.ownerId === ownerId)
+      .map(record => ({
+        localLocation: { ...record.localLocation },
+        storageId: record.storageId
+      }));
+  }
+
+  getBinding(
+    handle: SubLevelInteractionHandle,
+    localLocation: Vector3
+  ): SubLevelContainerStorageBinding | undefined {
+    const storageId = this.#storageIdBySubLevelBlock.get(
+      subLevelBlockKey(handle.id, localLocation)
+    );
+    const record = storageId ? this.#recordByStorageId.get(storageId) : undefined;
+    return record
+      ? { localLocation: { ...record.localLocation }, storageId: record.storageId }
+      : undefined;
   }
 
   discardStorage(storageId: string): void {
@@ -526,6 +559,32 @@ export class SubLevelContainerInteractionController {
     const record = this.#recordByStorageId.get(storageId);
     if (!record) throw new Error(`Storage ${storageId} is not registered.`);
     return record;
+  }
+
+  #ensureStorageEntity(
+    record: ContainerStorageRecord,
+    handle: SubLevelInteractionHandle
+  ): void {
+    if (record.entity?.isValid) return;
+    const profile = this.#requireProfile(record);
+    const entity = handle.dimension.spawnEntity(
+      profile.storageEntityTypeId,
+      storageLocationFromCellCenter(handle.localPointToWorld(record.localLocation), profile)
+    );
+    try {
+      initializeStorageEntity(
+        entity,
+        record.ownerId,
+        record.storageId,
+        record.localLocation,
+        profile
+      );
+      record.entity = entity;
+      this.#storageIdByEntityId.set(entity.id, record.storageId);
+    } catch (error) {
+      if (entity.isValid) entity.remove();
+      throw error;
+    }
   }
 
   #activeStorageLocation(
@@ -791,6 +850,26 @@ function storageLocationFromCellCenter(
     y: center.y - profile.collisionHeight * 0.5,
     z: center.z
   };
+}
+
+function initializeStorageEntity(
+  entity: Entity,
+  ownerId: string,
+  storageId: string,
+  localLocation: Vector3,
+  profile: SubLevelContainerProfile
+): void {
+  entity.setDynamicProperty(STORAGE_ID_PROPERTY, storageId);
+  entity.setDynamicProperty(STORAGE_OWNER_PROPERTY, ownerId);
+  entity.setDynamicProperty(STORAGE_LOCATION_PROPERTY, { ...localLocation });
+  entity.nameTag = profile.nameTranslationKey;
+  entity.triggerEvent(profile.deactivateEvent);
+  const container = entity.getComponent("minecraft:inventory")?.container;
+  if (!container || container.size !== profile.containerSize) {
+    throw new Error(
+      `Container storage entity ${profile.storageEntityTypeId} does not expose a ${profile.containerSize}-slot inventory.`
+    );
+  }
 }
 
 function subLevelBlockKey(subLevelId: number, localLocation: Vector3): string {

@@ -44,6 +44,10 @@ import {
   parseBlockLocationKey
 } from "../../util/SableVector3Utils.js";
 import type { SubLevelBlockBehaviorRegistry } from "../block/SubLevelBlockBehaviors.js";
+import type { SubLevelContainerInteractionController } from "../../content/assembly/SubLevelContainerInteraction.js";
+import { SubLevelStorage } from "../../sublevel/storage/serialization/SubLevelStorage.js";
+import type { SerializedSubLevelStructure } from "../../sublevel/storage/serialization/SubLevelData.js";
+import type { SubLevelRemovalReason } from "../../sublevel/storage/SubLevelRemovalReason.js";
 
 /** Region guard for entity budgets; larger captures need explicit staging. */
 const MAX_REGION_VOLUME = 4096;
@@ -65,23 +69,94 @@ interface ManagedSubLevelRecord {
   readonly id: string;
   readonly subLevel: SubLevel;
   readonly handle: SubLevelInteractionHandle;
+  readonly origin: Vector3;
   renderData: SubLevelRenderData;
   removed: boolean;
+  invalidateBody(): void;
 }
 
 /** Tracks every live sub-level and runs the default edit pipeline over them. */
 export class ServerSubLevelContainer {
   readonly #interactionSystem: SubLevelInteractionSystem;
   readonly #blockBehaviors: SubLevelBlockBehaviorRegistry;
+  readonly #containers: SubLevelContainerInteractionController;
+  readonly #storage: SubLevelStorage;
   readonly #recordsByHandleId = new Map<number, ManagedSubLevelRecord>();
   #nextSubLevelId = 1;
+  #initialized = false;
 
   constructor(
     interactionSystem: SubLevelInteractionSystem,
-    blockBehaviors: SubLevelBlockBehaviorRegistry
+    blockBehaviors: SubLevelBlockBehaviorRegistry,
+    containers: SubLevelContainerInteractionController,
+    storage = new SubLevelStorage()
   ) {
     this.#interactionSystem = interactionSystem;
     this.#blockBehaviors = blockBehaviors;
+    this.#containers = containers;
+    this.#storage = storage;
+  }
+
+  initialize(): void {
+    if (this.#initialized) return;
+    this.#initialized = true;
+    const savedSubLevels = this.#storage.listSubLevelIds().map(id => {
+      const saved = this.#storage.loadSubLevel(id);
+      if (!saved) throw new Error(`Stored sub-level manifest entry ${id} has no structure record.`);
+      this.#advanceNextSubLevelId(saved.id);
+      return saved;
+    });
+    for (const saved of savedSubLevels) {
+      this.#containers.registerSavedBindings(saved.id, saved.containerStorages);
+    }
+    for (const saved of savedSubLevels) this.#restoreSubLevel(saved);
+  }
+
+  tick(currentTick: number): void {
+    if (currentTick % 20 !== 0) return;
+    for (const record of [...this.#recordsByHandleId.values()]) {
+      if (record.removed || !record.handle.isValid) continue;
+      if (!record.renderData.hasKnownIntegrityFailure() && record.renderData.hasIntactEntities()) continue;
+      this.#saveRecord(record);
+      this.#destroyRecord(record, "unexpected");
+      throw new Error(`Sub-level ${record.id} was persisted after a visual integrity failure.`);
+    }
+  }
+
+  handleContainerNativeDeath(
+    ownerId: string,
+    binding: import("../../content/assembly/SubLevelContainerInteraction.js").SubLevelContainerStorageBinding
+  ): void {
+    const record = this.#findRecord(ownerId);
+    if (record) {
+      const bindings = this.#containerBindings(record)
+        .filter(entry => entry.storageId !== binding.storageId);
+      this.#saveRecord(record, bindings);
+      return;
+    }
+    const saved = this.#storage.loadSubLevel(ownerId);
+    if (!saved) throw new Error(`Native death storage ${binding.storageId} has no sub-level owner ${ownerId}.`);
+    const bindings = saved.containerStorages.filter(entry => entry.storageId !== binding.storageId);
+    if (!this.#storage.saveSubLevel(ownerId, { ...saved, containerStorages: bindings })) {
+      throw new Error(`Could not persist native death of storage ${binding.storageId}.`);
+    }
+  }
+
+  handleContainerUnexpectedRemoval(
+    ownerId: string,
+    _binding: import("../../content/assembly/SubLevelContainerInteraction.js").SubLevelContainerStorageBinding
+  ): void {
+    const record = this.#findRecord(ownerId);
+    if (record) {
+      this.#saveRecord(record);
+      this.#destroyRecord(record, "unexpected");
+      return;
+    }
+    const saved = this.#storage.loadSubLevel(ownerId);
+    if (!saved) throw new Error(`Unexpected storage removal has no sub-level owner ${ownerId}.`);
+    if (!this.#storage.saveSubLevel(ownerId, saved)) {
+      throw new Error(`Could not persist unexpected removal of sub-level ${ownerId}.`);
+    }
   }
 
   /**
@@ -96,6 +171,7 @@ export class ServerSubLevelContainer {
     to: Vector3,
     options?: CreateSubLevelFromRegionOptions
   ): ManagedSubLevel {
+    this.initialize();
     const minimum = {
       x: Math.min(Math.floor(from.x), Math.floor(to.x)),
       y: Math.min(Math.floor(from.y), Math.floor(to.y)),
@@ -146,44 +222,10 @@ export class ServerSubLevelContainer {
     foliageTint?: SubLevel["foliageTint"],
     worldData?: ReadonlyMap<string, unknown>
   ): ManagedSubLevel {
+    this.initialize();
     const id = `region_${this.#nextSubLevelId++}`;
-    let removed = false;
-    // Static pose: integer locals address world cell centers at origin + 0.5.
-    const body = {
-      get isValid() { return !removed; },
-      getRotation: () => ({ x: 0, y: 0, z: 0 }),
-      localPointToWorld: (local: Vector3): Vector3 => ({
-        x: origin.x + local.x + 0.5,
-        y: origin.y + local.y + 0.5,
-        z: origin.z + local.z + 0.5
-      })
-    };
-    const worldPointToLocal = (point: Vector3): Vector3 => ({
-      x: point.x - origin.x - 0.5,
-      y: point.y - origin.y - 0.5,
-      z: point.z - origin.z - 0.5
-    });
-    const subLevel: SubLevel = { body, blocks, dimension, foliageTint };
-    const renderData = SubLevelRenderer.createRenderData(subLevel);
-    let handle: SubLevelInteractionHandle;
-    const record: ManagedSubLevelRecord = {
-      id,
-      subLevel,
-      handle: undefined as unknown as SubLevelInteractionHandle,
-      renderData,
-      removed: false
-    };
-    try {
-      handle = this.#interactionSystem.register(subLevel, {
-        worldPointToLocal,
-        get renderData() { return record.renderData; }
-      });
-    } catch (error) {
-      renderData.remove();
-      removed = true;
-      throw error;
-    }
-    (record as { handle: SubLevelInteractionHandle }).handle = handle;
+    const record = this.#createRuntimeRecord(id, dimension, origin, blocks, foliageTint);
+    const handle = record.handle;
     this.#recordsByHandleId.set(handle.id, record);
     try {
       for (const block of blocks) {
@@ -195,8 +237,9 @@ export class ServerSubLevelContainer {
           worldData: worldData?.get(blockLocationKey(block.localLocation))
         });
       }
+      this.#saveRecord(record);
     } catch (error) {
-      this.#destroyRecord(record, () => { removed = true; });
+      this.#discardUncommittedRecord(record);
       throw error;
     }
     const container = this;
@@ -205,7 +248,7 @@ export class ServerSubLevelContainer {
       handle,
       get blockCount() { return handle.blocks.length; },
       get entityCount() { return record.renderData.entityCount; },
-      remove() { container.#removeManagedSubLevel(record, () => { removed = true; }); }
+      remove() { container.#removeManagedSubLevel(record); }
     };
   }
 
@@ -216,6 +259,7 @@ export class ServerSubLevelContainer {
     handle: SubLevelInteractionHandle,
     block: SubLevelBlock
   ): boolean {
+    this.initialize();
     const record = this.#recordsByHandleId.get(handle.id);
     if (!record || record.removed || !handle.isValid) return false;
     const current = handle.getBlockAtLocalLocation(block.localLocation);
@@ -260,7 +304,12 @@ export class ServerSubLevelContainer {
     dimension.playSound(sound.sound, targetPosition, { pitch: sound.pitch, volume: sound.volume });
 
     if (handle.blocks.length === 0) {
-      this.#removeManagedSubLevel(record, () => {});
+      if (!this.#storage.deleteSubLevel(record.id)) {
+        throw new Error(`Could not delete naturally emptied sub-level ${record.id}.`);
+      }
+      this.#destroyRecord(record, "natural");
+    } else {
+      this.#saveRecord(record);
     }
     return true;
   }
@@ -291,6 +340,7 @@ export class ServerSubLevelContainer {
     placement: Vector3,
     cardinalDirection: "north" | "east" | "south" | "west"
   ): boolean {
+    this.initialize();
     const record = this.#recordsByHandleId.get(handle.id);
     if (!record || record.removed || !handle.isValid) return false;
     if (getSubLevelBlockRegistration(itemStack.typeId)?.placeable !== true) return false;
@@ -304,6 +354,9 @@ export class ServerSubLevelContainer {
       this.#recreateRender(record, blocks);
       handle.resetBlocks(blocks);
     }
+    const previousBindings = new Set(
+      this.#containerBindings(record).map(binding => binding.storageId)
+    );
     try {
       this.#blockBehaviors.get(placed.typeId)?.onBlockAdded?.({
         block: placed,
@@ -311,9 +364,15 @@ export class ServerSubLevelContainer {
         handle,
         ownerId: record.id
       });
+      this.#saveRecord(record);
       return true;
     } catch (error) {
       handle.removeBlocksAtLocalLocations([placement]);
+      for (const binding of this.#containerBindings(record)) {
+        if (!previousBindings.has(binding.storageId)) {
+          this.#containers.discardStorage(binding.storageId);
+        }
+      }
       throw error;
     }
   }
@@ -372,31 +431,141 @@ export class ServerSubLevelContainer {
 
   #recreateRender(record: ManagedSubLevelRecord, blocks: readonly SubLevelBlock[]): void {
     const previous = record.renderData;
-    record.renderData = SubLevelRenderer.createRenderData({
+    const next = SubLevelRenderer.createRenderData({
       ...record.subLevel,
       blocks
     });
+    try {
+      previous.transferPersistentRidersTo?.(next);
+    } catch (error) {
+      // A failed transfer leaves the uncommitted projection unusable.
+      next.remove();
+      throw error;
+    }
+    record.renderData = next;
     previous.remove();
   }
 
-  #removeManagedSubLevel(record: ManagedSubLevelRecord, invalidateBody: () => void): void {
+  #removeManagedSubLevel(record: ManagedSubLevelRecord): void {
     if (record.removed) return;
-    this.#destroyRecord(record, invalidateBody);
+    this.#saveRecord(record);
+    this.#destroyRecord(record, "planned");
   }
 
-  #destroyRecord(record: ManagedSubLevelRecord, invalidateBody: () => void): void {
-    record.removed = true;
+  #destroyRecord(record: ManagedSubLevelRecord, reason: SubLevelRemovalReason): void {
+    if (record.removed) return;
     for (const behavior of this.#blockBehaviors.behaviors()) {
-      try {
-        behavior.onSubLevelRemoved?.(record.id, record.handle);
-      } catch {
-        // One behavior's teardown failure must not block the rest.
-      }
+      behavior.onSubLevelRemoved?.(record.id, record.handle, reason);
     }
+    if (reason !== "natural") {
+      this.#containers.unbindSubLevel(record.id, record.handle);
+    }
+    record.removed = true;
     this.#recordsByHandleId.delete(record.handle?.id ?? -1);
     record.renderData.remove();
     record.handle?.unregister();
-    invalidateBody();
+    record.invalidateBody();
+  }
+
+  #createRuntimeRecord(
+    id: string,
+    dimension: Dimension,
+    origin: Vector3,
+    blocks: readonly SubLevelBlock[],
+    foliageTint?: SubLevel["foliageTint"]
+  ): ManagedSubLevelRecord {
+    let removed = false;
+    // Static pose: integer locals address world cell centers at origin + 0.5.
+    const body = {
+      get isValid() { return !removed; },
+      getRotation: () => ({ x: 0, y: 0, z: 0 }),
+      localPointToWorld: (local: Vector3): Vector3 => ({
+        x: origin.x + local.x + 0.5,
+        y: origin.y + local.y + 0.5,
+        z: origin.z + local.z + 0.5
+      })
+    };
+    const worldPointToLocal = (point: Vector3): Vector3 => ({
+      x: point.x - origin.x - 0.5,
+      y: point.y - origin.y - 0.5,
+      z: point.z - origin.z - 0.5
+    });
+    const subLevel: SubLevel = { body, blocks, dimension, foliageTint };
+    const renderData = SubLevelRenderer.createRenderData(subLevel);
+    let record: ManagedSubLevelRecord;
+    try {
+      const handle = this.#interactionSystem.register(subLevel, {
+        worldPointToLocal,
+        get renderData() { return record.renderData; }
+      });
+      record = {
+        id,
+        subLevel,
+        handle,
+        origin: { ...origin },
+        renderData,
+        removed: false,
+        invalidateBody: () => { removed = true; }
+      };
+      return record;
+    } catch (error) {
+      renderData.remove();
+      removed = true;
+      throw error;
+    }
+  }
+
+  #restoreSubLevel(saved: SerializedSubLevelStructure): void {
+    const record = this.#createRuntimeRecord(
+      saved.id,
+      world.getDimension(saved.dimensionId),
+      saved.origin,
+      saved.blocks,
+      saved.foliageTint
+    );
+    this.#recordsByHandleId.set(record.handle.id, record);
+    try {
+      this.#containers.bindSubLevel(saved.id, record.handle, saved.containerStorages);
+    } catch (error) {
+      this.#destroyRecord(record, "unexpected");
+      throw error;
+    }
+  }
+
+  #saveRecord(
+    record: ManagedSubLevelRecord,
+    containerStorages = this.#containerBindings(record)
+  ): void {
+    if (!this.#storage.saveSubLevel(record.id, {
+      blocks: [...record.handle.blocks],
+      containerStorages,
+      dimensionId: record.handle.dimension.id,
+      foliageTint: record.subLevel.foliageTint,
+      origin: record.origin
+    })) {
+      throw new Error(`Could not persist sub-level ${record.id}.`);
+    }
+  }
+
+  #findRecord(ownerId: string): ManagedSubLevelRecord | undefined {
+    return [...this.#recordsByHandleId.values()].find(record => record.id === ownerId);
+  }
+
+  #containerBindings(record: ManagedSubLevelRecord) {
+    return this.#containers.getBindings(record.id);
+  }
+
+  #advanceNextSubLevelId(id: string): void {
+    const match = /^region_(\d+)$/.exec(id);
+    if (!match) return;
+    this.#nextSubLevelId = Math.max(this.#nextSubLevelId, Number(match[1]) + 1);
+  }
+
+  #discardUncommittedRecord(record: ManagedSubLevelRecord): void {
+    for (const binding of this.#containerBindings(record)) {
+      this.#containers.discardStorage(binding.storageId);
+    }
+    this.#destroyRecord(record, "unexpected");
   }
 }
 

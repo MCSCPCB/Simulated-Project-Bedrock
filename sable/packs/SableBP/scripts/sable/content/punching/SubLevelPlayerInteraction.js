@@ -173,7 +173,6 @@ class SubLevelPlayerInteractionController {
     const { player, swingSource } = event;
     if (!this.#canInteract(player)) return;
     const itemStack = event.heldItemStack ?? this.#getSelectedItem(player);
-    if (!player.isSneaking && !itemStack) return;
     const pending = this.#pendingPlaceByPlayer.get(player.id);
     const pendingTouchBreak = this.#pendingTouchBreakByPlayer.get(player.id);
     const editAction = resolveSubLevelEditAction(

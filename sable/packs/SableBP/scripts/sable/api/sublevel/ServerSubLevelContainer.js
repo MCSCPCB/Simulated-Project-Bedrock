@@ -25,15 +25,72 @@ import {
   blockLocationKey,
   parseBlockLocationKey
 } from "../../util/SableVector3Utils.js";
+import { SubLevelStorage } from "../../sublevel/storage/serialization/SubLevelStorage.js";
 const MAX_REGION_VOLUME = 4096;
 class ServerSubLevelContainer {
   #interactionSystem;
   #blockBehaviors;
+  #containers;
+  #storage;
   #recordsByHandleId = /* @__PURE__ */ new Map();
   #nextSubLevelId = 1;
-  constructor(interactionSystem, blockBehaviors) {
+  #initialized = false;
+  constructor(interactionSystem, blockBehaviors, containers, storage = new SubLevelStorage()) {
     this.#interactionSystem = interactionSystem;
     this.#blockBehaviors = blockBehaviors;
+    this.#containers = containers;
+    this.#storage = storage;
+  }
+  initialize() {
+    if (this.#initialized) return;
+    this.#initialized = true;
+    const savedSubLevels = this.#storage.listSubLevelIds().map((id) => {
+      const saved = this.#storage.loadSubLevel(id);
+      if (!saved) throw new Error(`Stored sub-level manifest entry ${id} has no structure record.`);
+      this.#advanceNextSubLevelId(saved.id);
+      return saved;
+    });
+    for (const saved of savedSubLevels) {
+      this.#containers.registerSavedBindings(saved.id, saved.containerStorages);
+    }
+    for (const saved of savedSubLevels) this.#restoreSubLevel(saved);
+  }
+  tick(currentTick) {
+    if (currentTick % 20 !== 0) return;
+    for (const record of [...this.#recordsByHandleId.values()]) {
+      if (record.removed || !record.handle.isValid) continue;
+      if (!record.renderData.hasKnownIntegrityFailure() && record.renderData.hasIntactEntities()) continue;
+      this.#saveRecord(record);
+      this.#destroyRecord(record, "unexpected");
+      throw new Error(`Sub-level ${record.id} was persisted after a visual integrity failure.`);
+    }
+  }
+  handleContainerNativeDeath(ownerId, binding) {
+    const record = this.#findRecord(ownerId);
+    if (record) {
+      const bindings2 = this.#containerBindings(record).filter((entry) => entry.storageId !== binding.storageId);
+      this.#saveRecord(record, bindings2);
+      return;
+    }
+    const saved = this.#storage.loadSubLevel(ownerId);
+    if (!saved) throw new Error(`Native death storage ${binding.storageId} has no sub-level owner ${ownerId}.`);
+    const bindings = saved.containerStorages.filter((entry) => entry.storageId !== binding.storageId);
+    if (!this.#storage.saveSubLevel(ownerId, { ...saved, containerStorages: bindings })) {
+      throw new Error(`Could not persist native death of storage ${binding.storageId}.`);
+    }
+  }
+  handleContainerUnexpectedRemoval(ownerId, _binding) {
+    const record = this.#findRecord(ownerId);
+    if (record) {
+      this.#saveRecord(record);
+      this.#destroyRecord(record, "unexpected");
+      return;
+    }
+    const saved = this.#storage.loadSubLevel(ownerId);
+    if (!saved) throw new Error(`Unexpected storage removal has no sub-level owner ${ownerId}.`);
+    if (!this.#storage.saveSubLevel(ownerId, saved)) {
+      throw new Error(`Could not persist unexpected removal of sub-level ${ownerId}.`);
+    }
   }
   /**
    * Captures a loaded world region into an entity-projected sub-level: full
@@ -42,6 +99,7 @@ class ServerSubLevelContainer {
    * registration work.
    */
   createSubLevelFromRegion(dimension, from, to, options) {
+    this.initialize();
     const minimum = {
       x: Math.min(Math.floor(from.x), Math.floor(to.x)),
       y: Math.min(Math.floor(from.y), Math.floor(to.y)),
@@ -82,47 +140,10 @@ class ServerSubLevelContainer {
   }
   /** Assembles, renders, and registers one sub-level from captured blocks. */
   createSubLevel(dimension, origin, blocks, foliageTint, worldData) {
+    this.initialize();
     const id = `region_${this.#nextSubLevelId++}`;
-    let removed = false;
-    const body = {
-      get isValid() {
-        return !removed;
-      },
-      getRotation: () => ({ x: 0, y: 0, z: 0 }),
-      localPointToWorld: (local) => ({
-        x: origin.x + local.x + 0.5,
-        y: origin.y + local.y + 0.5,
-        z: origin.z + local.z + 0.5
-      })
-    };
-    const worldPointToLocal = (point) => ({
-      x: point.x - origin.x - 0.5,
-      y: point.y - origin.y - 0.5,
-      z: point.z - origin.z - 0.5
-    });
-    const subLevel = { body, blocks, dimension, foliageTint };
-    const renderData = SubLevelRenderer.createRenderData(subLevel);
-    let handle;
-    const record = {
-      id,
-      subLevel,
-      handle: void 0,
-      renderData,
-      removed: false
-    };
-    try {
-      handle = this.#interactionSystem.register(subLevel, {
-        worldPointToLocal,
-        get renderData() {
-          return record.renderData;
-        }
-      });
-    } catch (error) {
-      renderData.remove();
-      removed = true;
-      throw error;
-    }
-    record.handle = handle;
+    const record = this.#createRuntimeRecord(id, dimension, origin, blocks, foliageTint);
+    const handle = record.handle;
     this.#recordsByHandleId.set(handle.id, record);
     try {
       for (const block of blocks) {
@@ -134,10 +155,9 @@ class ServerSubLevelContainer {
           worldData: worldData?.get(blockLocationKey(block.localLocation))
         });
       }
+      this.#saveRecord(record);
     } catch (error) {
-      this.#destroyRecord(record, () => {
-        removed = true;
-      });
+      this.#discardUncommittedRecord(record);
       throw error;
     }
     const container = this;
@@ -151,14 +171,13 @@ class ServerSubLevelContainer {
         return record.renderData.entityCount;
       },
       remove() {
-        container.#removeManagedSubLevel(record, () => {
-          removed = true;
-        });
+        container.#removeManagedSubLevel(record);
       }
     };
   }
   /** The default break pipeline: support cascade, effects, loot, block behaviors. */
   breakBlockForPlayerEdit(_player, itemStack, handle, block) {
+    this.initialize();
     const record = this.#recordsByHandleId.get(handle.id);
     if (!record || record.removed || !handle.isValid) return false;
     const current = handle.getBlockAtLocalLocation(block.localLocation);
@@ -199,8 +218,12 @@ class ServerSubLevelContainer {
     const sound = resolveVanillaBlockBreakSound(block.typeId);
     dimension.playSound(sound.sound, targetPosition, { pitch: sound.pitch, volume: sound.volume });
     if (handle.blocks.length === 0) {
-      this.#removeManagedSubLevel(record, () => {
-      });
+      if (!this.#storage.deleteSubLevel(record.id)) {
+        throw new Error(`Could not delete naturally emptied sub-level ${record.id}.`);
+      }
+      this.#destroyRecord(record, "natural");
+    } else {
+      this.#saveRecord(record);
     }
     return true;
   }
@@ -222,6 +245,7 @@ class ServerSubLevelContainer {
   }
   /** The default place pipeline: placeable registrations only, behaviors included. */
   placeBlockForPlayerEdit(player, itemStack, handle, _supportBlock, placement, cardinalDirection) {
+    this.initialize();
     const record = this.#recordsByHandleId.get(handle.id);
     if (!record || record.removed || !handle.isValid) return false;
     if (getSubLevelBlockRegistration(itemStack.typeId)?.placeable !== true) return false;
@@ -233,6 +257,9 @@ class ServerSubLevelContainer {
       this.#recreateRender(record, blocks);
       handle.resetBlocks(blocks);
     }
+    const previousBindings = new Set(
+      this.#containerBindings(record).map((binding) => binding.storageId)
+    );
     try {
       this.#blockBehaviors.get(placed.typeId)?.onBlockAdded?.({
         block: placed,
@@ -240,9 +267,15 @@ class ServerSubLevelContainer {
         handle,
         ownerId: record.id
       });
+      this.#saveRecord(record);
       return true;
     } catch (error) {
       handle.removeBlocksAtLocalLocations([placement]);
+      for (const binding of this.#containerBindings(record)) {
+        if (!previousBindings.has(binding.storageId)) {
+          this.#containers.discardStorage(binding.storageId);
+        }
+      }
       throw error;
     }
   }
@@ -288,28 +321,127 @@ class ServerSubLevelContainer {
   }
   #recreateRender(record, blocks) {
     const previous = record.renderData;
-    record.renderData = SubLevelRenderer.createRenderData({
+    const next = SubLevelRenderer.createRenderData({
       ...record.subLevel,
       blocks
     });
+    try {
+      previous.transferPersistentRidersTo?.(next);
+    } catch (error) {
+      next.remove();
+      throw error;
+    }
+    record.renderData = next;
     previous.remove();
   }
-  #removeManagedSubLevel(record, invalidateBody) {
+  #removeManagedSubLevel(record) {
     if (record.removed) return;
-    this.#destroyRecord(record, invalidateBody);
+    this.#saveRecord(record);
+    this.#destroyRecord(record, "planned");
   }
-  #destroyRecord(record, invalidateBody) {
-    record.removed = true;
+  #destroyRecord(record, reason) {
+    if (record.removed) return;
     for (const behavior of this.#blockBehaviors.behaviors()) {
-      try {
-        behavior.onSubLevelRemoved?.(record.id, record.handle);
-      } catch {
-      }
+      behavior.onSubLevelRemoved?.(record.id, record.handle, reason);
     }
+    if (reason !== "natural") {
+      this.#containers.unbindSubLevel(record.id, record.handle);
+    }
+    record.removed = true;
     this.#recordsByHandleId.delete(record.handle?.id ?? -1);
     record.renderData.remove();
     record.handle?.unregister();
-    invalidateBody();
+    record.invalidateBody();
+  }
+  #createRuntimeRecord(id, dimension, origin, blocks, foliageTint) {
+    let removed = false;
+    const body = {
+      get isValid() {
+        return !removed;
+      },
+      getRotation: () => ({ x: 0, y: 0, z: 0 }),
+      localPointToWorld: (local) => ({
+        x: origin.x + local.x + 0.5,
+        y: origin.y + local.y + 0.5,
+        z: origin.z + local.z + 0.5
+      })
+    };
+    const worldPointToLocal = (point) => ({
+      x: point.x - origin.x - 0.5,
+      y: point.y - origin.y - 0.5,
+      z: point.z - origin.z - 0.5
+    });
+    const subLevel = { body, blocks, dimension, foliageTint };
+    const renderData = SubLevelRenderer.createRenderData(subLevel);
+    let record;
+    try {
+      const handle = this.#interactionSystem.register(subLevel, {
+        worldPointToLocal,
+        get renderData() {
+          return record.renderData;
+        }
+      });
+      record = {
+        id,
+        subLevel,
+        handle,
+        origin: { ...origin },
+        renderData,
+        removed: false,
+        invalidateBody: () => {
+          removed = true;
+        }
+      };
+      return record;
+    } catch (error) {
+      renderData.remove();
+      removed = true;
+      throw error;
+    }
+  }
+  #restoreSubLevel(saved) {
+    const record = this.#createRuntimeRecord(
+      saved.id,
+      world.getDimension(saved.dimensionId),
+      saved.origin,
+      saved.blocks,
+      saved.foliageTint
+    );
+    this.#recordsByHandleId.set(record.handle.id, record);
+    try {
+      this.#containers.bindSubLevel(saved.id, record.handle, saved.containerStorages);
+    } catch (error) {
+      this.#destroyRecord(record, "unexpected");
+      throw error;
+    }
+  }
+  #saveRecord(record, containerStorages = this.#containerBindings(record)) {
+    if (!this.#storage.saveSubLevel(record.id, {
+      blocks: [...record.handle.blocks],
+      containerStorages,
+      dimensionId: record.handle.dimension.id,
+      foliageTint: record.subLevel.foliageTint,
+      origin: record.origin
+    })) {
+      throw new Error(`Could not persist sub-level ${record.id}.`);
+    }
+  }
+  #findRecord(ownerId) {
+    return [...this.#recordsByHandleId.values()].find((record) => record.id === ownerId);
+  }
+  #containerBindings(record) {
+    return this.#containers.getBindings(record.id);
+  }
+  #advanceNextSubLevelId(id) {
+    const match = /^region_(\d+)$/.exec(id);
+    if (!match) return;
+    this.#nextSubLevelId = Math.max(this.#nextSubLevelId, Number(match[1]) + 1);
+  }
+  #discardUncommittedRecord(record) {
+    for (const binding of this.#containerBindings(record)) {
+      this.#containers.discardStorage(binding.storageId);
+    }
+    this.#destroyRecord(record, "unexpected");
   }
 }
 function buildPlacedBlock(_player, typeId, placement, cardinalDirection) {

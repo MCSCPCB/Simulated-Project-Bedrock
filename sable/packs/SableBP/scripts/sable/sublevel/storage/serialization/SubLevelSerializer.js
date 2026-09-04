@@ -12,7 +12,8 @@ function serializeSubLevelStructure(id, source) {
     blocks: source.blocks.map(cloneSubLevelBlock),
     containerStorages: (source.containerStorages ?? []).map(cloneContainerStorageBinding),
     dimensionId: source.dimensionId,
-    id
+    id,
+    origin: { ...source.origin }
   };
   if (source.foliageTint) structure.foliageTint = { ...source.foliageTint };
   if (!isSerializedSubLevelStructure(structure)) {
@@ -28,7 +29,8 @@ function deserializeSubLevelStructure(value) {
     blocks: value.blocks.map(cloneSubLevelBlock),
     containerStorages: value.containerStorages.map(cloneContainerStorageBinding),
     dimensionId: value.dimensionId,
-    id: value.id
+    id: value.id,
+    origin: { ...value.origin }
   };
   if (value.foliageTint) structure.foliageTint = { ...value.foliageTint };
   return structure;

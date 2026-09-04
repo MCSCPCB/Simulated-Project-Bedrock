@@ -11,8 +11,9 @@ function isSerializedSubLevelStructure(value) {
     "containerStorages",
     "dimensionId",
     "foliageTint",
-    "id"
-  ]) && typeof structure.id === "string" && structure.id.length > 0 && typeof structure.dimensionId === "string" && structure.dimensionId.length > 0 && Array.isArray(structure.blocks) && structure.blocks.length > 0 && structure.blocks.every(isSerializedSubLevelBlock) && Array.isArray(structure.containerStorages) && structure.containerStorages.every(isContainerStorageBinding) && (structure.foliageTint === void 0 || isSubLevelFoliageTint(structure.foliageTint));
+    "id",
+    "origin"
+  ]) && typeof structure.id === "string" && structure.id.length > 0 && typeof structure.dimensionId === "string" && structure.dimensionId.length > 0 && isIntegerLocation(structure.origin) && Array.isArray(structure.blocks) && structure.blocks.length > 0 && structure.blocks.every(isSerializedSubLevelBlock) && Array.isArray(structure.containerStorages) && structure.containerStorages.every(isContainerStorageBinding) && (structure.foliageTint === void 0 || isSubLevelFoliageTint(structure.foliageTint));
 }
 function isContainerStorageBinding(value) {
   if (!value || typeof value !== "object") return false;

@@ -150,6 +150,10 @@ class CompositeSubLevelRenderData implements SubLevelRenderData {
     this.fancy.removeEmptyPersistentRiderCarriers?.();
     this.vanilla.removeEmptyPersistentRiderCarriers?.();
   }
+  transferPersistentRidersTo(target: SubLevelRenderData): void {
+    this.fancy.transferPersistentRidersTo?.(target);
+    this.vanilla.transferPersistentRidersTo?.(target);
+  }
 }
 
 function spawnTaggedEntity(

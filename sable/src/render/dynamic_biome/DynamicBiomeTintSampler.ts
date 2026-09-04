@@ -44,7 +44,7 @@ export function captureSubLevelFoliageTint(
   origin: Vector3
 ): SubLevelFoliageTint {
   const foliage = blocks.filter(block => (
-    resolveFancySubLevelBlock(block)?.model.tint !== undefined
+    resolveFancySubLevelBlock(block)?.model.tint?.method === "foliage"
   ));
   if (foliage.length === 0) return { ...DEFAULT_SUBLEVEL_FOLIAGE_TINT };
   const worldX = foliage.map(block => origin.x + block.localLocation.x);

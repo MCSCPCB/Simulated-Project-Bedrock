@@ -17,6 +17,7 @@ export interface SerializedSubLevelStructure {
   dimensionId: string;
   foliageTint?: SubLevelFoliageTint;
   id: string;
+  origin: Vector3;
 }
 
 export interface SubLevelStorageManifest {
@@ -42,12 +43,14 @@ export function isSerializedSubLevelStructure(
     "containerStorages",
     "dimensionId",
     "foliageTint",
-    "id"
+    "id",
+    "origin"
   ])
     && typeof structure.id === "string"
     && structure.id.length > 0
     && typeof structure.dimensionId === "string"
     && structure.dimensionId.length > 0
+    && isIntegerLocation(structure.origin)
     && Array.isArray(structure.blocks)
     && structure.blocks.length > 0
     && structure.blocks.every(isSerializedSubLevelBlock)

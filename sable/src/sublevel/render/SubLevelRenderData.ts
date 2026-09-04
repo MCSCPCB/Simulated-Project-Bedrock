@@ -44,6 +44,7 @@ export interface SubLevelRenderData {
   detachAuxiliaryRider?(entity: Entity): void;
   detachPersistentRider?(entity: Entity, preserveEmptyCarrier?: boolean): void;
   removeEmptyPersistentRiderCarriers?(): void;
+  transferPersistentRidersTo?(target: SubLevelRenderData): void;
   addBlocks?(blocks: readonly SubLevelBlock[]): void;
   rebaseRenderAnchor?(blocks: readonly SubLevelBlock[]): void;
 }

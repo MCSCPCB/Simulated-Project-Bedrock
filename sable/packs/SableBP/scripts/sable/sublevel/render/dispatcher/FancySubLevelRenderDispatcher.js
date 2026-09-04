@@ -144,6 +144,10 @@ class CompositeSubLevelRenderData {
     this.fancy.removeEmptyPersistentRiderCarriers?.();
     this.vanilla.removeEmptyPersistentRiderCarriers?.();
   }
+  transferPersistentRidersTo(target) {
+    this.fancy.transferPersistentRidersTo?.(target);
+    this.vanilla.transferPersistentRidersTo?.(target);
+  }
 }
 function spawnTaggedEntity(subLevel, typeId, location, tags) {
   const entity = subLevel.dimension.spawnEntity(typeId, location);

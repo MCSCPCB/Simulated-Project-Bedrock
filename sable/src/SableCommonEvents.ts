@@ -17,8 +17,8 @@ import { SubLevelInteractionSystem } from "./sublevel/system/SubLevelInteraction
 import { VANILLA_DIMENSION_IDS } from "./util/SableVector3Utils.js";
 
 // Render entities from an earlier session have no owner after a script reload;
-// this session starts from an empty sub-level set, so every surviving sable
-// projection entity is stale.
+// persisted sub-levels rebuild their projections below, so surviving render
+// entities are always replaced by the restored runtime records.
 const STALE_RENDER_ENTITY_FAMILIES = ["fancy_model", "block"] as const;
 
 export const sableInteractionSystem = new SubLevelInteractionSystem();
@@ -27,7 +27,8 @@ export const sableContainerInteraction = new SubLevelContainerInteractionControl
 export const sablePlayerInteraction = new SubLevelPlayerInteractionController(sableInteractionSystem);
 export const sableSubLevels = new ServerSubLevelContainer(
   sableInteractionSystem,
-  sableBlockBehaviors
+  sableBlockBehaviors,
+  sableContainerInteraction
 );
 
 sablePlayerInteraction.setBlockBreakHandler((player, itemStack, handle, block) => (
@@ -45,7 +46,13 @@ sablePlayerInteraction.setBlockPlacementEffectHandler((handle, block) => {
 sablePlayerInteraction.setBlockInteractHandler(sableContainerInteraction);
 registerVanillaSubLevelBlockBehaviors({
   behaviors: sableBlockBehaviors,
-  containers: sableContainerInteraction
+  containers: sableContainerInteraction,
+  onNativeDeath: (ownerId, binding) => {
+    sableSubLevels.handleContainerNativeDeath(ownerId, binding);
+  },
+  onUnexpectedRemoval: (ownerId, binding) => {
+    sableSubLevels.handleContainerUnexpectedRemoval(ownerId, binding);
+  }
 });
 
 sableContainerInteraction.start();
@@ -59,6 +66,7 @@ world.afterEvents.entityLoad.subscribe(event => {
 system.runInterval(() => {
   // The container controller ticks through the interaction handler hook.
   sablePlayerInteraction.tick(system.currentTick);
+  sableSubLevels.tick(system.currentTick);
 }, 1);
 
 // Dimension queries are unavailable during early execution; reload cleanup and
@@ -73,9 +81,6 @@ system.run(() => {
       }
     }
   }
-  // Sub-levels are session-scoped: no saved storage bindings exist, so every
-  // surviving container storage entity from an earlier session is reclaimed.
-  system.run(() => {
-    sableContainerInteraction.completeSavedBindingRegistration();
-  });
+  sableSubLevels.initialize();
+  sableContainerInteraction.completeSavedBindingRegistration();
 });

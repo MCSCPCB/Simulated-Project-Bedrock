@@ -9,7 +9,6 @@ import type {
   SubLevelContainerInteractionController,
   SubLevelContainerStorageBinding
 } from "../../../assembly/SubLevelContainerInteraction.js";
-import { blockLocationKey } from "../../../../util/SableVector3Utils.js";
 
 export const CHEST_ENTITY_TYPE_ID = "sable:chest";
 
@@ -23,13 +22,19 @@ const CHEST_COLLISION_HEIGHT = 0.875;
 export interface ChestSubLevelBehaviorContext {
   readonly behaviors: SubLevelBlockBehaviorRegistry;
   readonly containers: SubLevelContainerInteractionController;
+  readonly onNativeDeath?: (
+    ownerId: string,
+    binding: SubLevelContainerStorageBinding
+  ) => void;
+  readonly onUnexpectedRemoval?: (
+    ownerId: string,
+    binding: SubLevelContainerStorageBinding
+  ) => void;
 }
 
 /** Registers the chest container profile and its storage lifecycle hooks. */
 export function registerChestSubLevelBehavior(context: ChestSubLevelBehaviorContext): void {
   const containers = context.containers;
-  /** ownerId -> local block key -> storage binding. */
-  const bindingsByOwner = new Map<string, Map<string, SubLevelContainerStorageBinding>>();
 
   containers.registerContainerProfile({
     blockTypeId: CHEST_BLOCK_TYPE_ID,
@@ -44,7 +49,10 @@ export function registerChestSubLevelBehavior(context: ChestSubLevelBehaviorCont
     openSound: { id: "random.chestopen", pitch: 1, volume: 0.5 },
     closeSound: { id: "random.chestclosed", pitch: 1, volume: 0.5, delayTicks: 1 },
     onNativeDeath: (ownerId, binding) => {
-      bindingsByOwner.get(ownerId)?.delete(blockLocationKey(binding.localLocation));
+      context.onNativeDeath?.(ownerId, binding);
+    },
+    onUnexpectedRemoval: (ownerId, binding) => {
+      context.onUnexpectedRemoval?.(ownerId, binding);
     }
   });
 
@@ -62,20 +70,11 @@ export function registerChestSubLevelBehavior(context: ChestSubLevelBehaviorCont
     },
     onBlockAdded: event => {
       const binding = containers.createStorage(event.ownerId, event.handle, event.block.localLocation);
-      let bindings = bindingsByOwner.get(event.ownerId);
-      if (!bindings) {
-        bindings = new Map();
-        bindingsByOwner.set(event.ownerId, bindings);
-      }
-      bindings.set(blockLocationKey(event.block.localLocation), binding);
       fillChestStorage(binding, event.worldData);
     },
     onBlockRemoved: event => {
-      const bindings = bindingsByOwner.get(event.ownerId);
-      const key = blockLocationKey(event.block.localLocation);
-      const binding = bindings?.get(key);
-      if (!bindings || !binding) return;
-      bindings.delete(key);
+      const binding = containers.getBinding(event.handle, event.block.localLocation);
+      if (!binding) return;
       containers.settleStorages(
         event.ownerId,
         [binding],
@@ -83,31 +82,15 @@ export function registerChestSubLevelBehavior(context: ChestSubLevelBehaviorCont
         localLocation => event.handle.localPointToWorld(localLocation)
       );
     },
-    onSubLevelRemoved: (ownerId, handle) => {
-      const bindings = bindingsByOwner.get(ownerId);
-      if (!bindings) return;
-      bindingsByOwner.delete(ownerId);
-      // Teardown settles remaining storages so their contents drop natively;
-      // a storage that can no longer settle is discarded instead.
-      for (const binding of bindings.values()) {
-        try {
-          if (handle.isValid) {
-            containers.settleStorages(
-              ownerId,
-              [binding],
-              handle.dimension,
-              localLocation => handle.localPointToWorld(localLocation)
-            );
-            continue;
-          }
-        } catch {
-          // Fall through to the discard path below.
-        }
-        try {
-          containers.discardStorage(binding.storageId);
-        } catch {
-          // A stale binding must not block the remaining teardown.
-        }
+    onSubLevelRemoved: (ownerId, handle, reason) => {
+      if (reason !== "natural") return;
+      for (const binding of containers.getBindings(ownerId)) {
+        containers.settleStorages(
+          ownerId,
+          [binding],
+          handle.dimension,
+          localLocation => handle.localPointToWorld(localLocation)
+        );
       }
     }
   });

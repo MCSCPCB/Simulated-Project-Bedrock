@@ -13,7 +13,7 @@ const FIXED_CHERRY_GROVE_PALETTE_U = 8 / FOLIAGE_TINT_COORDINATE_STEPS;
 const FIXED_PALE_GARDEN_PALETTE_U = 23 / FOLIAGE_TINT_COORDINATE_STEPS;
 const FIXED_PALETTE_V = 16 / FOLIAGE_TINT_COORDINATE_STEPS;
 function captureSubLevelFoliageTint(dimension, blocks, origin) {
-  const foliage = blocks.filter((block) => resolveFancySubLevelBlock(block)?.model.tint !== void 0);
+  const foliage = blocks.filter((block) => resolveFancySubLevelBlock(block)?.model.tint?.method === "foliage");
   if (foliage.length === 0) return { ...DEFAULT_SUBLEVEL_FOLIAGE_TINT };
   const worldX = foliage.map((block) => origin.x + block.localLocation.x);
   const worldZ = foliage.map((block) => origin.z + block.localLocation.z);

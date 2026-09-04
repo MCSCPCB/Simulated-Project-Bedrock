@@ -155,6 +155,7 @@ class FancySubLevelModelRenderer {
     carrier ??= this.#createCarrier(true);
     ejectCurrentVehicle(entity);
     if (!carrier.entity.getComponent("minecraft:rideable")?.addRider(entity)) return false;
+    carrier.persistentRiders.set(entity.id, entity);
     carrier.persistentRiderIds.add(entity.id);
     scheduleRiderMountConfirmation(
       carrier.entity,
@@ -184,6 +185,7 @@ class FancySubLevelModelRenderer {
       carrier.entity.getComponent("minecraft:rideable")?.ejectRider(entity);
     }
     carrier.pendingRiderIds.delete(entity.id);
+    carrier.persistentRiders.delete(entity.id);
     carrier.persistentRiderIds.delete(entity.id);
     if (!preserveEmptyCarrier) this.#removeEmptyCarrier(carrier, true);
   }
@@ -191,6 +193,17 @@ class FancySubLevelModelRenderer {
     for (const carrier of [...this.#carriers]) {
       if (carrier.dedicatedToPersistentRiders && carrier.persistentRiderIds.size === 0) {
         this.#removeEmptyCarrier(carrier, true);
+      }
+    }
+  }
+  transferPersistentRidersTo(target) {
+    const persistentRiders = this.#carriers.flatMap((carrier) => [...carrier.persistentRiders.values()].filter((rider) => rider.isValid));
+    if (persistentRiders.length === 0) return;
+    for (const rider of persistentRiders) ejectCurrentVehicle(rider);
+    this.remove();
+    for (const rider of persistentRiders) {
+      if (!target.attachPersistentRider?.(rider)) {
+        throw new Error(`Could not reattach persistent sub-level entity ${rider.id}.`);
       }
     }
   }
@@ -252,7 +265,8 @@ class FancySubLevelModelRenderer {
       throw new Error("Fancy sub-level cannot encode the rebased model set.");
     }
     const revision = ++this.#renderAnchorRevision;
-    const persistentRiders = this.#carriers.flatMap((carrier) => nativeRiders(carrier.entity).filter((rider) => carrier.persistentRiderIds.has(rider.id)));
+    const persistentRiders = this.#carriers.flatMap((carrier) => [...carrier.persistentRiders.values()].filter((rider) => rider.isValid));
+    for (const rider of persistentRiders) ejectCurrentVehicle(rider);
     this.remove();
     this.#resetPoseState(nextAnchor);
     this.#appendModels(packed.models);
@@ -428,6 +442,7 @@ class FancySubLevelModelRenderer {
       entity,
       modelIds: /* @__PURE__ */ new Set(),
       pendingRiderIds: /* @__PURE__ */ new Set(),
+      persistentRiders: /* @__PURE__ */ new Map(),
       persistentRiderIds: /* @__PURE__ */ new Set()
     };
     this.#carriers.push(carrier);

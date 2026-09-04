@@ -67,6 +67,11 @@ class SubLevelContainerInteractionController {
       if (player?.typeId !== "minecraft:player") return;
       this.#closeContainer(player.id, event.entity);
     });
+    world.beforeEvents.entityHurt.subscribe((event) => {
+      if (!this.#profilesByEntityTypeId.has(event.hurtEntity.typeId)) return;
+      if (this.#settlingEntityIds.has(event.hurtEntity.id)) return;
+      event.cancel = true;
+    });
     world.afterEvents.entityDie.subscribe((event) => {
       if (!this.#profilesByEntityTypeId.has(event.deadEntity.typeId)) return;
       if (!this.#settlingEntityIds.has(event.deadEntity.id) && this.#storageIdByEntityId.has(event.deadEntity.id)) this.#nativeDeathEntityIds.add(event.deadEntity.id);
@@ -206,6 +211,10 @@ class SubLevelContainerInteractionController {
     record.attached = false;
     record.lastLocation = void 0;
     this.#invalidateRuntimeReferences(record);
+    record.profile?.onUnexpectedRemoval?.(record.ownerId, {
+      localLocation: { ...record.localLocation },
+      storageId: record.storageId
+    });
   }
   registerSavedBindings(ownerId, bindings) {
     if (this.#bindingRegistrationComplete) {
@@ -218,7 +227,12 @@ class SubLevelContainerInteractionController {
     if (this.#bindingRegistrationComplete) return;
     this.#bindingRegistrationComplete = true;
     for (const record of [...this.#recordByStorageId.values()]) {
-      if (record.claimed) continue;
+      if (record.claimed) {
+        if (record.handle?.isValid && !record.entity?.isValid) {
+          this.#ensureStorageEntity(record, record.handle);
+        }
+        continue;
+      }
       this.#removeRecordIndexes(record);
       if (record.entity?.isValid) record.entity.remove();
     }
@@ -237,6 +251,7 @@ class SubLevelContainerInteractionController {
       }
       if (record.handle !== handle) record.attached = false;
       this.#setRecordHandle(record, handle);
+      this.#ensureStorageEntity(record, handle);
       this.#storageIdBySubLevelBlock.set(
         subLevelBlockKey(handle.id, binding.localLocation),
         binding.storageId
@@ -244,20 +259,23 @@ class SubLevelContainerInteractionController {
       if (record.entity?.isValid && !record.active) this.#queueAttach(record);
     }
   }
-  /** Roll back runtime ownership when a restored sub-level fails before commit. */
-  rollbackSubLevelBinding(ownerId, handle) {
+  /** Release runtime ownership while preserving storage identity for restoration. */
+  unbindSubLevel(ownerId, handle) {
     for (const record of this.#recordByStorageId.values()) {
       if (record.ownerId !== ownerId || record.handle !== handle) continue;
-      if (record.attached && record.entity?.isValid && handle.isValid) {
-        handle.detachPersistentEntity(record.entity);
+      const entity = record.entity;
+      this.#invalidateRuntimeReferences(record);
+      record.pendingAttachTick = void 0;
+      if (entity?.isValid && handle.isValid) {
+        handle.detachPersistentEntity(entity);
+        entity.triggerEvent(this.#requireProfile(record).deactivateEvent);
       }
       this.#storageIdBySubLevelBlock.delete(
         subLevelBlockKey(handle.id, record.localLocation)
       );
       this.#setRecordHandle(record, void 0);
-      record.attached = false;
-      record.lastLocation = void 0;
     }
+    this.#removeUnusedStorageCarrier(handle);
   }
   createStorage(ownerId, handle, localLocation) {
     const block = handle.getBlockAtLocalLocation(localLocation);
@@ -271,17 +289,7 @@ class SubLevelContainerInteractionController {
     );
     try {
       const storageId = entity.id;
-      entity.setDynamicProperty(STORAGE_ID_PROPERTY, storageId);
-      entity.setDynamicProperty(STORAGE_OWNER_PROPERTY, ownerId);
-      entity.setDynamicProperty(STORAGE_LOCATION_PROPERTY, { ...localLocation });
-      entity.nameTag = profile.nameTranslationKey;
-      entity.triggerEvent(profile.deactivateEvent);
-      const container = entity.getComponent("minecraft:inventory")?.container;
-      if (!container || container.size !== profile.containerSize) {
-        throw new Error(
-          `Container storage entity ${profile.storageEntityTypeId} does not expose a ${profile.containerSize}-slot inventory.`
-        );
-      }
+      initializeStorageEntity(entity, ownerId, storageId, localLocation, profile);
       const record = {
         active: false,
         handle: void 0,
@@ -308,6 +316,20 @@ class SubLevelContainerInteractionController {
       if (entity.isValid) entity.remove();
       throw error;
     }
+  }
+  /** Returns the persisted binding set currently owned by one sub-level. */
+  getBindings(ownerId) {
+    return [...this.#recordByStorageId.values()].filter((record) => record.ownerId === ownerId).map((record) => ({
+      localLocation: { ...record.localLocation },
+      storageId: record.storageId
+    }));
+  }
+  getBinding(handle, localLocation) {
+    const storageId = this.#storageIdBySubLevelBlock.get(
+      subLevelBlockKey(handle.id, localLocation)
+    );
+    const record = storageId ? this.#recordByStorageId.get(storageId) : void 0;
+    return record ? { localLocation: { ...record.localLocation }, storageId: record.storageId } : void 0;
   }
   discardStorage(storageId) {
     const record = this.#requiredRecord(storageId);
@@ -397,6 +419,28 @@ class SubLevelContainerInteractionController {
     const record = this.#recordByStorageId.get(storageId);
     if (!record) throw new Error(`Storage ${storageId} is not registered.`);
     return record;
+  }
+  #ensureStorageEntity(record, handle) {
+    if (record.entity?.isValid) return;
+    const profile = this.#requireProfile(record);
+    const entity = handle.dimension.spawnEntity(
+      profile.storageEntityTypeId,
+      storageLocationFromCellCenter(handle.localPointToWorld(record.localLocation), profile)
+    );
+    try {
+      initializeStorageEntity(
+        entity,
+        record.ownerId,
+        record.storageId,
+        record.localLocation,
+        profile
+      );
+      record.entity = entity;
+      this.#storageIdByEntityId.set(entity.id, record.storageId);
+    } catch (error) {
+      if (entity.isValid) entity.remove();
+      throw error;
+    }
   }
   #activeStorageLocation(record, handle, localLocation) {
     return storageLocationFromCellCenter(
@@ -599,6 +643,19 @@ function storageLocationFromCellCenter(center, profile) {
     y: center.y - profile.collisionHeight * 0.5,
     z: center.z
   };
+}
+function initializeStorageEntity(entity, ownerId, storageId, localLocation, profile) {
+  entity.setDynamicProperty(STORAGE_ID_PROPERTY, storageId);
+  entity.setDynamicProperty(STORAGE_OWNER_PROPERTY, ownerId);
+  entity.setDynamicProperty(STORAGE_LOCATION_PROPERTY, { ...localLocation });
+  entity.nameTag = profile.nameTranslationKey;
+  entity.triggerEvent(profile.deactivateEvent);
+  const container = entity.getComponent("minecraft:inventory")?.container;
+  if (!container || container.size !== profile.containerSize) {
+    throw new Error(
+      `Container storage entity ${profile.storageEntityTypeId} does not expose a ${profile.containerSize}-slot inventory.`
+    );
+  }
 }
 function subLevelBlockKey(subLevelId, localLocation) {
   return `${subLevelId}|${localLocation.x},${localLocation.y},${localLocation.z}`;

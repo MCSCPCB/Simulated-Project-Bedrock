@@ -13,7 +13,8 @@ const sableContainerInteraction = new SubLevelContainerInteractionController();
 const sablePlayerInteraction = new SubLevelPlayerInteractionController(sableInteractionSystem);
 const sableSubLevels = new ServerSubLevelContainer(
   sableInteractionSystem,
-  sableBlockBehaviors
+  sableBlockBehaviors,
+  sableContainerInteraction
 );
 sablePlayerInteraction.setBlockBreakHandler((player, itemStack, handle, block) => sableSubLevels.breakBlockForPlayerEdit(player, itemStack, handle, block));
 sablePlayerInteraction.setBlockMiningEffectHandler((handle, block) => {
@@ -26,7 +27,13 @@ sablePlayerInteraction.setBlockPlacementEffectHandler((handle, block) => {
 sablePlayerInteraction.setBlockInteractHandler(sableContainerInteraction);
 registerVanillaSubLevelBlockBehaviors({
   behaviors: sableBlockBehaviors,
-  containers: sableContainerInteraction
+  containers: sableContainerInteraction,
+  onNativeDeath: (ownerId, binding) => {
+    sableSubLevels.handleContainerNativeDeath(ownerId, binding);
+  },
+  onUnexpectedRemoval: (ownerId, binding) => {
+    sableSubLevels.handleContainerUnexpectedRemoval(ownerId, binding);
+  }
 });
 sableContainerInteraction.start();
 sablePlayerInteraction.start();
@@ -36,6 +43,7 @@ world.afterEvents.entityLoad.subscribe((event) => {
 });
 system.runInterval(() => {
   sablePlayerInteraction.tick(system.currentTick);
+  sableSubLevels.tick(system.currentTick);
 }, 1);
 system.run(() => {
   for (const dimensionId of VANILLA_DIMENSION_IDS) {
@@ -46,9 +54,8 @@ system.run(() => {
       }
     }
   }
-  system.run(() => {
-    sableContainerInteraction.completeSavedBindingRegistration();
-  });
+  sableSubLevels.initialize();
+  sableContainerInteraction.completeSavedBindingRegistration();
 });
 export {
   sableBlockBehaviors,
