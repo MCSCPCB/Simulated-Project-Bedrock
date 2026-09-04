@@ -1,5 +1,5 @@
 {
-  "format_version": 2,
+  "format_version": 3,
   "metadata": {
     "authors": [
       "MINECRAFT-SCPCB"
@@ -16,11 +16,7 @@
       0,
       0
     ],
-    "min_engine_version": [
-      1,
-      21,
-      50
-    ]
+    "min_engine_version": "1.26.30"
   },
   "modules": [
     {
