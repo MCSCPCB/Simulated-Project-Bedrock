@@ -1,9 +1,9 @@
 // Builds and validates serialized sub-level structures. Serialization deep
 // clones every entry so later runtime mutation cannot alias persisted data.
 import type { SubLevelBlock, SubLevelFoliageTint } from "../../SubLevel.js";
-import type { SubLevelChestStorageBinding } from "../../../content/assembly/SubLevelContainerInteraction.js";
+import type { SubLevelContainerStorageBinding } from "../../../content/assembly/SubLevelContainerInteraction.js";
 import {
-  cloneChestStorageBinding,
+  cloneContainerStorageBinding,
   cloneSubLevelBlock,
   isSerializedSubLevelStructure,
   type SerializedSubLevelStructure
@@ -11,7 +11,7 @@ import {
 
 export interface SubLevelStructureSource {
   readonly blocks: readonly SubLevelBlock[];
-  readonly chestStorages?: readonly SubLevelChestStorageBinding[];
+  readonly containerStorages?: readonly SubLevelContainerStorageBinding[];
   readonly dimensionId: string;
   readonly foliageTint?: SubLevelFoliageTint;
 }
@@ -26,7 +26,7 @@ export function serializeSubLevelStructure(
   }
   const structure: SerializedSubLevelStructure = {
     blocks: source.blocks.map(cloneSubLevelBlock),
-    chestStorages: (source.chestStorages ?? []).map(cloneChestStorageBinding),
+    containerStorages: (source.containerStorages ?? []).map(cloneContainerStorageBinding),
     dimensionId: source.dimensionId,
     id
   };
@@ -43,7 +43,7 @@ export function deserializeSubLevelStructure(value: unknown): SerializedSubLevel
   }
   const structure: SerializedSubLevelStructure = {
     blocks: value.blocks.map(cloneSubLevelBlock),
-    chestStorages: value.chestStorages.map(cloneChestStorageBinding),
+    containerStorages: value.containerStorages.map(cloneContainerStorageBinding),
     dimensionId: value.dimensionId,
     id: value.id
   };

@@ -1,3 +1,12 @@
+import {
+  sableBlockBehaviors,
+  sableContainerInteraction,
+  sableInteractionSystem,
+  sablePlayerInteraction,
+  sableSubLevels
+} from "./SableCommonEvents.js";
+import { ServerSubLevelContainer } from "./api/sublevel/ServerSubLevelContainer.js";
+import { SubLevelBlockBehaviorRegistry } from "./api/block/SubLevelBlockBehaviors.js";
 import { SubLevelRenderer } from "./sublevel/render/SubLevelRenderer.js";
 import { captureSubLevelBlock, captureSubLevelBlocks } from "./api/SubLevelAssemblyHelper.js";
 import { captureSubLevelFoliageTint } from "./render/dynamic_biome/DynamicBiomeTintSampler.js";
@@ -21,9 +30,9 @@ import {
   INTERACTION_REACH
 } from "./content/block_outline_render/SubLevelOutlineController.js";
 import {
-  CHEST_ENTITY_TYPE_ID,
   SubLevelContainerInteractionController
 } from "./content/assembly/SubLevelContainerInteraction.js";
+import { CHEST_ENTITY_TYPE_ID } from "./content/blocks/vanilla/chest/ChestSubLevelBehavior.js";
 import {
   INTERACTION_TARGET_BLOCK_TYPE_ID
 } from "./content/block_placement/SubLevelInteractionTargetBlock.js";
@@ -60,6 +69,8 @@ export {
   CHEST_ENTITY_TYPE_ID,
   INTERACTION_REACH,
   INTERACTION_TARGET_BLOCK_TYPE_ID,
+  ServerSubLevelContainer,
+  SubLevelBlockBehaviorRegistry,
   SubLevelContainerInteractionController,
   SubLevelInteractionHandle,
   SubLevelInteractionSystem,
@@ -78,6 +89,11 @@ export {
   resolveVanillaBlockBreakSound,
   resolveVanillaBlockHitSound,
   resolveVanillaBlockPlaceSound,
+  sableBlockBehaviors,
+  sableContainerInteraction,
+  sableInteractionSystem,
+  sablePlayerInteraction,
+  sableSubLevels,
   selectDominantVanillaBlockBreakSound,
   spawnSubLevelBlockDestructParticle
 };

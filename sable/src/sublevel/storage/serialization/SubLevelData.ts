@@ -1,5 +1,5 @@
 // Persistence contract for sub-level structures: the serialized schema and its
-// shape validators. A structure is the block snapshot plus chest storage
+// shape validators. A structure is the block snapshot plus container storage
 // bindings and the foliage tint field; render layout and interaction state are
 // derived at load time and never persisted.
 import type { Vector3 } from "@minecraft/server";
@@ -9,11 +9,11 @@ import type {
   SubLevelBlockMapColor,
   SubLevelFoliageTint
 } from "../../SubLevel.js";
-import type { SubLevelChestStorageBinding } from "../../../content/assembly/SubLevelContainerInteraction.js";
+import type { SubLevelContainerStorageBinding } from "../../../content/assembly/SubLevelContainerInteraction.js";
 
 export interface SerializedSubLevelStructure {
   blocks: SubLevelBlock[];
-  chestStorages: SubLevelChestStorageBinding[];
+  containerStorages: SubLevelContainerStorageBinding[];
   dimensionId: string;
   foliageTint?: SubLevelFoliageTint;
   id: string;
@@ -39,7 +39,7 @@ export function isSerializedSubLevelStructure(
   const structure = value as Partial<SerializedSubLevelStructure>;
   return hasOnlyKeys(structure, [
     "blocks",
-    "chestStorages",
+    "containerStorages",
     "dimensionId",
     "foliageTint",
     "id"
@@ -51,14 +51,14 @@ export function isSerializedSubLevelStructure(
     && Array.isArray(structure.blocks)
     && structure.blocks.length > 0
     && structure.blocks.every(isSerializedSubLevelBlock)
-    && Array.isArray(structure.chestStorages)
-    && structure.chestStorages.every(isChestStorageBinding)
+    && Array.isArray(structure.containerStorages)
+    && structure.containerStorages.every(isContainerStorageBinding)
     && (structure.foliageTint === undefined || isSubLevelFoliageTint(structure.foliageTint));
 }
 
-export function isChestStorageBinding(value: unknown): value is SubLevelChestStorageBinding {
+export function isContainerStorageBinding(value: unknown): value is SubLevelContainerStorageBinding {
   if (!value || typeof value !== "object") return false;
-  const binding = value as Partial<SubLevelChestStorageBinding>;
+  const binding = value as Partial<SubLevelContainerStorageBinding>;
   return hasOnlyKeys(binding, ["localLocation", "storageId"])
     && isIntegerLocation(binding.localLocation)
     && typeof binding.storageId === "string"
@@ -84,9 +84,9 @@ export function isSubLevelFoliageTint(value: unknown): value is SubLevelFoliageT
     && isFiniteNumber(tint.vPerLocalZ);
 }
 
-export function cloneChestStorageBinding(
-  binding: SubLevelChestStorageBinding
-): SubLevelChestStorageBinding {
+export function cloneContainerStorageBinding(
+  binding: SubLevelContainerStorageBinding
+): SubLevelContainerStorageBinding {
   return {
     localLocation: { ...binding.localLocation },
     storageId: binding.storageId

@@ -1,5 +1,5 @@
 import {
-  cloneChestStorageBinding,
+  cloneContainerStorageBinding,
   cloneSubLevelBlock,
   isSerializedSubLevelStructure
 } from "./SubLevelData.js";
@@ -10,7 +10,7 @@ function serializeSubLevelStructure(id, source) {
   }
   const structure = {
     blocks: source.blocks.map(cloneSubLevelBlock),
-    chestStorages: (source.chestStorages ?? []).map(cloneChestStorageBinding),
+    containerStorages: (source.containerStorages ?? []).map(cloneContainerStorageBinding),
     dimensionId: source.dimensionId,
     id
   };
@@ -26,7 +26,7 @@ function deserializeSubLevelStructure(value) {
   }
   const structure = {
     blocks: value.blocks.map(cloneSubLevelBlock),
-    chestStorages: value.chestStorages.map(cloneChestStorageBinding),
+    containerStorages: value.containerStorages.map(cloneContainerStorageBinding),
     dimensionId: value.dimensionId,
     id: value.id
   };

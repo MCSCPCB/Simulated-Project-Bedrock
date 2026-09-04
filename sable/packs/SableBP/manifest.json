@@ -22,7 +22,7 @@
     {
       "language": "javascript",
       "type": "script",
-      "entry": "scripts/sable/Sable.js",
+      "entry": "scripts/main.js",
       "uuid": "4b8a31c2-2f5d-49cf-a9ae-8c0ee4c4e31f",
       "version": "1.0.0"
     }

@@ -8,19 +8,14 @@ import {
   squaredDistance
 } from "../../util/SableVector3Utils.js";
 import { resolveFancySubLevelBlock } from "../../sublevel/render/fancy/model/FancySubLevelModelRegistry.js";
-const CHEST_ENTITY_TYPE_ID = "sable:chest";
-const CHEST_BLOCK_TYPE_ID = "minecraft:chest";
-const CHEST_NAME_TRANSLATION_KEY = "tile.chest.name";
 const STORAGE_ID_PROPERTY = "sable:storage_id";
 const STORAGE_OWNER_PROPERTY = "sable:storage_owner";
 const STORAGE_LOCATION_PROPERTY = "sable:storage_location";
-const ACTIVE_EVENT = "sable:chest_activate";
-const INACTIVE_EVENT = "sable:chest_deactivate";
-const STORAGE_COLLISION_HEIGHT = 0.875;
 const POSITION_EPSILON_SQUARED = EPSILON_1E6;
 const STORAGE_DETACH_TIMEOUT_TICKS = 20;
-const CHEST_CLOSE_SOUND_DELAY_TICKS = 1;
 class SubLevelContainerInteractionController {
+  #profilesByBlockTypeId = /* @__PURE__ */ new Map();
+  #profilesByEntityTypeId = /* @__PURE__ */ new Map();
   #activeRecords = /* @__PURE__ */ new Set();
   #recordByStorageId = /* @__PURE__ */ new Map();
   #recordCountByDimension = /* @__PURE__ */ new Map();
@@ -30,69 +25,80 @@ class SubLevelContainerInteractionController {
   #viewerStorageByPlayer = /* @__PURE__ */ new Map();
   #nativeDeathEntityIds = /* @__PURE__ */ new Set();
   #settlingEntityIds = /* @__PURE__ */ new Set();
-  #nativeDeathHandler;
   #bindingRegistrationComplete = false;
   #started = false;
-  setNativeDeathHandler(handler) {
-    if (this.#nativeDeathHandler) {
-      throw new Error("The chest storage native-death handler is already configured.");
+  /** Register one container kind. Must precede start(). */
+  registerContainerProfile(profile) {
+    if (this.#started) {
+      throw new Error(`Container profile ${profile.blockTypeId} was registered after start.`);
     }
-    this.#nativeDeathHandler = handler;
+    if (this.#profilesByBlockTypeId.has(profile.blockTypeId)) {
+      throw new Error(`A container profile for ${profile.blockTypeId} is already registered.`);
+    }
+    if (this.#profilesByEntityTypeId.has(profile.storageEntityTypeId)) {
+      throw new Error(`Storage entity ${profile.storageEntityTypeId} already backs another container profile.`);
+    }
+    this.#profilesByBlockTypeId.set(profile.blockTypeId, profile);
+    this.#profilesByEntityTypeId.set(profile.storageEntityTypeId, profile);
   }
   start() {
     if (this.#started) return;
     this.#started = true;
     world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
-      if (event.target.typeId !== CHEST_ENTITY_TYPE_ID) return;
+      if (!this.#profilesByEntityTypeId.has(event.target.typeId)) return;
       const record = this.#recordForEntity(event.target);
       if (record?.handle?.isValid && record.active) return;
       event.cancel = true;
       if (!record) {
         system.run(() => {
-          throw new Error(`Unbound chest storage entity ${event.target.id} was interacted with.`);
+          throw new Error(`Unbound container storage entity ${event.target.id} was interacted with.`);
         });
       }
     });
     world.afterEvents.entityContainerOpened.subscribe((event) => {
-      if (event.entity.typeId !== CHEST_ENTITY_TYPE_ID) return;
+      if (!this.#profilesByEntityTypeId.has(event.entity.typeId)) return;
       const player = event.openSource.entity;
       if (player?.typeId !== "minecraft:player") return;
       this.#openContainer(player, event.entity);
     });
     world.afterEvents.entityContainerClosed.subscribe((event) => {
-      if (event.entity.typeId !== CHEST_ENTITY_TYPE_ID) return;
+      if (!this.#profilesByEntityTypeId.has(event.entity.typeId)) return;
       const player = event.closeSource.entity;
       if (player?.typeId !== "minecraft:player") return;
       this.#closeContainer(player.id, event.entity);
     });
     world.afterEvents.entityDie.subscribe((event) => {
-      if (event.deadEntity.typeId !== CHEST_ENTITY_TYPE_ID) return;
+      if (!this.#profilesByEntityTypeId.has(event.deadEntity.typeId)) return;
       if (!this.#settlingEntityIds.has(event.deadEntity.id) && this.#storageIdByEntityId.has(event.deadEntity.id)) this.#nativeDeathEntityIds.add(event.deadEntity.id);
       if (event.deadEntity.isValid) event.deadEntity.remove();
     });
     world.afterEvents.entityRemove.subscribe((event) => {
-      if (event.typeId !== CHEST_ENTITY_TYPE_ID) return;
+      if (!this.#profilesByEntityTypeId.has(event.typeId)) return;
       this.handleEntityRemove(event.removedEntityId);
     });
     system.run(() => {
       for (const dimensionId of VANILLA_DIMENSION_IDS) {
         const dimension = world.getDimension(dimensionId);
-        for (const entity of dimension.getEntities({ type: CHEST_ENTITY_TYPE_ID })) {
-          this.handleEntityLoad(entity);
+        for (const typeId of this.#profilesByEntityTypeId.keys()) {
+          for (const entity of dimension.getEntities({ type: typeId })) {
+            this.handleEntityLoad(entity);
+          }
         }
       }
     });
   }
   canInteract(_handle, block) {
-    if (block.typeId !== CHEST_BLOCK_TYPE_ID) return false;
-    return resolveFancySubLevelBlock(block)?.model.description.type === "chest";
+    const profile = this.#profilesByBlockTypeId.get(block.typeId);
+    if (!profile) return false;
+    if (profile.modelType === void 0) return true;
+    return resolveFancySubLevelBlock(block)?.model.description.type === profile.modelType;
   }
   /** Native entity interaction opens the container; this only consumes sub-level gestures. */
   interact(_player, handle, block) {
     if (!this.canInteract(handle, block)) return false;
     const record = this.#recordAt(handle, block.localLocation);
     if (!record?.entity?.isValid) {
-      throw new Error(`Projected chest ${subLevelBlockKey(handle.id, block.localLocation)} has no storage entity.`);
+      throw new Error(`Projected container ${subLevelBlockKey(handle.id, block.localLocation)} has no storage entity.`);
     }
     return true;
   }
@@ -119,7 +125,7 @@ class SubLevelContainerInteractionController {
         this.#invalidateRuntimeReferences(record);
         continue;
       }
-      const location = activeStorageLocation(record.handle, record.localLocation);
+      const location = this.#activeStorageLocation(record, record.handle, record.localLocation);
       if (record.lastLocation && squaredDistance(record.lastLocation, location) <= POSITION_EPSILON_SQUARED) {
         continue;
       }
@@ -134,7 +140,8 @@ class SubLevelContainerInteractionController {
     if (viewerStorageId) this.#releaseViewer(playerId, viewerStorageId);
   }
   handleEntityLoad(entity) {
-    if (entity.typeId !== CHEST_ENTITY_TYPE_ID) return;
+    const profile = this.#profilesByEntityTypeId.get(entity.typeId);
+    if (!profile) return;
     const identity = readStorageIdentity(entity);
     let record = this.#recordByStorageId.get(identity.storageId);
     if (!record) {
@@ -151,12 +158,14 @@ class SubLevelContainerInteractionController {
         ownerId: identity.ownerId,
         pendingAttachTick: void 0,
         previewers: /* @__PURE__ */ new Set(),
+        profile,
         storageId: identity.storageId,
         viewers: /* @__PURE__ */ new Set()
       };
       this.#recordByStorageId.set(record.storageId, record);
     } else {
       assertStorageIdentity(record, identity);
+      this.#assignProfile(record, profile);
       if (record.entity?.isValid && record.entity.id !== entity.id) {
         throw new Error(`Storage ID ${record.storageId} is owned by multiple loaded entities.`);
       }
@@ -170,7 +179,7 @@ class SubLevelContainerInteractionController {
     const diedNatively = this.#nativeDeathEntityIds.delete(entityId);
     const storageId = this.#storageIdByEntityId.get(entityId);
     if (diedNatively && !storageId) {
-      throw new Error(`Native death for chest storage entity ${entityId} lost its storage index.`);
+      throw new Error(`Native death for container storage entity ${entityId} lost its storage index.`);
     }
     if (!storageId) return;
     this.#storageIdByEntityId.delete(entityId);
@@ -180,11 +189,11 @@ class SubLevelContainerInteractionController {
     if (handle?.isValid && record.entity) handle.detachPersistentEntity(record.entity);
     if (diedNatively) {
       this.#invalidateRuntimeReferences(record);
-      const handler = this.#nativeDeathHandler;
-      if (!handler) {
+      const onNativeDeath = record.profile?.onNativeDeath;
+      if (!onNativeDeath) {
         throw new Error(`Storage ${record.storageId} died without a native-death handler.`);
       }
-      handler(record.ownerId, {
+      onNativeDeath(record.ownerId, {
         localLocation: { ...record.localLocation },
         storageId: record.storageId
       });
@@ -200,7 +209,7 @@ class SubLevelContainerInteractionController {
   }
   registerSavedBindings(ownerId, bindings) {
     if (this.#bindingRegistrationComplete) {
-      throw new Error("Saved chest storage bindings were registered after reconciliation completed.");
+      throw new Error("Saved container storage bindings were registered after reconciliation completed.");
     }
     for (const binding of bindings) this.#claimBinding(ownerId, binding);
   }
@@ -217,10 +226,12 @@ class SubLevelContainerInteractionController {
   bindSubLevel(ownerId, handle, bindings) {
     for (const binding of bindings) {
       const block = handle.getBlockAtLocalLocation(binding.localLocation);
-      if (block?.typeId !== CHEST_BLOCK_TYPE_ID) {
-        throw new Error(`Storage ${binding.storageId} does not point to a chest block.`);
+      const profile = block ? this.#profilesByBlockTypeId.get(block.typeId) : void 0;
+      if (!profile) {
+        throw new Error(`Storage ${binding.storageId} does not point to a container block.`);
       }
       const record = this.#claimBinding(ownerId, binding);
+      this.#assignProfile(record, profile);
       if (record.handle && record.handle !== handle && record.handle.isValid) {
         throw new Error(`Storage ${binding.storageId} is already bound to another sub-level.`);
       }
@@ -249,20 +260,27 @@ class SubLevelContainerInteractionController {
     }
   }
   createStorage(ownerId, handle, localLocation) {
+    const block = handle.getBlockAtLocalLocation(localLocation);
+    const profile = block ? this.#profilesByBlockTypeId.get(block.typeId) : void 0;
+    if (!profile) {
+      throw new Error(`No container profile covers the block at ${subLevelBlockKey(handle.id, localLocation)}.`);
+    }
     const entity = handle.dimension.spawnEntity(
-      CHEST_ENTITY_TYPE_ID,
-      activeStorageLocation(handle, localLocation)
+      profile.storageEntityTypeId,
+      storageLocationFromCellCenter(handle.localPointToWorld(localLocation), profile)
     );
     try {
       const storageId = entity.id;
       entity.setDynamicProperty(STORAGE_ID_PROPERTY, storageId);
       entity.setDynamicProperty(STORAGE_OWNER_PROPERTY, ownerId);
       entity.setDynamicProperty(STORAGE_LOCATION_PROPERTY, { ...localLocation });
-      entity.nameTag = CHEST_NAME_TRANSLATION_KEY;
-      entity.triggerEvent(INACTIVE_EVENT);
+      entity.nameTag = profile.nameTranslationKey;
+      entity.triggerEvent(profile.deactivateEvent);
       const container = entity.getComponent("minecraft:inventory")?.container;
-      if (!container || container.size !== 27) {
-        throw new Error("Chest storage entity does not expose a 27-slot inventory.");
+      if (!container || container.size !== profile.containerSize) {
+        throw new Error(
+          `Container storage entity ${profile.storageEntityTypeId} does not expose a ${profile.containerSize}-slot inventory.`
+        );
       }
       const record = {
         active: false,
@@ -274,6 +292,7 @@ class SubLevelContainerInteractionController {
         ownerId,
         pendingAttachTick: void 0,
         previewers: /* @__PURE__ */ new Set(),
+        profile,
         storageId,
         viewers: /* @__PURE__ */ new Set()
       };
@@ -306,14 +325,15 @@ class SubLevelContainerInteractionController {
       if (record.ownerId !== ownerId || !sameLocation(record.localLocation, binding.localLocation)) {
         throw new Error(`Storage ${binding.storageId} does not match settlement owner ${ownerId}.`);
       }
+      const profile = this.#requireProfile(record);
       const entity = record.entity;
       if (!entity?.isValid || entity.dimension.id !== dimension.id) {
         throw new Error(`Storage ${binding.storageId} is unavailable for sub-level settlement.`);
       }
       this.#invalidateRuntimeReferences(record);
       if (record.handle?.isValid) record.handle.detachPersistentEntity(entity);
-      entity.triggerEvent(ACTIVE_EVENT);
-      entity.teleport(storageLocationFromCellCenter(resolveLocation(binding.localLocation)));
+      entity.triggerEvent(profile.activateEvent);
+      entity.teleport(storageLocationFromCellCenter(resolveLocation(binding.localLocation), profile));
       this.#settlingEntityIds.add(entity.id);
       if (!entity.kill()) {
         this.#settlingEntityIds.delete(entity.id);
@@ -351,6 +371,18 @@ class SubLevelContainerInteractionController {
     record.claimed = true;
     return record;
   }
+  #assignProfile(record, profile) {
+    if (record.profile && record.profile !== profile) {
+      throw new Error(`Storage ${record.storageId} is claimed by two container profiles.`);
+    }
+    record.profile = profile;
+  }
+  #requireProfile(record) {
+    if (!record.profile) {
+      throw new Error(`Storage ${record.storageId} has no resolved container profile.`);
+    }
+    return record.profile;
+  }
   #recordAt(handle, localLocation) {
     const storageId = this.#storageIdBySubLevelBlock.get(
       subLevelBlockKey(handle.id, localLocation)
@@ -366,16 +398,23 @@ class SubLevelContainerInteractionController {
     if (!record) throw new Error(`Storage ${storageId} is not registered.`);
     return record;
   }
+  #activeStorageLocation(record, handle, localLocation) {
+    return storageLocationFromCellCenter(
+      handle.localPointToWorld(localLocation),
+      this.#requireProfile(record)
+    );
+  }
   #activate(record) {
     if (record.active) return;
     const entity = record.entity;
     const handle = record.handle;
     if (!entity?.isValid || !handle?.isValid) return;
+    const profile = this.#requireProfile(record);
     if (record.attached) handle.detachPersistentEntity(entity, true);
     record.attached = false;
-    const location = activeStorageLocation(handle, record.localLocation);
+    const location = this.#activeStorageLocation(record, handle, record.localLocation);
     entity.teleport(location);
-    entity.triggerEvent(ACTIVE_EVENT);
+    entity.triggerEvent(profile.activateEvent);
     record.active = true;
     this.#activeRecords.add(record);
     record.lastLocation = location;
@@ -384,7 +423,7 @@ class SubLevelContainerInteractionController {
     if (!record.active || record.previewers.size > 0 || record.viewers.size > 0) return;
     const entity = record.entity;
     if (!entity?.isValid) return;
-    entity.triggerEvent(INACTIVE_EVENT);
+    entity.triggerEvent(this.#requireProfile(record).deactivateEvent);
     record.active = false;
     this.#activeRecords.delete(record);
     record.lastLocation = void 0;
@@ -462,18 +501,24 @@ class SubLevelContainerInteractionController {
   #setOpen(record, open) {
     const handle = record.handle;
     if (!handle?.isValid) return;
-    if (!handle.setBlockModelState(record.localLocation, "open", open ? 1 : 0)) {
-      throw new Error(`Could not set chest ${record.storageId} open state to ${open}.`);
+    const profile = this.#requireProfile(record);
+    if (profile.openStateDimension !== void 0) {
+      if (!handle.setBlockModelState(record.localLocation, profile.openStateDimension, open ? 1 : 0)) {
+        throw new Error(`Could not set container ${record.storageId} open state to ${open}.`);
+      }
     }
     const dimension = handle.dimension;
     const location = handle.localPointToWorld(record.localLocation);
     if (open) {
-      dimension.playSound("random.chestopen", location, { pitch: 1, volume: 0.5 });
+      const sound2 = profile.openSound;
+      if (sound2) dimension.playSound(sound2.id, location, { pitch: sound2.pitch, volume: sound2.volume });
       return;
     }
+    const sound = profile.closeSound;
+    if (!sound) return;
     system.runTimeout(() => {
-      dimension.playSound("random.chestclosed", location, { pitch: 1, volume: 0.5 });
-    }, CHEST_CLOSE_SOUND_DELAY_TICKS);
+      dimension.playSound(sound.id, location, { pitch: sound.pitch, volume: sound.volume });
+    }, sound.delayTicks);
   }
   #invalidateRuntimeReferences(record) {
     this.#activeRecords.delete(record);
@@ -493,7 +538,7 @@ class SubLevelContainerInteractionController {
     const wasOpen = record.viewers.size > 0;
     record.previewers.clear();
     record.viewers.clear();
-    if (wasOpen && record.handle?.isValid && record.handle.getBlockAtLocalLocation(record.localLocation)?.typeId === CHEST_BLOCK_TYPE_ID) this.#setOpen(record, false);
+    if (wasOpen && record.handle?.isValid && record.handle.getBlockAtLocalLocation(record.localLocation)?.typeId === record.profile?.blockTypeId) this.#setOpen(record, false);
   }
   #removeRecordIndexes(record) {
     record.pendingAttachTick = void 0;
@@ -521,7 +566,7 @@ class SubLevelContainerInteractionController {
     if (dimensionId === void 0) return;
     const next = (this.#recordCountByDimension.get(dimensionId) ?? 0) + delta;
     if (next < 0) {
-      throw new Error(`Chest storage count for dimension ${dimensionId} became negative.`);
+      throw new Error(`Container storage count for dimension ${dimensionId} became negative.`);
     }
     if (next === 0) this.#recordCountByDimension.delete(dimensionId);
     else this.#recordCountByDimension.set(dimensionId, next);
@@ -539,7 +584,7 @@ function readStorageIdentity(entity) {
   const ownerId = entity.getDynamicProperty(STORAGE_OWNER_PROPERTY);
   const localLocation = entity.getDynamicProperty(STORAGE_LOCATION_PROPERTY);
   if (typeof storageId !== "string" || storageId.length === 0 || typeof ownerId !== "string" || ownerId.length === 0 || !isIntegerVector(localLocation)) {
-    throw new Error(`Chest storage entity ${entity.id} has invalid persistent identity.`);
+    throw new Error(`Container storage entity ${entity.id} has invalid persistent identity.`);
   }
   return { localLocation, ownerId, storageId };
 }
@@ -548,13 +593,10 @@ function assertStorageIdentity(record, identity) {
     throw new Error(`Storage ${identity.storageId} has conflicting persistent ownership.`);
   }
 }
-function activeStorageLocation(handle, localLocation) {
-  return storageLocationFromCellCenter(handle.localPointToWorld(localLocation));
-}
-function storageLocationFromCellCenter(center) {
+function storageLocationFromCellCenter(center, profile) {
   return {
     x: center.x,
-    y: center.y - STORAGE_COLLISION_HEIGHT * 0.5,
+    y: center.y - profile.collisionHeight * 0.5,
     z: center.z
   };
 }
@@ -570,6 +612,5 @@ function isIntegerVector(value) {
   return Number.isInteger(vector.x) && Number.isInteger(vector.y) && Number.isInteger(vector.z);
 }
 export {
-  CHEST_ENTITY_TYPE_ID,
   SubLevelContainerInteractionController
 };

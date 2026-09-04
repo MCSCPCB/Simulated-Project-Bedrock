@@ -8,13 +8,13 @@ function isSerializedSubLevelStructure(value) {
   const structure = value;
   return hasOnlyKeys(structure, [
     "blocks",
-    "chestStorages",
+    "containerStorages",
     "dimensionId",
     "foliageTint",
     "id"
-  ]) && typeof structure.id === "string" && structure.id.length > 0 && typeof structure.dimensionId === "string" && structure.dimensionId.length > 0 && Array.isArray(structure.blocks) && structure.blocks.length > 0 && structure.blocks.every(isSerializedSubLevelBlock) && Array.isArray(structure.chestStorages) && structure.chestStorages.every(isChestStorageBinding) && (structure.foliageTint === void 0 || isSubLevelFoliageTint(structure.foliageTint));
+  ]) && typeof structure.id === "string" && structure.id.length > 0 && typeof structure.dimensionId === "string" && structure.dimensionId.length > 0 && Array.isArray(structure.blocks) && structure.blocks.length > 0 && structure.blocks.every(isSerializedSubLevelBlock) && Array.isArray(structure.containerStorages) && structure.containerStorages.every(isContainerStorageBinding) && (structure.foliageTint === void 0 || isSubLevelFoliageTint(structure.foliageTint));
 }
-function isChestStorageBinding(value) {
+function isContainerStorageBinding(value) {
   if (!value || typeof value !== "object") return false;
   const binding = value;
   return hasOnlyKeys(binding, ["localLocation", "storageId"]) && isIntegerLocation(binding.localLocation) && typeof binding.storageId === "string" && binding.storageId.length > 0;
@@ -31,7 +31,7 @@ function isSubLevelFoliageTint(value) {
     "vPerLocalZ"
   ]) && (tint.gradientAxis === "x" || tint.gradientAxis === "z") && Number.isInteger(tint.mapKind) && isFiniteNumber(tint.uAtLocalOrigin) && isFiniteNumber(tint.uPerLocalX) && isFiniteNumber(tint.vAtLocalOrigin) && isFiniteNumber(tint.vPerLocalZ);
 }
-function cloneChestStorageBinding(binding) {
+function cloneContainerStorageBinding(binding) {
   return {
     localLocation: { ...binding.localLocation },
     storageId: binding.storageId
@@ -101,9 +101,9 @@ function hasOnlyKeys(value, allowedKeys) {
   return Object.keys(value).every((key) => allowed.has(key));
 }
 export {
-  cloneChestStorageBinding,
+  cloneContainerStorageBinding,
   cloneSubLevelBlock,
-  isChestStorageBinding,
+  isContainerStorageBinding,
   isSerializedSubLevelStructure,
   isSubLevelFoliageTint,
   isSubLevelStorageManifest,

@@ -1,3 +1,23 @@
+// Evaluating the bootstrap module assembles and starts the default pipeline
+// (interaction system, controllers, edit handlers) as a load-time side effect.
+export {
+  sableBlockBehaviors,
+  sableContainerInteraction,
+  sableInteractionSystem,
+  sablePlayerInteraction,
+  sableSubLevels
+} from "./SableCommonEvents.js";
+export { ServerSubLevelContainer } from "./api/sublevel/ServerSubLevelContainer.js";
+export type {
+  CreateSubLevelFromRegionOptions,
+  ManagedSubLevel
+} from "./api/sublevel/ServerSubLevelContainer.js";
+export { SubLevelBlockBehaviorRegistry } from "./api/block/SubLevelBlockBehaviors.js";
+export type {
+  SubLevelBlockBehavior,
+  SubLevelBlockLifecycleEvent,
+  SubLevelBlockWorldCapture
+} from "./api/block/SubLevelBlockBehaviors.js";
 export { SubLevelRenderer } from "./sublevel/render/SubLevelRenderer.js";
 export { captureSubLevelBlock, captureSubLevelBlocks } from "./api/SubLevelAssemblyHelper.js";
 export { captureSubLevelFoliageTint } from "./render/dynamic_biome/DynamicBiomeTintSampler.js";
@@ -48,12 +68,13 @@ export type {
   SubLevelRaycastResult
 } from "./content/block_outline_render/SubLevelOutlineController.js";
 export {
-  CHEST_ENTITY_TYPE_ID,
   SubLevelContainerInteractionController
 } from "./content/assembly/SubLevelContainerInteraction.js";
 export type {
-  SubLevelChestStorageBinding
+  SubLevelContainerProfile,
+  SubLevelContainerStorageBinding
 } from "./content/assembly/SubLevelContainerInteraction.js";
+export { CHEST_ENTITY_TYPE_ID } from "./content/blocks/vanilla/chest/ChestSubLevelBehavior.js";
 export {
   INTERACTION_TARGET_BLOCK_TYPE_ID
 } from "./content/block_placement/SubLevelInteractionTargetBlock.js";
