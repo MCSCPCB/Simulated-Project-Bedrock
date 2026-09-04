@@ -23,7 +23,7 @@
 
 ### 几何真值库
 
-`sable/tools/sublevel-block-render/model-geometry.json`：从 TreePhysics 资源包一次性提取的槽位骨骼子树库（骨骼 pivot/rotation/cubes/uv 原样保留），按变体键组织，每变体记录贴图通道角色、材质角色与贴图尺寸。库中骨骼名使用 `{slot}` 占位，生成时替换为槽位序号。
+`sable/tools/sublevel-block/model-geometry.json`：从 TreePhysics 资源包一次性提取的槽位骨骼子树库（骨骼 pivot/rotation/cubes/uv 原样保留），按变体键组织，每变体记录贴图通道角色、材质角色与贴图尺寸。库中骨骼名使用 `{slot}` 占位，生成时替换为槽位序号。
 
 ### 注册表模型类型
 

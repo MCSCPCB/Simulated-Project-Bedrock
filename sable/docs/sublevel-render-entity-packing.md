@@ -87,9 +87,9 @@ value = x + y*2^bx + z*2^(bx+by) + family*2^(bx+by+bz) + state*2^(bx+by+bz+fb) +
 | `src/.../FancySubLevelModelRegistry.ts` | pool 透传 |
 | `src/.../FancySubLevelTintCodec.ts` | packed.tint 化 |
 | `src/.../FancySubLevelModelRenderer.ts` | LiveModel/池状态读写 |
-| `tools/sublevel-block-render/registry.ts` | domain 字段、分池、运行时 pool 数据 |
-| `tools/sublevel-block-render/model-templates.ts` | origin_y molang、池资源生成 |
-| `tools/sublevel-block-render/resources.ts` | 池产物路径 |
+| `tools/sublevel-block/registry.ts` | domain 字段、分池、运行时 pool 数据 |
+| `tools/sublevel-block/model-templates.ts` | origin_y molang、池资源生成 |
+| `tools/sublevel-block/resources.ts` | 池产物路径 |
 
 ## 七、验证
 

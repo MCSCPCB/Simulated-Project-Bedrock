@@ -1,4 +1,4 @@
-import { blockRenderRegistry } from "../../../../generated/sublevel-block-render-registry.js";
+import { blockRegistry } from "../../../../generated/sublevel-block-registry.js";
 import { createFancySubLevelModelState } from "./FancySubLevelModelTypes.js";
 const modelCache = /* @__PURE__ */ new Map();
 const MISSING_MODEL = {
@@ -19,7 +19,7 @@ const MISSING_MODEL = {
   sparseEntityTypeId: "sable:fancy_model_missing_sparse"
 };
 function resolveFancySubLevelBlock(block) {
-  const registration = blockRenderRegistry[block.typeId];
+  const registration = blockRegistry[block.typeId];
   if (!registration) return void 0;
   const variant = registration.variants.find((entry) => evaluateCondition(entry.condition, block.states));
   const selected = variant ? variant.model : registration.default;
@@ -28,10 +28,10 @@ function resolveFancySubLevelBlock(block) {
   return { block, model, state: model.state?.dimensions[0]?.value ?? 0 };
 }
 function hasFancySubLevelRegistration(typeId) {
-  return blockRenderRegistry[typeId] !== void 0;
+  return blockRegistry[typeId] !== void 0;
 }
 function getSubLevelBlockRegistration(typeId) {
-  const registration = blockRenderRegistry[typeId];
+  const registration = blockRegistry[typeId];
   if (!registration) return void 0;
   return {
     category: registration.category,

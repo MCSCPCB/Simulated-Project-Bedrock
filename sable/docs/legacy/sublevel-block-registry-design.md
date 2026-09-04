@@ -4,7 +4,7 @@
 
 Sable 的方块投影渲染由数据注册驱动。框架源码只认识渲染能力、几何模型、材质、状态选择和实体布局，不认识任何具体方块 ID。
 
-新增一个当前能力范围内的方块时，只修改 `sable/src/data/sublevel-block-render.json`。构建过程读取注册表并自动生成运行时代码、行为包实体、资源包实体、几何、动画和渲染控制器，不需要手工维护生成物。
+新增一个当前能力范围内的方块时，只修改 `sable/src/data/sublevel-block.json`。构建过程读取注册表并自动生成运行时代码、行为包实体、资源包实体、几何、动画和渲染控制器，不需要手工维护生成物。
 
 ## 渲染路线
 
@@ -19,8 +19,8 @@ Sable 的方块投影渲染由数据注册驱动。框架源码只认识渲染�
 
 | 职责 | 路径 |
 | --- | --- |
-| 人工维护的方块注册数据 | `sable/src/data/sublevel-block-render.json` |
-| 注册数据构建工具 | `sable/tools/build-sublevel-block-render.ts` |
+| 人工维护的方块注册数据 | `sable/src/data/sublevel-block.json` |
+| 注册数据构建工具 | `sable/tools/build-sublevel-block.ts` |
 | Sable TypeScript 源码 | `sable/src` |
 | 编译后的行为包 | `sable/packs/SableBP` |
 | 编译后的资源包 | `sable/packs/SableRP` |
@@ -339,7 +339,7 @@ sable/src/sublevel/render/
 
 统一构建命令依次完成：
 
-1. 读取并校验 `sable/src/data/sublevel-block-render.json`。
+1. 读取并校验 `sable/src/data/sublevel-block.json`。
 2. 校验方块 ID、状态声明、条件语法、模型字段、纹理路径、材质和 tint 组合。
 3. 将条件表达式编译为受限的运行时判定数据，不使用动态代码执行。
 4. 生成行为包运行时注册数据和脚本模块。

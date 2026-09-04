@@ -65,8 +65,8 @@ function fixedColormapTga(palette: readonly string[]): Buffer {
   return Buffer.concat([header, pixels]);
 }
 
-const REGISTRY_VIRTUAL_SPECIFIER = "sable:sublevel-block-render-registry";
-const REGISTRY_MODULE_PATH = "SableBP/scripts/sable/generated/sublevel-block-render-registry.js";
+const REGISTRY_VIRTUAL_SPECIFIER = "sable:sublevel-block-registry";
+const REGISTRY_MODULE_PATH = "SableBP/scripts/sable/generated/sublevel-block-registry.js";
 
 // Every file the tool writes lives inside one of these subtrees (plus the
 // individually named pack-level files below); nothing else is ever touched.
@@ -129,7 +129,7 @@ async function collectScriptTargets(
 ): Promise<void> {
   targets.set(
     REGISTRY_MODULE_PATH,
-    `export const blockRenderRegistry = ${JSON.stringify(runtimeRegistry)};\n`
+    `export const blockRegistry = ${JSON.stringify(runtimeRegistry)};\n`
   );
   for (const sourcePath of await listFiles(srcRoot)) {
     const relativeSource = relative(srcRoot, sourcePath).split(sep).join("/");

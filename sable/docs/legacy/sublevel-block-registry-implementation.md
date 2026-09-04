@@ -2,7 +2,7 @@
 
 ## 实施边界
 
-本次只完成 `sublevel-block-render-registry-design.md` 定义的注册、路由、实体布局、运行时渲染和构建产物生成。物理、碰撞、方块交互、存储和 Simulated 业务代码不在改动范围内。
+本次只完成 `sublevel-block-registry-design.md` 定义的注册、路由、实体布局、运行时渲染和构建产物生成。物理、碰撞、方块交互、存储和 Simulated 业务代码不在改动范围内。
 
 ## 当前代码状态
 
@@ -15,7 +15,7 @@
 | `sable/src/sublevel/render/fancy/fragment` | 具备空间分桶、位编码、载体、状态和 tint 基础，但名称与源码注册仍是 TreePhysics 迁移态。 | 删除该路径；能力迁入 `fancy/model`，只消费解析后的模型，不包含具体方块 ID。 |
 | `sable/src/sublevel/render/SubLevelVisualEntityUtils.ts` | 两条路线共用的实体、骑乘和写入阈值工具。 | 改为 `SubLevelRenderEntityUtils.ts`，函数语义保持不变。 |
 | `sable/src/sublevel/render/vanilla` | 双手手持方块与载体生命周期已完整。 | 保留计算与行为，统一 render 命名并作为逐方块回退。 |
-| `sable/src/data` | 不存在。 | 增加唯一人工维护注册表 `sublevel-block-render.json`。 |
+| `sable/src/data` | 不存在。 | 增加唯一人工维护注册表 `sublevel-block.json`。 |
 | `sable/tools` | 空目录。 | 增加注册校验、条件编译、模型资源和包生成工具。 |
 | `sable/packs` | 只有空入口和 foliage 固定色图。 | 由工具完整生成 SableBP、SableRP 和编译后的 `Sable.js`。 |
 
@@ -23,8 +23,8 @@
 
 ```text
 sable/src/
-├── data/sublevel-block-render.json
-├── generated/sublevel-block-render-registry.d.ts
+├── data/sublevel-block.json
+├── generated/sublevel-block-registry.d.ts
 ├── sublevel/SubLevel.ts
 └── sublevel/render/
     ├── SubLevelRenderData.ts
@@ -47,15 +47,15 @@ sable/src/
         └── VanillaChunkedSubLevelRenderData.ts
 
 sable/tools/
-├── build-sublevel-block-render.ts
-└── sublevel-block-render/
+├── build-sublevel-block.ts
+└── sublevel-block/
     ├── condition.ts
     ├── model-templates.ts
     ├── registry.ts
     └── resources.ts
 ```
 
-`sable:sublevel-block-render-registry` 是构建时虚拟模块。声明文件只描述生成数据的类型；具体方块数据由构建工具从 JSON 编译后注入 bundle，不生成含方块 ID 的 TypeScript 源文件。
+`sable:sublevel-block-registry` 是构建时虚拟模块。声明文件只描述生成数据的类型；具体方块数据由构建工具从 JSON 编译后注入 bundle，不生成含方块 ID 的 TypeScript 源文件。
 
 ## 公开数据调整
 
@@ -75,7 +75,7 @@ sable/tools/
 构建工具把每个注册记录编译为：
 
 ```ts
-interface CompiledBlockRenderRegistration {
+interface CompiledBlockRegistration {
   readonly states: readonly string[];
   readonly variants: readonly {
     readonly condition: CompiledCondition;
@@ -209,7 +209,7 @@ interface CompiledFancySubLevelModel {
 统一构建入口是：
 
 ```powershell
-node --experimental-strip-types sable/tools/build-sublevel-block-render.ts
+node --experimental-strip-types sable/tools/build-sublevel-block.ts
 ```
 
 工具内部调用 esbuild，把 `sable/src/Sable.ts` bundle 为 ESM，并将 `@minecraft/server` 标记为 external。虚拟注册模块在同一次 bundle 中注入。
@@ -224,4 +224,3 @@ node --experimental-strip-types sable/tools/build-sublevel-block-render.ts
 4. 搜索 `sable/src`，确认没有具体方块 ID，没有 `fragment`、`visual`、`voxel`、`attachment`、`cube_fragment` 临时渲染术语。
 5. 检查每个注册最终定义均存在 dense/sparse 行为实体、客户端实体、几何、动画和渲染控制器。
 6. 检查未注册方块的逐方块 vanilla 路由与混合 render data 仍然存在。
-

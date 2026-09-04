@@ -1,4 +1,4 @@
-import { blockRenderRegistry } from "sable:sublevel-block-render-registry";
+import { blockRegistry } from "sable:sublevel-block-registry";
 import type { SubLevelBlock, SubLevelBlockStates } from "../../../SubLevel.js";
 import {
   type CompiledCondition,
@@ -31,7 +31,7 @@ const MISSING_MODEL: CompiledFancySubLevelModel = {
 export function resolveFancySubLevelBlock(
   block: SubLevelBlock
 ): FancySubLevelBlock | undefined {
-  const registration = blockRenderRegistry[block.typeId];
+  const registration = blockRegistry[block.typeId];
   if (!registration) return undefined;
   const variant = registration.variants.find(entry => (
     evaluateCondition(entry.condition, block.states)
@@ -44,7 +44,7 @@ export function resolveFancySubLevelBlock(
 }
 
 export function hasFancySubLevelRegistration(typeId: string): boolean {
-  return blockRenderRegistry[typeId] !== undefined;
+  return blockRegistry[typeId] !== undefined;
 }
 
 /** Block-level registry facts the interaction layer consumes. */
@@ -53,7 +53,7 @@ export function getSubLevelBlockRegistration(typeId: string): {
   readonly hardness?: number;
   readonly support?: import("./FancySubLevelModel.js").SubLevelSupportRule;
 } | undefined {
-  const registration = blockRenderRegistry[typeId];
+  const registration = blockRegistry[typeId];
   if (!registration) return undefined;
   return {
     category: registration.category,

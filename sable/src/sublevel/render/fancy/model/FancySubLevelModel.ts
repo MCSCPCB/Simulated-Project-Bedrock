@@ -149,7 +149,7 @@ export type SubLevelSupportRule =
   | "moss_column"
   | "vine_faces";
 
-export interface CompiledBlockRenderRegistration {
+export interface CompiledBlockRegistration {
   readonly category: string;
   readonly hardness?: number;
   readonly support?: SubLevelSupportRule;
@@ -161,8 +161,8 @@ export interface CompiledBlockRenderRegistration {
   readonly default: CompiledFancySubLevelModel | null;
 }
 
-export type CompiledBlockRenderRegistry = Readonly<
-  Record<string, CompiledBlockRenderRegistration>
+export type CompiledBlockRegistry = Readonly<
+  Record<string, CompiledBlockRegistration>
 >;
 
 export interface FancySubLevelTintContext {
