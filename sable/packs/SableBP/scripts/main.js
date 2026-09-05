@@ -775,7 +775,8 @@ function packFancySubLevelModels(blocks) {
 }
 function packModelGroup(group) {
   const model = group[0].model;
-  const candidates = model.tint?.method === "foliage" ? [FOLIAGE_DENSE_CANDIDATE] : DENSE_CANDIDATES;
+  const foliage = model.tint?.method === "foliage";
+  const candidates = foliage ? [FOLIAGE_DENSE_CANDIDATE] : DENSE_CANDIDATES;
   const sparseOrigin = {
     x: chooseCenteredAxisOrigin(group, "x", FANCY_MODEL_SPARSE_SIZE),
     y: chooseCenteredAxisOrigin(group, "y", FANCY_MODEL_SPARSE_SIZE),
@@ -806,7 +807,7 @@ function packModelGroup(group) {
     buckets.sort((left, right) => left[1].length - right[1].length || compareAnchors(left[0], right[0]));
     const boxCounts = /* @__PURE__ */ new Map();
     let sparseEntities = 0;
-    const maximumEvictions = sparseValid ? buckets.length : 0;
+    const maximumEvictions = sparseValid && !foliage ? buckets.length : 0;
     for (let evicted = 0; evicted <= maximumEvictions; evicted++) {
       const entities = buckets.length - evicted + sparseEntities;
       const capacity = (buckets.length - evicted) * candidate.width * candidate.height * candidate.depth + sparseEntities * FANCY_MODEL_SPARSE_SLOT_COUNT;
@@ -923,8 +924,9 @@ function packSparseBlocks(model, origin, blocks) {
 function applyPoolPacking(packedGroups) {
   const byPool = /* @__PURE__ */ new Map();
   for (const group of packedGroups) {
-    const pool = group.blocks[0].model.pool;
-    if (!pool) continue;
+    const model = group.blocks[0].model;
+    const pool = model.pool;
+    if (!pool || model.tint?.method === "foliage") continue;
     const members = byPool.get(pool.entityTypeId);
     if (members) members.push(group);
     else byPool.set(pool.entityTypeId, [group]);
@@ -14007,6 +14009,17 @@ var SubLevelPlayerInteractionController = class {
         event.cancel = true;
       }
     });
+    world7.afterEvents.playerStartBreakingBlock.subscribe((event) => {
+      if (!this.#outlines.isManagedInteractionTarget(event.dimension, event.block)) return;
+      const { player } = event;
+      this.#pendingPlaceByPlayer.delete(player.id);
+      if (player.inputInfo.lastInputModeUsed !== InputMode2.Touch) return;
+      if (this.#touchGestureYieldsToContainer(player)) return;
+      if (this.#pendingTouchBreakByPlayer.has(player.id)) return;
+      const target = this.#outlines.captureActionTarget(player);
+      if (!target) return;
+      this.#queueTouchBreakAction(player, this.#getSelectedItem(player), target);
+    });
     world7.beforeEvents.playerInteractWithBlock.subscribe((event) => {
       const { itemStack, player } = event;
       const heldItemIsBlock = itemStack !== void 0 && BlockTypes2.get(itemStack.typeId) !== void 0;
@@ -14104,6 +14117,10 @@ var SubLevelPlayerInteractionController = class {
       itemStack !== void 0 && BlockTypes2.get(itemStack.typeId) !== void 0
     );
     if (editAction === "break") {
+      if (this.#touchGestureYieldsToContainer(player)) {
+        this.#pendingTouchBreakByPlayer.delete(player.id);
+        return;
+      }
       if (player.inputInfo.lastInputModeUsed === InputMode2.Touch && swingSource === EntitySwingSource.Mine && pendingTouchBreak === void 0) {
         const target3 = this.#outlines.captureActionTarget(player);
         if (!target3) {
@@ -14163,10 +14180,15 @@ var SubLevelPlayerInteractionController = class {
         originTick,
         system8.currentTick
       )) return;
+      if (this.#touchGestureYieldsToContainer(player)) return;
       const selected = this.#getSelectedItem(player);
       if (player.selectedSlotIndex !== pending.slot || selected?.typeId !== pending.itemTypeId) return;
       this.#performBreakAction(player, selected, pending.target);
     });
+  }
+  /** A touch hold aimed at an interactable container never mines it. */
+  #touchGestureYieldsToContainer(player) {
+    return player.inputInfo.lastInputModeUsed === InputMode2.Touch && !player.isSneaking && this.#findStandingInteractionTarget(player) !== void 0;
   }
   #performBreakAction(player, itemStack, target) {
     this.#outlines.handleBreak(player, itemStack, target);

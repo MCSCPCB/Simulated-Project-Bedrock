@@ -171,6 +171,21 @@ export class SubLevelPlayerInteractionController {
         event.cancel = true;
       }
     });
+    world.afterEvents.playerStartBreakingBlock.subscribe(event => {
+      if (!this.#outlines.isManagedInteractionTarget(event.dimension, event.block)) return;
+      const { player } = event;
+      // The engine entering break mode on the managed proxy is definitive
+      // non-placement evidence for the same gesture.
+      this.#pendingPlaceByPlayer.delete(player.id);
+      if (player.inputInfo.lastInputModeUsed !== InputMode.Touch) return;
+      if (this.#touchGestureYieldsToContainer(player)) return;
+      if (this.#pendingTouchBreakByPlayer.has(player.id)) return;
+      const target = this.#outlines.captureActionTarget(player);
+      if (!target) return;
+      // A hold the engine recognized natively enters the same deferred-break
+      // arbitration as a Mine swing, covering holds whose swings never arrive.
+      this.#queueTouchBreakAction(player, this.#getSelectedItem(player), target);
+    });
     world.beforeEvents.playerInteractWithBlock.subscribe(event => {
       const { itemStack, player } = event;
       const heldItemIsBlock = itemStack !== undefined
@@ -293,6 +308,12 @@ export class SubLevelPlayerInteractionController {
       itemStack !== undefined && BlockTypes.get(itemStack.typeId) !== undefined
     );
     if (editAction === "break") {
+      if (this.#touchGestureYieldsToContainer(player)) {
+        // An ambiguous touch hold over an interactable container belongs to
+        // the container on both platforms' semantics: long-press interacts.
+        this.#pendingTouchBreakByPlayer.delete(player.id);
+        return;
+      }
       if (
         player.inputInfo.lastInputModeUsed === InputMode.Touch
         && swingSource === EntitySwingSource.Mine
@@ -373,6 +394,7 @@ export class SubLevelPlayerInteractionController {
         originTick,
         system.currentTick
       )) return;
+      if (this.#touchGestureYieldsToContainer(player)) return;
       const selected = this.#getSelectedItem(player);
       if (
         player.selectedSlotIndex !== pending.slot
@@ -380,6 +402,13 @@ export class SubLevelPlayerInteractionController {
       ) return;
       this.#performBreakAction(player, selected, pending.target);
     });
+  }
+
+  /** A touch hold aimed at an interactable container never mines it. */
+  #touchGestureYieldsToContainer(player: Player): boolean {
+    return player.inputInfo.lastInputModeUsed === InputMode.Touch
+      && !player.isSneaking
+      && this.#findStandingInteractionTarget(player) !== undefined;
   }
 
   #performBreakAction(

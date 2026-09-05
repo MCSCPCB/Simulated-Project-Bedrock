@@ -117,7 +117,8 @@ export function packFancySubLevelModels(
  */
 function packModelGroup(group: readonly FancySubLevelBlock[]): PackedFancySubLevelModel[] | undefined {
   const model = group[0]!.model;
-  const candidates = model.tint?.method === "foliage" ? [FOLIAGE_DENSE_CANDIDATE] : DENSE_CANDIDATES;
+  const foliage = model.tint?.method === "foliage";
+  const candidates = foliage ? [FOLIAGE_DENSE_CANDIDATE] : DENSE_CANDIDATES;
   const sparseOrigin = {
     x: chooseCenteredAxisOrigin(group, "x", FANCY_MODEL_SPARSE_SIZE),
     y: chooseCenteredAxisOrigin(group, "y", FANCY_MODEL_SPARSE_SIZE),
@@ -157,7 +158,9 @@ function packModelGroup(group: readonly FancySubLevelBlock[]): PackedFancySubLev
     buckets.sort((left, right) => left[1].length - right[1].length || compareAnchors(left[0], right[0]));
     const boxCounts = new Map<string, number>();
     let sparseEntities = 0;
-    const maximumEvictions = sparseValid ? buckets.length : 0;
+    // The whole-structure climate gradient exists only in the dense colormap
+    // geometry, so foliage-tinted buckets never evict to sparse entities.
+    const maximumEvictions = sparseValid && !foliage ? buckets.length : 0;
     for (let evicted = 0; evicted <= maximumEvictions; evicted++) {
       const entities = buckets.length - evicted + sparseEntities;
       const capacity = (buckets.length - evicted)
@@ -302,8 +305,10 @@ function applyPoolPacking(
 ): PackedFancySubLevelModel[] {
   const byPool = new Map<string, { readonly blocks: FancySubLevelBlock[]; packs: PackedFancySubLevelModel[] }[]>();
   for (const group of packedGroups) {
-    const pool = group.blocks[0]!.model.pool;
-    if (!pool) continue;
+    const model = group.blocks[0]!.model;
+    const pool = model.pool;
+    // Foliage-tinted models stay on their dense colormap entities.
+    if (!pool || model.tint?.method === "foliage") continue;
     const members = byPool.get(pool.entityTypeId);
     if (members) members.push(group);
     else byPool.set(pool.entityTypeId, [group]);

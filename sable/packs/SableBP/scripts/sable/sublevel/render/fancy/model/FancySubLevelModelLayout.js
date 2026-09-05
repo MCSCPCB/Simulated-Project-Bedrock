@@ -49,7 +49,8 @@ function packFancySubLevelModels(blocks) {
 }
 function packModelGroup(group) {
   const model = group[0].model;
-  const candidates = model.tint?.method === "foliage" ? [FOLIAGE_DENSE_CANDIDATE] : DENSE_CANDIDATES;
+  const foliage = model.tint?.method === "foliage";
+  const candidates = foliage ? [FOLIAGE_DENSE_CANDIDATE] : DENSE_CANDIDATES;
   const sparseOrigin = {
     x: chooseCenteredAxisOrigin(group, "x", FANCY_MODEL_SPARSE_SIZE),
     y: chooseCenteredAxisOrigin(group, "y", FANCY_MODEL_SPARSE_SIZE),
@@ -80,7 +81,7 @@ function packModelGroup(group) {
     buckets.sort((left, right) => left[1].length - right[1].length || compareAnchors(left[0], right[0]));
     const boxCounts = /* @__PURE__ */ new Map();
     let sparseEntities = 0;
-    const maximumEvictions = sparseValid ? buckets.length : 0;
+    const maximumEvictions = sparseValid && !foliage ? buckets.length : 0;
     for (let evicted = 0; evicted <= maximumEvictions; evicted++) {
       const entities = buckets.length - evicted + sparseEntities;
       const capacity = (buckets.length - evicted) * candidate.width * candidate.height * candidate.depth + sparseEntities * FANCY_MODEL_SPARSE_SLOT_COUNT;
@@ -197,8 +198,9 @@ function packSparseBlocks(model, origin, blocks) {
 function applyPoolPacking(packedGroups) {
   const byPool = /* @__PURE__ */ new Map();
   for (const group of packedGroups) {
-    const pool = group.blocks[0].model.pool;
-    if (!pool) continue;
+    const model = group.blocks[0].model;
+    const pool = model.pool;
+    if (!pool || model.tint?.method === "foliage") continue;
     const members = byPool.get(pool.entityTypeId);
     if (members) members.push(group);
     else byPool.set(pool.entityTypeId, [group]);

@@ -307,38 +307,19 @@ function beeNestWrapperRotation(direction: number): readonly [number, number, nu
   return yaw === 0 ? undefined : [0, yaw, 0];
 }
 
-/**
- * A fixed model orientation lives on a dedicated child bone: Bedrock drops
- * geometry rest rotations on animation-driven bones, so the animated slot bone
- * stays transform-only and the pose bone carries the rotation and the cubes.
- */
-function orientedChannelBones(
-  channel: Pick<ModelChannel, "bones" | "wrapperRotation">
-): readonly LibraryBone[] {
-  const rotation = channel.wrapperRotation;
-  if (!rotation) return channel.bones;
-  const [root, ...rest] = channel.bones as [LibraryBone, ...LibraryBone[]];
-  const poseName = `${root.name}_pose`;
-  return [
-    { name: root.name, ...(root.pivot ? { pivot: root.pivot } : {}) },
-    {
-      name: poseName,
-      parent: root.name,
-      ...(root.pivot ? { pivot: root.pivot } : {}),
-      rotation,
-      ...(root.cubes ? { cubes: root.cubes } : {})
-    },
-    ...rest.map(bone => (bone.parent === root.name ? { ...bone, parent: poseName } : bone))
-  ];
-}
-
+// A client entity merges every geometry's bones into one skeleton by name, so
+// same-named bones must carry identical rest transforms across all geometries,
+// and a fixed model orientation can never live in the geometry (pool members
+// would overwrite each other). Orientation is applied by the transform
+// animation on the slot bone instead — the source project's technique for its
+// state-driven log and cube-block rotations.
 function instantiateBones(
-  channel: Pick<ModelChannel, "bones" | "wrapperRotation">,
+  channel: Pick<ModelChannel, "bones">,
   slot: number,
   parent: string,
   namePrefix = ""
 ): JsonObject[] {
-  return orientedChannelBones(channel).map(bone => {
+  return channel.bones.map(bone => {
     const record: JsonObject = { name: namePrefix + bone.name.replaceAll("{s}", String(slot)) };
     record.parent = bone.parent
       ? namePrefix + bone.parent.replaceAll("{s}", String(slot))
@@ -351,13 +332,17 @@ function instantiateBones(
 }
 
 function channelBoneNames(
-  channel: Pick<ModelChannel, "bones" | "wrapperRotation">,
+  channel: Pick<ModelChannel, "bones">,
   slot: number,
   namePrefix = ""
 ): string[] {
-  return orientedChannelBones(channel).map(bone => (
+  return channel.bones.map(bone => (
     namePrefix + bone.name.replaceAll("{s}", String(slot))
   ));
+}
+
+function modelOrientation(model: CompiledModel): readonly [number, number, number] | undefined {
+  return modelChannels(model).find(channel => channel.wrapperRotation)?.wrapperRotation;
 }
 
 function isTintMaterial(model: CompiledModel): boolean {
@@ -646,9 +631,11 @@ export function createFancyAnimation(model: CompiledModel, format: "dense" | "sp
       ]
     }
   };
+  const orientation = modelOrientation(model);
   for (let slot = 0; slot < slotCountOf(format); slot++) {
     bones[`slot_${slot}`] = {
       position: slotPosition(format, slot),
+      ...(orientation ? { rotation: orientation } : {}),
       scale: `v.c${slot} > 0`
     };
   }
@@ -970,13 +957,16 @@ export function createPoolAnimation(pool: CompiledPool): JsonObject {
     }
   };
   const hasLids = pool.members.some(isChestModel);
+  const orientations = pool.members.map(modelOrientation);
   for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
+    const rotation = poolSlotOrientation(orientations, slot);
     bones[`slot_${slot}`] = {
       position: [
         `math.mod(v.s${slot}, ${places.xSpan}) * 16`,
         `math.mod(math.floor(v.s${slot} / ${places.xSpan}), ${places.ySpan}) * 16`,
         `-math.mod(math.floor(v.s${slot} / ${places.xSpan * places.ySpan}), ${places.zSpan}) * 16`
       ],
+      ...(rotation ? { rotation } : {}),
       scale: `v.o${slot}`
     };
   }
@@ -991,6 +981,22 @@ export function createPoolAnimation(pool: CompiledPool): JsonObject {
     animations[`animation.${key}.lid_pose`] = { bones: lidBones, loop: true };
   }
   return { format_version: "1.8.0", animations };
+}
+
+/** Per-slot orientation selected by the slot's family, like the source cube rotation. */
+function poolSlotOrientation(
+  orientations: readonly (readonly [number, number, number] | undefined)[],
+  slot: number
+): (string | number)[] | undefined {
+  const components = [0, 1, 2].map(axis => {
+    const terms = orientations.flatMap((rotation, family) => (
+      rotation && rotation[axis] !== 0
+        ? [`(v.f${slot} == ${family} ? ${rotation[axis]} : 0)`]
+        : []
+    ));
+    return terms.length === 0 ? 0 : terms.join(" + ");
+  });
+  return components.every(component => component === 0) ? undefined : components;
 }
 
 export function createPoolRenderController(pool: CompiledPool): JsonObject {

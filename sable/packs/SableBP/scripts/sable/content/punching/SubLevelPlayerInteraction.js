@@ -86,6 +86,17 @@ class SubLevelPlayerInteractionController {
         event.cancel = true;
       }
     });
+    world.afterEvents.playerStartBreakingBlock.subscribe((event) => {
+      if (!this.#outlines.isManagedInteractionTarget(event.dimension, event.block)) return;
+      const { player } = event;
+      this.#pendingPlaceByPlayer.delete(player.id);
+      if (player.inputInfo.lastInputModeUsed !== InputMode.Touch) return;
+      if (this.#touchGestureYieldsToContainer(player)) return;
+      if (this.#pendingTouchBreakByPlayer.has(player.id)) return;
+      const target = this.#outlines.captureActionTarget(player);
+      if (!target) return;
+      this.#queueTouchBreakAction(player, this.#getSelectedItem(player), target);
+    });
     world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
       const { itemStack, player } = event;
       const heldItemIsBlock = itemStack !== void 0 && BlockTypes.get(itemStack.typeId) !== void 0;
@@ -183,6 +194,10 @@ class SubLevelPlayerInteractionController {
       itemStack !== void 0 && BlockTypes.get(itemStack.typeId) !== void 0
     );
     if (editAction === "break") {
+      if (this.#touchGestureYieldsToContainer(player)) {
+        this.#pendingTouchBreakByPlayer.delete(player.id);
+        return;
+      }
       if (player.inputInfo.lastInputModeUsed === InputMode.Touch && swingSource === EntitySwingSource.Mine && pendingTouchBreak === void 0) {
         const target3 = this.#outlines.captureActionTarget(player);
         if (!target3) {
@@ -242,10 +257,15 @@ class SubLevelPlayerInteractionController {
         originTick,
         system.currentTick
       )) return;
+      if (this.#touchGestureYieldsToContainer(player)) return;
       const selected = this.#getSelectedItem(player);
       if (player.selectedSlotIndex !== pending.slot || selected?.typeId !== pending.itemTypeId) return;
       this.#performBreakAction(player, selected, pending.target);
     });
+  }
+  /** A touch hold aimed at an interactable container never mines it. */
+  #touchGestureYieldsToContainer(player) {
+    return player.inputInfo.lastInputModeUsed === InputMode.Touch && !player.isSneaking && this.#findStandingInteractionTarget(player) !== void 0;
   }
   #performBreakAction(player, itemStack, target) {
     this.#outlines.handleBreak(player, itemStack, target);
