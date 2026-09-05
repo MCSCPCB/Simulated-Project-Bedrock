@@ -83,6 +83,11 @@ function property(type: "float" | "int", range: readonly [number, number], defau
   return { type, range, client_sync: true, default: defaultValue };
 }
 
+// Persistent storage entities (container inventories) declare this family so
+// every carrier accepts them without matching the render-entity families the
+// startup reclaim sweeps.
+const PERSISTENT_RIDER_FAMILY = "sable_persistent_rider";
+
 function commonComponents(family: string, rideable = false): JsonObject {
   const components: JsonObject = {
     "minecraft:type_family": { family: [family, "inanimate"] },
@@ -95,7 +100,7 @@ function commonComponents(family: string, rideable = false): JsonObject {
   };
   if (rideable) {
     components["minecraft:rideable"] = {
-      family_types: [family],
+      family_types: [family, PERSISTENT_RIDER_FAMILY],
       seat_count: CARRIER_SEAT_COUNT,
       seats: Array.from({ length: CARRIER_SEAT_COUNT }, (_, index) => ({
         max_rider_count: CARRIER_SEAT_COUNT,
@@ -302,27 +307,57 @@ function beeNestWrapperRotation(direction: number): readonly [number, number, nu
   return yaw === 0 ? undefined : [0, yaw, 0];
 }
 
+/**
+ * A fixed model orientation lives on a dedicated child bone: Bedrock drops
+ * geometry rest rotations on animation-driven bones, so the animated slot bone
+ * stays transform-only and the pose bone carries the rotation and the cubes.
+ */
+function orientedChannelBones(
+  channel: Pick<ModelChannel, "bones" | "wrapperRotation">
+): readonly LibraryBone[] {
+  const rotation = channel.wrapperRotation;
+  if (!rotation) return channel.bones;
+  const [root, ...rest] = channel.bones as [LibraryBone, ...LibraryBone[]];
+  const poseName = `${root.name}_pose`;
+  return [
+    { name: root.name, ...(root.pivot ? { pivot: root.pivot } : {}) },
+    {
+      name: poseName,
+      parent: root.name,
+      ...(root.pivot ? { pivot: root.pivot } : {}),
+      rotation,
+      ...(root.cubes ? { cubes: root.cubes } : {})
+    },
+    ...rest.map(bone => (bone.parent === root.name ? { ...bone, parent: poseName } : bone))
+  ];
+}
+
 function instantiateBones(
   channel: Pick<ModelChannel, "bones" | "wrapperRotation">,
   slot: number,
   parent: string,
   namePrefix = ""
 ): JsonObject[] {
-  return channel.bones.map((bone, index) => {
+  return orientedChannelBones(channel).map(bone => {
     const record: JsonObject = { name: namePrefix + bone.name.replaceAll("{s}", String(slot)) };
     record.parent = bone.parent
       ? namePrefix + bone.parent.replaceAll("{s}", String(slot))
       : parent;
     if (bone.pivot) record.pivot = bone.pivot;
-    const rotation = index === 0 ? channel.wrapperRotation ?? bone.rotation : bone.rotation;
-    if (rotation) record.rotation = rotation;
+    if (bone.rotation) record.rotation = bone.rotation;
     if (bone.cubes) record.cubes = bone.cubes;
     return record;
   });
 }
 
-function channelBoneNames(channel: Pick<ModelChannel, "bones">, slot: number, namePrefix = ""): string[] {
-  return channel.bones.map(bone => namePrefix + bone.name.replaceAll("{s}", String(slot)));
+function channelBoneNames(
+  channel: Pick<ModelChannel, "bones" | "wrapperRotation">,
+  slot: number,
+  namePrefix = ""
+): string[] {
+  return orientedChannelBones(channel).map(bone => (
+    namePrefix + bone.name.replaceAll("{s}", String(slot))
+  ));
 }
 
 function isTintMaterial(model: CompiledModel): boolean {

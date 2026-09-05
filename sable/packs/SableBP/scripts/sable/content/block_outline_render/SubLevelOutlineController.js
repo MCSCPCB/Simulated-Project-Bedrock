@@ -141,16 +141,12 @@ class SubLevelOutlineController {
     const result = this.#validatedActionResult(player, expected);
     if (!result) return;
     if (!canPlayerBreakSubLevelBlock(player, itemStack, result.hit.block.typeId)) return;
-    const registration = getSubLevelBlockRegistration(result.hit.block.typeId);
-    if (registration === void 0) return;
+    const hardness = getSubLevelBlockRegistration(result.hit.block.typeId)?.hardness ?? DEFAULT_BLOCK_HARDNESS;
     const targetKey = blockKey(result.hit.block.localLocation);
     const progress = this.#miningProgress.advance(
       `${result.handle.id}|${targetKey}`,
       system.currentTick,
-      getSubLevelMiningTargetTicks(
-        registration.hardness ?? DEFAULT_BLOCK_HARDNESS,
-        itemStack
-      ),
+      getSubLevelMiningTargetTicks(hardness, itemStack),
       player.inputInfo.lastInputModeUsed === InputMode.Touch ? { playerId: player.id, type: "touch" } : { type: "attack" }
     );
     if (!progress) return;

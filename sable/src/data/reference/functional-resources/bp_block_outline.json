@@ -85,7 +85,7 @@
     "components": {
       "minecraft:type_family": {
         "family": [
-          "fragment",
+          "fancy_model",
           "block",
           "block_outline",
           "inanimate"

@@ -4,6 +4,9 @@
 - [completed] 收尾验证染色、互动目标、挖掘、选择框与箱子装配链路
 - [completed] 修复计划/非预期结算的持久化恢复与 kill 拦截
 - [completed] 检查其他无法解释的迁移缺失并运行可用验证
+- [in_progress] 对照 TreePhysics 定位箱子挂接、状态/旋转、vanilla 挖掘、fancy 高度和 outline 刷新差异
+- [pending] 修复上述五条链路并同步源码、部署脚本与 main.js
+- [pending] 运行构建、类型、脚本语法和生成物验证并完成文档收尾
 
 ## Errors Encountered
 
@@ -16,3 +19,4 @@
 | 单入口 `tsc` 找不到 `sable:sublevel-block-registry` | 1 | 将仓库现有 `src/generated/sublevel-block-registry.d.ts` 显式加入检查，严格检查通过。 |
 | PowerShell 将全部 sable 源文件展开传给 `tsc` 时命令行超长 | 1 | 保留已通过的单入口严格检查，改用构建工具和生成 JS 语法检查完成验证。 |
 | 在迁移仓库父目录查找 `package.json` 未找到 | 1 | 构建工具已按自身路径运行通过，父目录 package 文件与本任务无关。 |
+| esbuild 从标准输入重建 `main.js` 时无法解析 `./sable/Sable.js` | 1 | 改用工作树内的临时入口文件执行 bundle，避免标准输入的相对路径解析差异。 |

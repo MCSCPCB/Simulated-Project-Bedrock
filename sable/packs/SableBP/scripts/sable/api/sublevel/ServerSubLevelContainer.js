@@ -59,10 +59,10 @@ class ServerSubLevelContainer {
     if (currentTick % 20 !== 0) return;
     for (const record of [...this.#recordsByHandleId.values()]) {
       if (record.removed || !record.handle.isValid) continue;
+      if (!isRecordRegionLoaded(record)) continue;
       if (!record.renderData.hasKnownIntegrityFailure() && record.renderData.hasIntactEntities()) continue;
       this.#saveRecord(record);
-      this.#destroyRecord(record, "unexpected");
-      throw new Error(`Sub-level ${record.id} was persisted after a visual integrity failure.`);
+      this.#recreateRender(record, record.handle.blocks);
     }
   }
   handleContainerNativeDeath(ownerId, binding) {
@@ -373,7 +373,17 @@ class ServerSubLevelContainer {
     });
     const subLevel = { body, blocks, dimension, foliageTint };
     const renderData = SubLevelRenderer.createRenderData(subLevel);
-    let record;
+    const record = {
+      id,
+      subLevel,
+      handle: void 0,
+      origin: { ...origin },
+      renderData,
+      removed: false,
+      invalidateBody: () => {
+        removed = true;
+      }
+    };
     try {
       const handle = this.#interactionSystem.register(subLevel, {
         worldPointToLocal,
@@ -381,17 +391,7 @@ class ServerSubLevelContainer {
           return record.renderData;
         }
       });
-      record = {
-        id,
-        subLevel,
-        handle,
-        origin: { ...origin },
-        renderData,
-        removed: false,
-        invalidateBody: () => {
-          removed = true;
-        }
-      };
+      record.handle = handle;
       return record;
     } catch (error) {
       renderData.remove();
@@ -442,6 +442,15 @@ class ServerSubLevelContainer {
       this.#containers.discardStorage(binding.storageId);
     }
     this.#destroyRecord(record, "unexpected");
+  }
+}
+function isRecordRegionLoaded(record) {
+  try {
+    return record.handle.dimension.getBlock(
+      record.handle.localPointToWorld(record.handle.outlineAnchorLocal)
+    ) !== void 0;
+  } catch {
+    return false;
   }
 }
 function buildPlacedBlock(_player, typeId, placement, cardinalDirection) {

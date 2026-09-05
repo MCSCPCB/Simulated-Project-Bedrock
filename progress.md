@@ -29,3 +29,6 @@
 - 补齐渲染重建的异常事务，迁移持久化骑手失败时清理未提交的新投影后再暴露原始错误。
 - 收尾复验通过：子世界方块注册表构建生成 62 个注册项和 179 个模型资源；显式纳入生成 registry 声明的 TypeScript 严格检查通过；Sable BP 的 50 个 JavaScript 产物均通过 `node --check`；`git diff --check` 无空白错误。
 - 源码与部署脚本逐链路复核完成，未发现需要新增的 interaction target、outline、空手挖掘或箱子迁移修复；Sable 仍没有独立的加载范围/超时自动结算调度器。
+- 按入口配置更新 `sable/packs/SableBP/scripts/main.js`：将木棍选区入口与当前 `sable` 脚本合并为单一 ESM bundle，生成后通过 `node --check`，确保部署入口包含本轮修复。
+- 修复子世界创建时报 `renderData of undefined`：交互系统注册期间会读取 `renderData` getter，`#createRuntimeRecord` 现先建立带 `renderData` 的记录对象，再注册句柄并回填 `handle`；源码、部署脚本和 `main.js` bundle 已同步。
+- 修复后重新通过 TypeScript 严格检查、Sable BP 50 个 JavaScript 文件语法检查及 `git diff --check`。

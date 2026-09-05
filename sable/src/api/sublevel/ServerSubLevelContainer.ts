@@ -116,10 +116,15 @@ export class ServerSubLevelContainer {
     if (currentTick % 20 !== 0) return;
     for (const record of [...this.#recordsByHandleId.values()]) {
       if (record.removed || !record.handle.isValid) continue;
+      // Unloaded chunks invalidate entity handles without losing the entities;
+      // integrity only means anything while the projection region is loaded.
+      if (!isRecordRegionLoaded(record)) continue;
       if (!record.renderData.hasKnownIntegrityFailure() && record.renderData.hasIntactEntities()) continue;
+      // Externally removed projection entities are terminal for the current
+      // render; the block record stays authoritative, so rebuild the
+      // projection in place and carry the surviving storage riders over.
       this.#saveRecord(record);
-      this.#destroyRecord(record, "unexpected");
-      throw new Error(`Sub-level ${record.id} was persisted after a visual integrity failure.`);
+      this.#recreateRender(record, record.handle.blocks);
     }
   }
 
@@ -492,21 +497,21 @@ export class ServerSubLevelContainer {
     });
     const subLevel: SubLevel = { body, blocks, dimension, foliageTint };
     const renderData = SubLevelRenderer.createRenderData(subLevel);
-    let record: ManagedSubLevelRecord;
+    const record = {
+      id,
+      subLevel,
+      handle: undefined as unknown as SubLevelInteractionHandle,
+      origin: { ...origin },
+      renderData,
+      removed: false,
+      invalidateBody: () => { removed = true; }
+    };
     try {
       const handle = this.#interactionSystem.register(subLevel, {
         worldPointToLocal,
         get renderData() { return record.renderData; }
       });
-      record = {
-        id,
-        subLevel,
-        handle,
-        origin: { ...origin },
-        renderData,
-        removed: false,
-        invalidateBody: () => { removed = true; }
-      };
+      record.handle = handle;
       return record;
     } catch (error) {
       renderData.remove();
@@ -566,6 +571,16 @@ export class ServerSubLevelContainer {
       this.#containers.discardStorage(binding.storageId);
     }
     this.#destroyRecord(record, "unexpected");
+  }
+}
+
+function isRecordRegionLoaded(record: ManagedSubLevelRecord): boolean {
+  try {
+    return record.handle.dimension.getBlock(
+      record.handle.localPointToWorld(record.handle.outlineAnchorLocal)
+    ) !== undefined;
+  } catch {
+    return false;
   }
 }
 

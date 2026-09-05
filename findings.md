@@ -99,3 +99,16 @@
 - 复核触控输入：`SubLevelOutlineController` 已按 `InputMode.Touch` 将 interaction target 固定到玩家头部格；`SubLevelPlayerInteraction.#tryPlayerStandingInteraction` 仍是容器原生交互的视线承接，与 TreePhysics 同源，不应为迁移修复改成另一套触控路由。
 - 复核渲染重建异常：持久化骑手迁移失败时，新投影已创建但尚未提交；`ServerSubLevelContainer.#recreateRender` 现在先销毁该未提交投影再重新抛错，成功路径和骑手归属不变。
 - sable 当前不存在独立的超出加载范围/超时调度器；现有可触发的计划移除入口只有 `ManagedSubLevel.remove()`，因此未凭空新增调度能力，所有已有计划或视觉异常移除均走持久化保留路径。
+
+## 五条问题的当前代码事实
+
+- `captureSubLevelBlock()` 已调用 `BlockPermutation.getAllStates()` 并写入 `SubLevelBlock.states`；vanilla 单块渲染通过 `block.rotation` 写入本地旋转属性，fancy 注册表通过同一 `states` 解析模型。因此“原木旋转状态丢失”不能由捕获函数缺失状态解释，需继续核对状态键和放置/序列化路径。
+- 箱子创建和区域装配都在 `ChestSubLevelBehavior.onBlockAdded()` 进入通用 `createStorage()`；失败点是 `SubLevelInteractionHandle.attachPersistentEntity()` 转发到 renderer 的 persistent rider 挂接，当前没有箱子专用替代路径。
+- vanilla 挖掘、outline 和子世界射线分别由 `SubLevelPlayerInteraction`、`SubLevelOutlineController`、`SubLevelGridRaycast` 驱动，当前源码仍需和 TreePhysics 同类链路做数值/刷新时机对照，不能仅凭入口存在判定功能正确。
+
+- TreePhysics 的 vanilla block renderer 在初始姿态释放时将每个方块实体的 `scale` 写为 `1`；Sable 版本保留同一操作，因此 fancy 高度偏差应继续定位到 fancy 模型的几何原点/编码，而不是通用载体锚点。
+
+- `SubLevelMiningProgress`/`SubLevelMiningTime` 与 TreePhysics 的 `MiningProgress`/`MiningTime` 在贡献刻度、阶段计算和目标时间公式上同源；“进度始终为 0”需继续确认是否根本没有进入 `handleBreak` 或注册表硬度/权限被错误拒绝，而不是先改进度算法。
+- `SubLevelOutlineController.handleBreak()` 的顺序与 TreePhysics 一致：先验证射线、权限、注册表，再调用 `advance()`；因此 vanilla 挖掘问题的首要观测点是事件是否到达 `handleBreak` 以及目标方块是否有注册项。
+
+- Sable 与 TreePhysics 的交互目标控制器实现逐段一致：均以射线命中格为 `sourceLocation`，桌面使用射线离开目标格后的世界格，触控使用玩家头部格，并仅替换空气/水格。当前“代理没有生成”不能归因于代理算法本身的迁移改写，需核对同步调用是否被 bundle/入口或刷新条件跳过，以及目标世界格在运行时是否可替换。

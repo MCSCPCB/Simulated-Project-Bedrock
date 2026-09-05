@@ -46,7 +46,7 @@
       },
       "minecraft:type_family": {
         "family": [
-          "fragment",
+          "sable_persistent_rider",
           "chest"
         ]
       }
