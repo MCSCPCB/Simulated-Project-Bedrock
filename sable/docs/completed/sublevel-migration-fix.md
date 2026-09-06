@@ -59,6 +59,38 @@
 
 投影实体被外部移除（如 /kill）属于当前渲染的终止性损坏，但方块记录仍是权威数据：完整性检查发现损坏时先保存、再原地重建投影并迁移幸存的 persistent storage riders，子世界本体不消失。区块未加载只会使实体句柄失效而不丢失实体，完整性判定必须以投影区域已加载为前提。
 
+## 已确认回退与修复方案
+
+### 捕获源方块事务
+
+`ServerSubLevelContainer.createSubLevelFromRegion` 当前在捕获后立即 `setType("minecraft:air")`，随后才创建运行时子世界、执行方块行为与保存记录。若 `createSubLevel()`、渲染创建、容器 storage 创建或保存失败，catch 路径只清理运行时实体，不能恢复源世界方块，造成“世界方块已消失但子世界不存在”。TreePhysics 的 `WorldRemoval.prepare/commit` 把世界移除放在可回滚事务里，失败时按 snapshot 恢复 permutation。
+
+修复：在 sable 现有 API 边界内引入通用捕获事务。`createSubLevelFromRegion` 先按捕获范围保存每个将被移除世界方块的 `typeId` 与 `permutation.getAllStates()`，再创建子世界、执行行为、创建 storage、保存结构记录；全部成功后才提交源世界清除。若提交清除自身失败，按已清除快照恢复并销毁未提交子世界记录。若运行时创建或保存失败，源世界保持不变；任一路径都要触发当前架构需要的缓存/代理刷新回收。
+
+### 玩家破坏编辑事务
+
+`ServerSubLevelContainer.breakBlockForPlayerEdit` 当前先改 live blocks、更新 render、执行 `onBlockRemoved` 与掉落/粒子/音效，最后才保存或删除持久化记录。保存失败时无法完整恢复 handle blocks、render assignments/carriers、container storage bindings、block behavior 副作用与旧持久化记录。TreePhysics 的编辑路径先准备 durable record，再提交 live body，并保留失败恢复入口。
+
+修复：为破坏编辑建立 per-record edit transaction。进入编辑前快照旧 blocks、旧 renderData、旧 container bindings 与旧持久化记录；先计算将删除的 blocks、support cascade 和 stateUpdates，并准备新结构记录。提交顺序为：写入新结构记录或删除记录成功后，提交 live blocks/render/state updates；再执行方块删除 behavior、掉落、粒子与音效；最后释放或结算 container storage。若任一步失败，按快照恢复 live blocks、renderData 与 storage indexes，并恢复旧持久化记录。自然清空子世界时只有持久化删除成功后才 `destroyRecord("natural")`。
+
+### 玩家放置编辑事务
+
+`ServerSubLevelContainer.placeBlockForPlayerEdit` 当前先 `addBlock` 或 `#recreateRender`，再执行 `onBlockAdded` 创建 storage，最后保存。catch 只删除新增 block 和新增 storage，不能恢复旧 render、旧 block 状态、旧 storage 绑定或旧记录；若 render 重建已迁移 riders，失败后 storage 可能脱离旧 carrier。
+
+修复：放置路径与破坏路径共用 edit transaction。先构造 `placed` snapshot 和新 blocks 列表，保存旧 live/render/storage/persistence 快照；创建或重建 render 时必须在事务内保留旧 renderData 到提交完成。`onBlockAdded` 产生的新 storage 只在持久化成功后纳入正式 bindings；失败时删除新 storage，并恢复旧 handle blocks、旧 renderData、旧 rider attachment 与旧记录。不得改变注册表 `placeable` 与行为 registry 的泛化边界。
+
+### Storage entity 卸载语义
+
+`SubLevelContainerInteraction.handleEntityRemove` 当前把所有非 settling、非 native death 的 `entityRemove` 都转发为 `onUnexpectedRemoval`，`ServerSubLevelContainer.handleContainerUnexpectedRemoval` 随后保存并 `destroyRecord("unexpected")`。但 `@minecraft/server` 的 `entityRemove` 同时代表区块卸载或远离玩家卸载；普通卸载被误判后会销毁整个子世界投影。TreePhysics 在该分支只清 runtime entity 引用，保留 contraption/sub-level 记录，等待 entityLoad 后重绑。
+
+修复：`handleEntityRemove` 对普通 remove 只删除 `#storageIdByEntityId`、清 `record.entity/active/attached/lastLocation`、释放 preview/viewer runtime 状态，并保留 record、owner binding 与持久化结构；不得调用 `onUnexpectedRemoval`。真正外部永久移除由子世界 render 完整性检查在“投影区域已加载且实体确实缺失”时处理：先保存当前结构，再原地重建投影并迁移幸存 persistent storage riders。`entityLoad` 重新读 dynamic properties，匹配已保存 binding 后恢复 profile、handle 与 carrier attach。
+
+### 启动恢复隔离与区块可读性
+
+`ServerSubLevelContainer.initialize` 当前 `listSubLevelIds().map(load)` 后直接循环 `#restoreSubLevel(saved)`。任意一个保存记录损坏、维度不可用、投影区域未加载、render 创建失败或 storage 绑定失败，都会抛出并中断后续子世界恢复，也会阻断 `completeSavedBindingRegistration()`。TreePhysics 的 `#restoreAvailableTrees` 按保存记录逐个恢复，先检查 bounds chunk 可读性，失败只给该 id 设置 retry tick 并回滚本次 runtime/binding，不影响其他记录。
+
+修复：Sable 持久化恢复改为两段式。`initialize()` 只加载 manifest 与 saved records、推进 next id、登记所有 saved storage bindings，并把结构放入 pending restore map；实际恢复在 `tick()` 中按记录逐个尝试。恢复前用保存 blocks 的 world bounds 检查投影区域是否可读；不可读则保留 pending，不抛错。单条恢复失败时调用 storage binding rollback/unbind、移除已创建 render/handle，并记录 retry tick；其他 saved records 继续恢复。`completeSavedBindingRegistration()` 必须在所有 saved bindings 登记之后仍可执行，不依赖所有子世界已经恢复成功。
+
 ## 计划改动
 
 1. 恢复 foliage 过滤条件，构建同步 JS。
