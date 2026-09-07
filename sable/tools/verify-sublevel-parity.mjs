@@ -1042,19 +1042,25 @@ function interactionFixture(typeId, inputMode, sneaking = false, origin = { x: 0
   return { ...f, controller, managed, player, tick, proxies };
 }
 
-test("standing desktop containers keep a mining proxy beyond the target on all six rays", () => {
+test("standing desktop containers claim a mining proxy only after a left attack", () => {
   for (const axis of ["x", "y", "z"]) for (const sign of [-1, 1]) {
     const origin = { x: 0.5, y: 0.5, z: 0.5 };
     origin[axis] -= sign * 3;
     const direction = { x: 0, y: 0, z: 0, [axis]: sign };
     const f = interactionFixture("minecraft:chest", "keyboard", false, origin, direction);
-    assert.deepEqual(f.proxies(), [{ x: 0, y: 0, z: 0, [axis]: sign > 0 ? 1 : -1 }]);
+    assert.deepEqual(f.proxies(), [], "right-click target stays unobstructed by default");
+    f.signals.get("playerSwingStart").forEach(callback => callback({
+      player: f.player,
+      swingSource: f.server.EntitySwingSource.Attack,
+      heldItemStack: undefined
+    }));
+    assert.equal(f.proxies().length, 1, `proxy is created for ${axis}${sign}`);
     const storage = [...f.entities.values()].find(entity => entity.typeId === "sable:chest");
     assert(storage.events.includes("sable:chest_activate"), "native opening remains active");
   }
 });
 
-test("stationary container posture and input changes release and recreate the appropriate proxy", () => {
+test("stationary container posture and input changes release the mining lease", () => {
   const f = interactionFixture("minecraft:chest", "touch", true);
   const headCell = { x: 0, y: 0, z: -3 };
   assert.deepEqual(f.proxies(), [headCell]);
@@ -1063,7 +1069,13 @@ test("stationary container posture and input changes release and recreate the ap
   assert.deepEqual(f.proxies(), [], "standing touch must release the previous mining proxy");
   f.player.inputInfo.lastInputModeUsed = "keyboard";
   f.tick();
-  assert.deepEqual(f.proxies(), [{ x: 0, y: 0, z: 1 }], "input change must bypass the stationary ray cache");
+  assert.deepEqual(f.proxies(), [], "standing keyboard keeps the entity target unobstructed");
+  f.signals.get("playerSwingStart").forEach(callback => callback({
+    player: f.player,
+    swingSource: f.server.EntitySwingSource.Attack,
+    heldItemStack: undefined
+  }));
+  assert.equal(f.proxies().length, 1);
   f.player.inputInfo.lastInputModeUsed = "touch";
   f.tick();
   assert.deepEqual(f.proxies(), []);
@@ -1072,10 +1084,38 @@ test("stationary container posture and input changes release and recreate the ap
   assert.deepEqual(f.proxies(), [headCell], "sneaking must restore touch mining without moving the ray");
 });
 
+test("standing desktop mining leases end on right interaction or attack timeout", () => {
+  const f = interactionFixture("minecraft:chest", "keyboard", false);
+  f.signals.get("playerSwingStart").forEach(callback => callback({
+    player: f.player,
+    swingSource: f.server.EntitySwingSource.Attack,
+    heldItemStack: undefined
+  }));
+  assert.equal(f.proxies().length, 1);
+  f.signals.get("playerInteractWithEntity").forEach(callback => callback({ player: f.player }));
+  assert.deepEqual(f.proxies(), [], "right interaction releases the mining lease immediately");
+
+  f.signals.get("playerSwingStart").forEach(callback => callback({
+    player: f.player,
+    swingSource: f.server.EntitySwingSource.Attack,
+    heldItemStack: undefined
+  }));
+  assert.equal(f.proxies().length, 1);
+  for (let tick = 0; tick < 8; tick++) {
+    f.flush();
+    f.tick();
+  }
+  assert.deepEqual(f.proxies(), [], "no further left attack expires the lease");
+});
+
 test("non-container and sneaking desktop selection retain the original proxy cell", () => {
   for (const typeId of ["minecraft:oak_log", "minecraft:chest"]) {
     for (const inputMode of ["keyboard", "touch"]) for (const sneaking of [false, true]) {
-      if (typeId === "minecraft:chest" && !sneaking) continue;
+      if (typeId === "minecraft:chest" && !sneaking) {
+        const f = interactionFixture(typeId, inputMode, sneaking);
+        assert.deepEqual(f.proxies(), []);
+        continue;
+      }
       const f = interactionFixture(typeId, inputMode, sneaking);
       assert.deepEqual(f.proxies(), [{ x: 0, y: 0, z: inputMode === "touch" ? -3 : -1 }]);
     }

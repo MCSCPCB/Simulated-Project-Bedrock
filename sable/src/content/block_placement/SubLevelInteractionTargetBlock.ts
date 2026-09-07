@@ -88,8 +88,7 @@ export class SubLevelInteractionTargetBlockController {
     playerHead: Vector3,
     hitLocation: Vector3,
     direction: Vector3,
-    useHeadAnchor: boolean,
-    useFarSide = false
+    useHeadAnchor: boolean
   ): void {
     // Keep the physical hit cell as the source. Desktop places the native
     // interaction proxy in the first world cell crossed after leaving it,
@@ -99,18 +98,9 @@ export class SubLevelInteractionTargetBlockController {
       y: hitLocation.y - direction.y * TARGET_LOCATION_EPSILON,
       z: hitLocation.z - direction.z * TARGET_LOCATION_EPSILON
     });
-    // Native containers must precede the mining proxy on the interaction ray.
-    // Start just inside the hit cell and reuse the existing exit-cell placement.
-    const insideHit = useFarSide ? {
-      x: hitLocation.x + direction.x * TARGET_LOCATION_EPSILON,
-      y: hitLocation.y + direction.y * TARGET_LOCATION_EPSILON,
-      z: hitLocation.z + direction.z * TARGET_LOCATION_EPSILON
-    } : undefined;
-    const proxyLocation = insideHit
-      ? findInteractionProxyLocation(insideHit, direction, blockLocation(insideHit))
-      : useHeadAnchor
-        ? blockLocation(playerHead)
-        : findRayTargetOffset(playerHead, direction, sourceLocation);
+    const proxyLocation = useHeadAnchor
+      ? blockLocation(playerHead)
+      : findRayTargetOffset(playerHead, direction, sourceLocation);
     if (!proxyLocation) {
       this.releasePlayer(playerId);
       return;

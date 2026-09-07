@@ -63,6 +63,7 @@ class SubLevelOutlineController {
   #breakOverlays = /* @__PURE__ */ new Map();
   #states = /* @__PURE__ */ new Map();
   #interactionTargets = new SubLevelInteractionTargetBlockController();
+  #miningTargetPlayers = /* @__PURE__ */ new Set();
   #trackedEntityIds = /* @__PURE__ */ new Set();
   #miningProgress = new SubLevelMiningProgress();
   #startupCleanupComplete = false;
@@ -434,6 +435,11 @@ class SubLevelOutlineController {
       this.#clearInteractionTargets(player.id);
       return;
     }
+    if (inputMode === InputMode.KeyboardAndMouse && !player.isSneaking && nativeInteraction) {
+      if (this.#miningTargetPlayers.has(player.id)) return;
+      this.#clearInteractionTargets(player.id);
+      return;
+    }
     if (refreshInteractionTarget) {
       this.#interactionTargets.syncPlayer(
         player.id,
@@ -441,10 +447,25 @@ class SubLevelOutlineController {
         result.origin,
         result.hit.location,
         result.direction,
-        inputMode === InputMode.Touch,
-        inputMode === InputMode.KeyboardAndMouse && nativeInteraction
+        inputMode === InputMode.Touch
       );
     }
+  }
+  /** Start the native mining route after a standing keyboard attack is observed. */
+  syncInteractionTargetForMining(player, result) {
+    this.#miningTargetPlayers.add(player.id);
+    this.#interactionTargets.syncPlayer(
+      player.id,
+      player.dimension,
+      result.origin,
+      result.hit.location,
+      result.direction,
+      false
+    );
+  }
+  releaseInteractionTarget(playerId) {
+    this.#miningTargetPlayers.delete(playerId);
+    this.#interactionTargets.releasePlayer(playerId);
   }
   #setSharedMiningStage(handle, block, stage) {
     const targetKey = blockKey(block.localLocation);

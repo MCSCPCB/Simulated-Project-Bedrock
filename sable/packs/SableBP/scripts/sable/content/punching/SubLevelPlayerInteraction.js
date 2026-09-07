@@ -23,10 +23,12 @@ import {
   WORLD_BLOCK_OCCLUSION_EPSILON
 } from "../block_outline_render/SubLevelOutlineController.js";
 const PLACE_ACTION_DEDUP_WINDOW_TICKS = 1;
+const DESKTOP_MINING_LEASE_TICKS = 8;
 const WORLD_OCCLUSION_PROBE_REACH = 7;
 class SubLevelPlayerInteractionController {
   #lastPlaceActionByPlayer = /* @__PURE__ */ new Map();
   #lastTouchBlockInteractionTickByPlayer = /* @__PURE__ */ new Map();
+  #desktopMiningLeaseByPlayer = /* @__PURE__ */ new Map();
   #pendingPlaceByPlayer = /* @__PURE__ */ new Map();
   #pendingTouchBreakByPlayer = /* @__PURE__ */ new Map();
   #raycastByPlayer = /* @__PURE__ */ new Map();
@@ -44,6 +46,7 @@ class SubLevelPlayerInteractionController {
     this.#syncStandingInteractionTargets();
     this.#interactionHandler?.tick?.(currentTick);
     this.#outlines.tick(currentTick);
+    this.#refreshDesktopMiningLeases(currentTick);
   }
   handleVisualEntityLoad(entity) {
     this.#outlines.handleEntityLoad(entity);
@@ -89,6 +92,9 @@ class SubLevelPlayerInteractionController {
     });
     world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
       const { itemStack, player } = event;
+      if (player.inputInfo.lastInputModeUsed === InputMode.KeyboardAndMouse && !player.isSneaking) {
+        this.#releaseDesktopMiningLease(player.id);
+      }
       const heldItemIsBlock = itemStack !== void 0 && BlockTypes.get(itemStack.typeId) !== void 0;
       if (heldItemIsBlock && player.inputInfo.lastInputModeUsed === InputMode.KeyboardAndMouse && !player.isSneaking && this.#canInteract(player) && (this.#ownsStandingChestGesture(player) || this.#findStandingInteractionTarget(player) !== void 0)) {
         event.cancel = true;
@@ -104,6 +110,11 @@ class SubLevelPlayerInteractionController {
       }
       if (!heldItemIsBlock || !itemStack) return;
       this.#queuePlaceAction(player, itemStack, target);
+    });
+    world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
+      if (event.player.inputInfo.lastInputModeUsed === InputMode.KeyboardAndMouse) {
+        this.#releaseDesktopMiningLease(event.player.id);
+      }
     });
     world.beforeEvents.entityHurt.subscribe((event) => {
       if (this.#isSubLevelVisualEntity(event.hurtEntity)) event.cancel = true;
@@ -173,6 +184,9 @@ class SubLevelPlayerInteractionController {
   #handleSwing(event) {
     const { player, swingSource } = event;
     if (!this.#canInteract(player)) return;
+    if (player.inputInfo.lastInputModeUsed === InputMode.KeyboardAndMouse && !player.isSneaking && (swingSource === EntitySwingSource.Attack || swingSource === EntitySwingSource.Mine)) {
+      if (this.#observeStandingMiningAttack(player)) return;
+    }
     const itemStack = event.heldItemStack ?? this.#getSelectedItem(player);
     const pending = this.#pendingPlaceByPlayer.get(player.id);
     const pendingTouchBreak = this.#pendingTouchBreakByPlayer.get(player.id);
@@ -298,6 +312,41 @@ class SubLevelPlayerInteractionController {
     this.#lastPlaceActionByPlayer.delete(playerId);
     this.#lastTouchBlockInteractionTickByPlayer.delete(playerId);
     this.#standingChestGestureTickByPlayer.delete(playerId);
+    this.#releaseDesktopMiningLease(playerId);
+  }
+  #observeStandingMiningAttack(player) {
+    const current = this.#desktopMiningLeaseByPlayer.get(player.id);
+    if (current) {
+      current.expiresTick = system.currentTick + DESKTOP_MINING_LEASE_TICKS;
+      return false;
+    }
+    const result = this.#findStandingInteractionTarget(player);
+    if (!result) return false;
+    this.#desktopMiningLeaseByPlayer.set(player.id, {
+      target: actionTargetFromResult(result),
+      expiresTick: system.currentTick + DESKTOP_MINING_LEASE_TICKS
+    });
+    this.#outlines.syncInteractionTargetForMining(player, result);
+    return true;
+  }
+  #refreshDesktopMiningLeases(currentTick) {
+    for (const [playerId, lease] of this.#desktopMiningLeaseByPlayer) {
+      const player = this.#players.get(playerId);
+      if (!player || player.inputInfo.lastInputModeUsed !== InputMode.KeyboardAndMouse || player.isSneaking || currentTick >= lease.expiresTick) {
+        this.#releaseDesktopMiningLease(playerId);
+        continue;
+      }
+      const result = this.#findStandingInteractionTarget(player);
+      if (!result || !actionTargetMatchesResult(lease.target, result)) {
+        this.#releaseDesktopMiningLease(playerId);
+        continue;
+      }
+      this.#outlines.syncInteractionTargetForMining(player, result);
+    }
+  }
+  #releaseDesktopMiningLease(playerId) {
+    if (!this.#desktopMiningLeaseByPlayer.delete(playerId)) return;
+    this.#outlines.releaseInteractionTarget(playerId);
   }
   #isSubLevelVisualEntity(entity) {
     if (entity.typeId === BLOCK_OUTLINE_ENTITY_TYPE_ID || entity.typeId === BLOCK_CRACK_ENTITY_TYPE_ID) return true;
@@ -438,6 +487,16 @@ function canEatFoodNow(canAlwaysEat, currentHunger, maximumHunger) {
 }
 function getInventory(player) {
   return player.getComponent("minecraft:inventory");
+}
+function actionTargetFromResult(result) {
+  return {
+    subLevelId: result.handle.id,
+    blockKey: blockKey(result.hit.block.localLocation),
+    face: result.hit.face
+  };
+}
+function actionTargetMatchesResult(target, result) {
+  return target.subLevelId === result.handle.id && target.blockKey === blockKey(result.hit.block.localLocation) && target.face === result.hit.face;
 }
 function shouldPrioritizeFoodUse(player, itemStack, includeVanillaFoodTag = false) {
   const food = itemStack.getComponent("minecraft:food");

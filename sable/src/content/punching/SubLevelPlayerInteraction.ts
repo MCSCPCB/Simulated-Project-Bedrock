@@ -45,6 +45,8 @@ import {
 // event plus deferred swing); treat a same-target repeat inside this window as
 // one action.
 const PLACE_ACTION_DEDUP_WINDOW_TICKS = 1;
+/** Keeps the native mining proxy alive briefly after the latest attack. */
+const DESKTOP_MINING_LEASE_TICKS = 8;
 /** World blocks slightly beyond interaction reach still occlude selection rays. */
 const WORLD_OCCLUSION_PROBE_REACH = 7;
 
@@ -78,6 +80,11 @@ interface CompletedPlaceAction {
   readonly tick: number;
 }
 
+interface DesktopMiningLease {
+  readonly target: SubLevelOutlineActionTarget;
+  expiresTick: number;
+}
+
 export type SubLevelEditAction = "break" | "place";
 
 export interface SubLevelBlockInteractionHandler {
@@ -97,6 +104,7 @@ export interface SubLevelBlockInteractionHandler {
 export class SubLevelPlayerInteractionController {
   readonly #lastPlaceActionByPlayer = new Map<string, CompletedPlaceAction>();
   readonly #lastTouchBlockInteractionTickByPlayer = new Map<string, number>();
+  readonly #desktopMiningLeaseByPlayer = new Map<string, DesktopMiningLease>();
   readonly #pendingPlaceByPlayer = new Map<string, PendingPlaceAction>();
   readonly #pendingTouchBreakByPlayer = new Map<string, PendingTouchBreakAction>();
   readonly #raycastByPlayer = new Map<string, SubLevelRaycastCache>();
@@ -116,6 +124,7 @@ export class SubLevelPlayerInteractionController {
     this.#syncStandingInteractionTargets();
     this.#interactionHandler?.tick?.(currentTick);
     this.#outlines.tick(currentTick);
+    this.#refreshDesktopMiningLeases(currentTick);
   }
 
   handleVisualEntityLoad(entity: Entity): void {
@@ -174,6 +183,9 @@ export class SubLevelPlayerInteractionController {
     });
     world.beforeEvents.playerInteractWithBlock.subscribe(event => {
       const { itemStack, player } = event;
+      if (player.inputInfo.lastInputModeUsed === InputMode.KeyboardAndMouse && !player.isSneaking) {
+        this.#releaseDesktopMiningLease(player.id);
+      }
       const heldItemIsBlock = itemStack !== undefined
         && BlockTypes.get(itemStack.typeId) !== undefined;
       if (
@@ -202,6 +214,11 @@ export class SubLevelPlayerInteractionController {
       }
       if (!heldItemIsBlock || !itemStack) return;
       this.#queuePlaceAction(player, itemStack, target);
+    });
+    world.beforeEvents.playerInteractWithEntity.subscribe(event => {
+      if (event.player.inputInfo.lastInputModeUsed === InputMode.KeyboardAndMouse) {
+        this.#releaseDesktopMiningLease(event.player.id);
+      }
     });
     world.beforeEvents.entityHurt.subscribe(event => {
       if (this.#isSubLevelVisualEntity(event.hurtEntity)) event.cancel = true;
@@ -283,6 +300,13 @@ export class SubLevelPlayerInteractionController {
   #handleSwing(event: PlayerSwingStartAfterEvent): void {
     const { player, swingSource } = event;
     if (!this.#canInteract(player)) return;
+    if (
+      player.inputInfo.lastInputModeUsed === InputMode.KeyboardAndMouse
+      && !player.isSneaking
+      && (swingSource === EntitySwingSource.Attack || swingSource === EntitySwingSource.Mine)
+    ) {
+      if (this.#observeStandingMiningAttack(player)) return;
+    }
     const itemStack = event.heldItemStack ?? this.#getSelectedItem(player);
     const pending = this.#pendingPlaceByPlayer.get(player.id);
     const pendingTouchBreak = this.#pendingTouchBreakByPlayer.get(player.id);
@@ -469,6 +493,49 @@ export class SubLevelPlayerInteractionController {
     this.#lastPlaceActionByPlayer.delete(playerId);
     this.#lastTouchBlockInteractionTickByPlayer.delete(playerId);
     this.#standingChestGestureTickByPlayer.delete(playerId);
+    this.#releaseDesktopMiningLease(playerId);
+  }
+
+  #observeStandingMiningAttack(player: Player): boolean {
+    const current = this.#desktopMiningLeaseByPlayer.get(player.id);
+    if (current) {
+      current.expiresTick = system.currentTick + DESKTOP_MINING_LEASE_TICKS;
+      return false;
+    }
+    const result = this.#findStandingInteractionTarget(player);
+    if (!result) return false;
+    this.#desktopMiningLeaseByPlayer.set(player.id, {
+      target: actionTargetFromResult(result),
+      expiresTick: system.currentTick + DESKTOP_MINING_LEASE_TICKS
+    });
+    this.#outlines.syncInteractionTargetForMining(player, result);
+    return true;
+  }
+
+  #refreshDesktopMiningLeases(currentTick: number): void {
+    for (const [playerId, lease] of this.#desktopMiningLeaseByPlayer) {
+      const player = this.#players.get(playerId);
+      if (
+        !player
+        || player.inputInfo.lastInputModeUsed !== InputMode.KeyboardAndMouse
+        || player.isSneaking
+        || currentTick >= lease.expiresTick
+      ) {
+        this.#releaseDesktopMiningLease(playerId);
+        continue;
+      }
+      const result = this.#findStandingInteractionTarget(player);
+      if (!result || !actionTargetMatchesResult(lease.target, result)) {
+        this.#releaseDesktopMiningLease(playerId);
+        continue;
+      }
+      this.#outlines.syncInteractionTargetForMining(player, result);
+    }
+  }
+
+  #releaseDesktopMiningLease(playerId: string): void {
+    if (!this.#desktopMiningLeaseByPlayer.delete(playerId)) return;
+    this.#outlines.releaseInteractionTarget(playerId);
   }
 
   #isSubLevelVisualEntity(entity: Entity): boolean {
@@ -687,6 +754,23 @@ export function canEatFoodNow(
 /** May throw on an invalid player; the only caller (#getSelectedItem) catches. */
 function getInventory(player: Player): EntityInventoryComponent | undefined {
   return player.getComponent("minecraft:inventory") as EntityInventoryComponent | undefined;
+}
+
+function actionTargetFromResult(result: SubLevelRaycastResult): SubLevelOutlineActionTarget {
+  return {
+    subLevelId: result.handle.id,
+    blockKey: blockKey(result.hit.block.localLocation),
+    face: result.hit.face
+  };
+}
+
+function actionTargetMatchesResult(
+  target: SubLevelOutlineActionTarget,
+  result: SubLevelRaycastResult
+): boolean {
+  return target.subLevelId === result.handle.id
+    && target.blockKey === blockKey(result.hit.block.localLocation)
+    && target.face === result.hit.face;
 }
 
 function shouldPrioritizeFoodUse(
