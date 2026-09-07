@@ -155,7 +155,7 @@ function fixture() {
   const load = moduleLoader(join(sable, "src"), server);
   const reference = moduleLoader(join(baseline, "src"), server);
   const flush = () => { system.currentTick++; const current = queued.splice(0); current.forEach(callback => callback()); };
-  return { load, reference, dimension, entities, system, server, changes, loot, sounds, particles, flush, permutation, signals };
+  return { load, reference, dimension, entities, cells, system, server, changes, loot, sounds, particles, flush, permutation, signals };
 }
 
 const block = (typeId, x = 0, y = 0, z = 0, states = {}) => ({ typeId, localLocation: { x, y, z }, states });
@@ -184,7 +184,7 @@ function managedFixture() {
     behaviors, containers,
     onNativeDeath: (owner, binding) => manager.handleContainerNativeDeath(owner, binding)
   });
-  return { ...f, manager, containers, behaviors, storage, saved };
+  return { ...f, manager, containers, behaviors, storage, saved, runtime };
 }
 
 test("functional resource definitions retain baseline properties, geometry and animations", () => {
@@ -1019,8 +1019,71 @@ test("vine sampling buckets and UV gradients match mixed baseline attachments", 
   }
 });
 
-test("touch mining a container and native tap arbitration retain baseline gestures", () => {
-  function run(reference, tap) {
+function interactionFixture(typeId, inputMode, sneaking = false, origin = { x: 0.5, y: 0.5, z: -2.5 }, direction = { x: 0, y: 0, z: 1 }) {
+  const f = managedFixture();
+  const player = {
+    id: "player", isValid: true, isSneaking: sneaking, dimension: f.dimension, selectedSlotIndex: 0,
+    inputInfo: { lastInputModeUsed: inputMode }, getGameMode: () => f.server.GameMode.Survival,
+    getHeadLocation: () => origin, getViewDirection: () => direction,
+    getBlockFromViewDirection: () => undefined, getComponent: () => undefined,
+    setPropertyOverrideForEntity() {}, clearPropertyOverridesForEntity() {}
+  };
+  f.server.world.getPlayers = () => [player];
+  const Controller = f.load("content/punching/SubLevelPlayerInteraction.ts").SubLevelPlayerInteractionController;
+  const controller = new Controller(f.runtime);
+  controller.setBlockInteractHandler(f.containers);
+  controller.start();
+  f.flush();
+  const managed = f.manager.createSubLevel(f.dimension, { x: 0, y: 0, z: 0 }, [block(typeId)]);
+  f.flush();
+  const tick = () => controller.tick(f.system.currentTick);
+  tick();
+  const proxies = () => [...f.cells.values()].filter(cell => cell.typeId === "sable:interaction_target").map(cell => cell.location);
+  return { ...f, controller, managed, player, tick, proxies };
+}
+
+test("standing desktop containers keep a mining proxy beyond the target on all six rays", () => {
+  for (const axis of ["x", "y", "z"]) for (const sign of [-1, 1]) {
+    const origin = { x: 0.5, y: 0.5, z: 0.5 };
+    origin[axis] -= sign * 3;
+    const direction = { x: 0, y: 0, z: 0, [axis]: sign };
+    const f = interactionFixture("minecraft:chest", "keyboard", false, origin, direction);
+    assert.deepEqual(f.proxies(), [{ x: 0, y: 0, z: 0, [axis]: sign > 0 ? 1 : -1 }]);
+    const storage = [...f.entities.values()].find(entity => entity.typeId === "sable:chest");
+    assert(storage.events.includes("sable:chest_activate"), "native opening remains active");
+  }
+});
+
+test("stationary container posture and input changes release and recreate the appropriate proxy", () => {
+  const f = interactionFixture("minecraft:chest", "touch", true);
+  const headCell = { x: 0, y: 0, z: -3 };
+  assert.deepEqual(f.proxies(), [headCell]);
+  f.player.isSneaking = false;
+  f.tick();
+  assert.deepEqual(f.proxies(), [], "standing touch must release the previous mining proxy");
+  f.player.inputInfo.lastInputModeUsed = "keyboard";
+  f.tick();
+  assert.deepEqual(f.proxies(), [{ x: 0, y: 0, z: 1 }], "input change must bypass the stationary ray cache");
+  f.player.inputInfo.lastInputModeUsed = "touch";
+  f.tick();
+  assert.deepEqual(f.proxies(), []);
+  f.player.isSneaking = true;
+  f.tick();
+  assert.deepEqual(f.proxies(), [headCell], "sneaking must restore touch mining without moving the ray");
+});
+
+test("non-container and sneaking desktop selection retain the original proxy cell", () => {
+  for (const typeId of ["minecraft:oak_log", "minecraft:chest"]) {
+    for (const inputMode of ["keyboard", "touch"]) for (const sneaking of [false, true]) {
+      if (typeId === "minecraft:chest" && !sneaking) continue;
+      const f = interactionFixture(typeId, inputMode, sneaking);
+      assert.deepEqual(f.proxies(), [{ x: 0, y: 0, z: inputMode === "touch" ? -3 : -1 }]);
+    }
+  }
+});
+
+test("touch standing containers consume stale mining signals while other mining retains baseline gestures", () => {
+  function run(reference, tap, sneaking, typeId) {
     const f = fixture();
     const calls = [];
     const target = { subLevelId: 1, contraptionId: 1, blockKey: "0,0,0", face: "up" };
@@ -1042,7 +1105,7 @@ test("touch mining a container and native tap arbitration retain baseline gestur
       "api/player/ActivePlayerRegistry.ts": { ActivePlayerRegistry: class { start() {} } },
       "service/ActivePlayerRegistry.ts": { ActivePlayerRegistry: class { start() {} } }
     });
-    const handle = { raycast: () => ({ block: block("minecraft:chest"), distance: 2 }) };
+    const handle = { id: 1, raycast: () => ({ block: block(typeId), distance: 2 }) };
     const runtime = {
       hasSubLevels: () => true, getRaycastRevision: () => 0, getRaycastCandidates: () => [handle],
       getDimension: () => ({ hasContraptions: () => true, contraptionRevision: 0, getRaycastCandidates: () => [handle] })
@@ -1051,14 +1114,14 @@ test("touch mining a container and native tap arbitration retain baseline gestur
       ? load("content/player/Interaction.ts").PlayerInteractionController
       : load("content/punching/SubLevelPlayerInteraction.ts").SubLevelPlayerInteractionController;
     const controller = new Controller(runtime);
-    const handler = { hasSyncTargets: () => true, canInteract: () => true, interact: () => true };
+    const handler = { hasSyncTargets: () => true, canInteract: () => typeId === "minecraft:chest", interact: () => true };
     if (reference) controller.setContraptionInteractHandler(handler);
     else controller.setBlockInteractHandler(handler);
     controller.start();
     const item = { typeId: "minecraft:diamond_axe" };
     f.server.BlockTypes.get = id => id === item.typeId ? undefined : { id };
     const player = {
-      id: "player", isValid: true, isSneaking: false, dimension: f.dimension, selectedSlotIndex: 0,
+      id: "player", isValid: true, isSneaking: sneaking, dimension: f.dimension, selectedSlotIndex: 0,
       inputInfo: { lastInputModeUsed: f.server.InputMode.Touch }, getGameMode: () => f.server.GameMode.Survival,
       getHeadLocation: () => ({ x: 0, y: 0, z: 0 }), getViewDirection: () => ({ x: 0, y: 0, z: 1 }),
       getBlockFromViewDirection: () => undefined,
@@ -1069,7 +1132,12 @@ test("touch mining a container and native tap arbitration retain baseline gestur
     f.flush();
     return calls;
   }
-  for (const tap of [false, true]) assert.deepEqual(run(false, tap), run(true, tap), `tap=${tap}`);
+  for (const tap of [false, true]) {
+    assert.deepEqual(run(false, tap, false, "minecraft:chest"), [], `standing chest tap=${tap}`);
+    for (const [sneaking, typeId] of [[true, "minecraft:chest"], [false, "minecraft:oak_log"], [true, "minecraft:oak_log"]]) {
+      assert.deepEqual(run(false, tap, sneaking, typeId), run(true, tap, sneaking, typeId), `${typeId} sneaking=${sneaking} tap=${tap}`);
+    }
+  }
 });
 
 test("reloaded stale render entities are reclaimed without touching live renderers or inventories", () => {

@@ -94,8 +94,10 @@ interface PlayerOutlineState {
   activeSubLevelId?: number;
   interactionTargetDirty?: boolean;
   lastDirection?: Vector3;
+  lastInputMode?: InputMode;
   lastOrigin?: Vector3;
   lastRayTick: number;
+  lastSneaking?: boolean;
   mode?: "block";
   rayCache?: RayCache;
   shapeSignature?: string;
@@ -439,7 +441,11 @@ export class SubLevelOutlineController {
       return;
     }
 
-    this.#syncInteractionTargets(player, result, refresh || state.interactionTargetDirty === true);
+    const interactionModeChanged = state.lastInputMode !== player.inputInfo.lastInputModeUsed
+      || state.lastSneaking !== player.isSneaking;
+    this.#syncInteractionTargets(player, result, refresh || interactionModeChanged || state.interactionTargetDirty === true);
+    state.lastInputMode = player.inputInfo.lastInputModeUsed;
+    state.lastSneaking = player.isSneaking;
     state.interactionTargetDirty = false;
 
     const targetKey = blockKey(result.hit.block.localLocation);
@@ -599,13 +605,12 @@ export class SubLevelOutlineController {
     result: SubLevelRaycastResult,
     refreshInteractionTarget: boolean
   ): void {
-    if (
-      player.inputInfo.lastInputModeUsed === InputMode.KeyboardAndMouse
-      && !player.isSneaking
-      && this.#interactionTargetSuppressor?.(result.handle, result.hit.block)
-    ) {
-      // Native storage interaction needs the entity to remain the first target
-      // on the right-click ray, so standing desktop players get no proxy here.
+    const inputMode = player.inputInfo.lastInputModeUsed;
+    const nativeInteraction = !player.isSneaking
+      && this.#interactionTargetSuppressor?.(result.handle, result.hit.block) === true;
+    if (inputMode === InputMode.Touch && nativeInteraction) {
+      // A standing touch hold belongs to the container, including when a
+      // previous crouching or non-container selection left a mining proxy.
       this.#clearInteractionTargets(player.id);
       return;
     }
@@ -616,7 +621,8 @@ export class SubLevelOutlineController {
         result.origin,
         result.hit.location,
         result.direction,
-        player.inputInfo.lastInputModeUsed === InputMode.Touch
+        inputMode === InputMode.Touch,
+        inputMode === InputMode.KeyboardAndMouse && nativeInteraction
       );
     }
   }

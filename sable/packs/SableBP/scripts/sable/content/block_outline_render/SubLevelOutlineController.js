@@ -287,7 +287,10 @@ class SubLevelOutlineController {
       state.shapeSignature = void 0;
       return;
     }
-    this.#syncInteractionTargets(player, result, refresh || state.interactionTargetDirty === true);
+    const interactionModeChanged = state.lastInputMode !== player.inputInfo.lastInputModeUsed || state.lastSneaking !== player.isSneaking;
+    this.#syncInteractionTargets(player, result, refresh || interactionModeChanged || state.interactionTargetDirty === true);
+    state.lastInputMode = player.inputInfo.lastInputModeUsed;
+    state.lastSneaking = player.isSneaking;
     state.interactionTargetDirty = false;
     const targetKey = blockKey(result.hit.block.localLocation);
     if (state.activeSubLevelId !== result.handle.id) {
@@ -425,7 +428,9 @@ class SubLevelOutlineController {
   }
   /** Keep the native block target aligned with the selected sub-level cell. */
   #syncInteractionTargets(player, result, refreshInteractionTarget) {
-    if (player.inputInfo.lastInputModeUsed === InputMode.KeyboardAndMouse && !player.isSneaking && this.#interactionTargetSuppressor?.(result.handle, result.hit.block)) {
+    const inputMode = player.inputInfo.lastInputModeUsed;
+    const nativeInteraction = !player.isSneaking && this.#interactionTargetSuppressor?.(result.handle, result.hit.block) === true;
+    if (inputMode === InputMode.Touch && nativeInteraction) {
       this.#clearInteractionTargets(player.id);
       return;
     }
@@ -436,7 +441,8 @@ class SubLevelOutlineController {
         result.origin,
         result.hit.location,
         result.direction,
-        player.inputInfo.lastInputModeUsed === InputMode.Touch
+        inputMode === InputMode.Touch,
+        inputMode === InputMode.KeyboardAndMouse && nativeInteraction
       );
     }
   }

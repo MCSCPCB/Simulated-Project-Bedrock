@@ -42,13 +42,18 @@ class SubLevelInteractionTargetBlockController {
     const record = this.#activeCells.get(targetCellKey(dimension.id, block.location));
     return record?.targetBlockTypeId === block.typeId;
   }
-  syncPlayer(playerId, dimension, playerHead, hitLocation, direction, useHeadAnchor) {
+  syncPlayer(playerId, dimension, playerHead, hitLocation, direction, useHeadAnchor, useFarSide = false) {
     const sourceLocation = blockLocation({
       x: hitLocation.x - direction.x * TARGET_LOCATION_EPSILON,
       y: hitLocation.y - direction.y * TARGET_LOCATION_EPSILON,
       z: hitLocation.z - direction.z * TARGET_LOCATION_EPSILON
     });
-    const proxyLocation = useHeadAnchor ? blockLocation(playerHead) : findRayTargetOffset(playerHead, direction, sourceLocation);
+    const insideHit = useFarSide ? {
+      x: hitLocation.x + direction.x * TARGET_LOCATION_EPSILON,
+      y: hitLocation.y + direction.y * TARGET_LOCATION_EPSILON,
+      z: hitLocation.z + direction.z * TARGET_LOCATION_EPSILON
+    } : void 0;
+    const proxyLocation = insideHit ? findInteractionProxyLocation(insideHit, direction, blockLocation(insideHit)) : useHeadAnchor ? blockLocation(playerHead) : findRayTargetOffset(playerHead, direction, sourceLocation);
     if (!proxyLocation) {
       this.releasePlayer(playerId);
       return;

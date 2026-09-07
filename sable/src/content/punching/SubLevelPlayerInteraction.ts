@@ -16,6 +16,7 @@ import {
 } from "@minecraft/server";
 import { ActivePlayerRegistry } from "../../api/player/ActivePlayerRegistry.js";
 import {
+  blockLocationKey as blockKey,
   dot,
   normalizeFinite as normalize,
   subtract,
@@ -387,6 +388,14 @@ export class SubLevelPlayerInteractionController {
     itemStack: ItemStack | undefined,
     target: SubLevelOutlineActionTarget
   ): void {
+    if (player.inputInfo.lastInputModeUsed === InputMode.Touch && !player.isSneaking) {
+      // A proxy Mine signal can outlive the crouch/target that created it.
+      // Check the selected block again when the deferred action commits.
+      const selected = this.#raycastPlayerSubLevels(player, INTERACTION_REACH);
+      if (selected?.handle.id === target.subLevelId
+        && blockKey(selected.hit.block.localLocation) === target.blockKey
+        && this.#interactionHandler?.canInteract(selected.handle, selected.hit.block)) return;
+    }
     this.#outlines.handleBreak(player, itemStack, target);
   }
 
