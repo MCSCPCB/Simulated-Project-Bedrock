@@ -727,7 +727,7 @@ test("reported log and chest captures preserve the saved states and client rotat
       blocks: [block("minecraft:chest", 0, 0, 0, { facing_direction: 2, "minecraft:cardinal_direction": "north" })],
       entityTypeId: "sable:fancy_model_chest_sparse",
       words: [8255425],
-      rotations: [[0, 360, 0]]
+      rotations: [[0, 180, 0]]
     }
   ];
   for (const sample of cases) {
@@ -789,7 +789,63 @@ test("native rotation probe selects both paths and cleans up without changing wo
   assert.equal(f.changes.length, 0);
 });
 
-test("mixed orientations retain baseline face transforms across pool, dense and sparse resources", () => {
+test("chest fronts follow world cardinal directions in pool, sparse and dense projections", () => {
+  const f = fixture();
+  const registry = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts");
+  const layout = f.load("sublevel/render/fancy/model/FancySubLevelModelLayout.ts");
+  const Renderer = f.load("sublevel/render/fancy/model/FancySubLevelModelRenderer.ts").FancySubLevelModelRenderer;
+  const reader = modelResourceReader(join(sable, "packs/SableRP"), "sable/sublevel/fancy");
+  // Native testing establishes Sable's chest facing. Compare the actual front
+  // face against world directions instead of copying the reference's raw yaw.
+  const directions = { north: [0, -1], east: [1, 0], south: [0, 1], west: [-1, 0] };
+  for (const format of ["pool", "sparse", "dense"]) {
+    const entries = Object.keys(directions).flatMap((direction, group) => (
+      Array.from({ length: format === "dense" ? 27 : 1 }, (_, index) => (
+        block("minecraft:chest", group * 5 + index % 3, 0, Math.floor(index / 3), {
+          "minecraft:cardinal_direction": direction
+        })
+      ))
+    ));
+    const resolved = entries.map(registry.resolveFancySubLevelBlock).map(entry => (
+      format === "pool" ? entry : { ...entry, model: { ...entry.model, pool: undefined } }
+    ));
+    const packs = layout.packFancySubLevelModels(resolved).models;
+    assert(packs.length > 0 && packs.every(pack => pack.format === format), format);
+    const renderer = new Renderer(body, packs, f.dimension.spawnEntity, undefined, undefined, { x: 0, y: 0, z: 0 });
+    renderer.sync(true);
+    renderer.releaseInitialPose();
+    try {
+      for (const open of [0, 1]) {
+        for (const entry of entries) {
+          const { x, y, z } = entry.localLocation;
+          assert(renderer.setBlockModelState(`${x},${y},${z}`, "open", open));
+        }
+        const fronts = renderer.entityIds.map(id => f.entities.get(id))
+          .filter(entity => !entity.typeId.includes("carrier"))
+          .flatMap(entity => activeModelSurfaces(entity, reader(entity), true))
+          .filter(face => face.uv.uv.join(",") === "14,33" && face.uv.uv_size.join(",") === "14,10");
+        assert.equal(fronts.length, entries.length);
+        const seen = new Set();
+        for (const face of fronts) {
+          const x = face.vertices.reduce((sum, point) => sum + point[0], 0) / 64;
+          const z = -face.vertices.reduce((sum, point) => sum + point[2], 0) / 64;
+          const entry = entries.find(entry => entry.localLocation.x === Math.round(x)
+            && entry.localLocation.z === Math.round(z));
+          assert(entry, `unexpected chest front at ${x}, ${z}`);
+          assert(!seen.has(entry), "duplicate chest front");
+          seen.add(entry);
+          const direction = entry.states["minecraft:cardinal_direction"];
+          const [dx, dz] = directions[direction];
+          assert(Math.abs(x - entry.localLocation.x - dx * 7 / 16) < 1e-6
+            && Math.abs(z - entry.localLocation.z - dz * 7 / 16) < 1e-6,
+          `${format} ${direction} open=${open}: front offset ${x - entry.localLocation.x}, ${z - entry.localLocation.z}`);
+        }
+      }
+    } finally { renderer.remove(); }
+  }
+});
+
+test("mixed non-chest orientations retain baseline face transforms across pool, dense and sparse resources", () => {
   const f = fixture();
   const registry = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts");
   const layout = f.load("sublevel/render/fancy/model/FancySubLevelModelLayout.ts");
@@ -808,7 +864,6 @@ test("mixed orientations retain baseline face transforms across pool, dense and 
   for (const typeId of ["oak_log", "birch_log", "stripped_spruce_log", "oak_wood"]) {
     for (const pillar_axis of ["x", "y", "z"]) add(`minecraft:${typeId}`, { pillar_axis });
   }
-  for (const cardinal_direction of ["south", "west", "north", "east"]) add("minecraft:chest", { "minecraft:cardinal_direction": cardinal_direction });
   for (const direction of [0, 1, 2, 3]) {
     for (const honey_level of [0, 5]) add("minecraft:bee_nest", { direction, honey_level });
     for (const age of [0, 1, 2]) add("minecraft:cocoa", { direction, age });
@@ -850,7 +905,7 @@ test("mixed orientations retain baseline face transforms across pool, dense and 
   assert.deepEqual([...formats].sort(), ["dense", "pool", "sparse"]);
 });
 
-test("all registered state variants select baseline textures, materials, visible cubes and rotations", () => {
+test("registered non-chest state variants select baseline textures, materials, visible cubes and rotations", () => {
   const f = fixture();
   const actualReader = modelResourceReader(join(sable, "packs/SableRP"), "sable/sublevel/fancy");
   const expectedReader = modelResourceReader(join(baseline, "packs/TreePhysics/TreePhysicsRP"), "fragments");
@@ -874,6 +929,9 @@ test("all registered state variants select baseline textures, materials, visible
   const field = { gradientAxis: "x", mapKind: 1, uAtLocalOrigin: 0.4, uPerLocalX: 0, vAtLocalOrigin: 0.7, vPerLocalZ: 0 };
   let checked = 0;
   for (const [typeId, definition] of Object.entries(definitions)) {
+    // Chest geometry is compared separately; its world facing has a native-
+    // verified expectation in the cardinal-direction test above.
+    if (typeId === "minecraft:chest") continue;
     let permutations = [{}];
     for (const name of definition.states) {
       const values = stateValues[name.replace("minecraft:", "")];

@@ -258,12 +258,13 @@ function modelChannels(model: CompiledModel): ModelChannel[] {
   if (type === "chest") {
     const channel = libraryChannels(type, "default").default!;
     const turn = QUARTER_TURN_BY_DIRECTION[String(description.facing)] ?? 0;
+    // The unrotated chest faces south in Sable's projection, as verified in-game.
     return [{
       name: "default",
       texture,
       textureSize: channel.textureSize,
       bones: channel.bones,
-      wrapperRotation: [0, 180 + turn * 90, 0]
+      wrapperRotation: [0, turn * 90, 0]
     }];
   }
   if (type === "cocoa") {
