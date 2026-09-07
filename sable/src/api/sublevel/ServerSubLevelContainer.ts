@@ -6,9 +6,11 @@
 // block-specific reaches it through the behavior registry.
 import {
   BlockPermutation,
+  system,
   world,
   type Block,
   type Dimension,
+  type Entity,
   type ItemStack,
   type Player,
   type Vector3
@@ -37,7 +39,8 @@ import {
   spawnSubLevelBlockDestructParticle
 } from "../../content/particle/SubLevelBlockParticles.js";
 import {
-  getSubLevelBlockRegistration
+  getSubLevelBlockRegistration,
+  resolveFancySubLevelBlock
 } from "../../sublevel/render/fancy/model/FancySubLevelModelRegistry.js";
 import {
   blockLocationKey,
@@ -84,6 +87,7 @@ export class ServerSubLevelContainer {
   readonly #recordsByHandleId = new Map<number, ManagedSubLevelRecord>();
   #nextSubLevelId = 1;
   #initialized = false;
+  readonly #pendingRestores = new Map<string, SerializedSubLevelStructure>();
 
   constructor(
     interactionSystem: SubLevelInteractionSystem,
@@ -100,20 +104,41 @@ export class ServerSubLevelContainer {
   initialize(): void {
     if (this.#initialized) return;
     this.#initialized = true;
-    const savedSubLevels = this.#storage.listSubLevelIds().map(id => {
-      const saved = this.#storage.loadSubLevel(id);
-      if (!saved) throw new Error(`Stored sub-level manifest entry ${id} has no structure record.`);
-      this.#advanceNextSubLevelId(saved.id);
-      return saved;
-    });
-    for (const saved of savedSubLevels) {
-      this.#containers.registerSavedBindings(saved.id, saved.containerStorages);
+    for (const id of this.#storage.listSubLevelIds()) {
+      this.#advanceNextSubLevelId(id);
+      try {
+        const saved = this.#storage.loadSubLevel(id);
+        if (!saved) throw new Error(`Stored sub-level manifest entry ${id} has no structure record.`);
+        this.#containers.registerSavedBindings(saved.id, saved.containerStorages);
+        this.#pendingRestores.set(saved.id, saved);
+      } catch (error) {
+        console.warn(`Could not load sub-level ${id}: ${error}`);
+      }
     }
-    for (const saved of savedSubLevels) this.#restoreSubLevel(saved);
+  }
+
+  handleVisualEntityLoad(entity: Entity): void {
+    if (entity.typeId !== "sable:block" && entity.typeId !== "sable:block_carrier"
+      && !entity.typeId.startsWith("sable:fancy_model_")
+      && !entity.typeId.startsWith("sable:fancy_pool_")) return;
+    system.run(() => {
+      if (!entity.isValid || this.#interactionSystem.isVisualEntity(entity.dimension.id, entity.id)) return;
+      entity.remove();
+    });
   }
 
   tick(currentTick: number): void {
     if (currentTick % 20 !== 0) return;
+    for (const [id, saved] of this.#pendingRestores) {
+      try {
+        const dimension = world.getDimension(saved.dimensionId);
+        if (!isSubLevelRegionLoaded(dimension, saved.origin, saved.blocks)) continue;
+        this.#restoreSubLevel(saved);
+        this.#pendingRestores.delete(id);
+      } catch (error) {
+        console.warn(`Could not restore sub-level ${id}: ${error}`);
+      }
+    }
     for (const record of [...this.#recordsByHandleId.values()]) {
       if (record.removed || !record.handle.isValid) continue;
       // Unloaded chunks invalidate entity handles without losing the entities;
@@ -190,7 +215,7 @@ export class ServerSubLevelContainer {
     const volume = (maximum.x - minimum.x + 1)
       * (maximum.y - minimum.y + 1)
       * (maximum.z - minimum.z + 1);
-    if (volume > MAX_REGION_VOLUME) {
+    if (!Number.isSafeInteger(volume) || volume <= 0 || volume > MAX_REGION_VOLUME) {
       throw new RangeError(`Sub-level region spans ${volume} cells; the limit is ${MAX_REGION_VOLUME}.`);
     }
 
@@ -199,7 +224,8 @@ export class ServerSubLevelContainer {
       for (let z = minimum.z; z <= maximum.z; z++) {
         for (let x = minimum.x; x <= maximum.x; x++) {
           const block = dimension.getBlock({ x, y, z });
-          if (block) worldBlocks.push(block);
+          if (!block) throw new Error(`Selected block is unavailable at ${x},${y},${z}.`);
+          worldBlocks.push(block);
         }
       }
     }
@@ -210,13 +236,40 @@ export class ServerSubLevelContainer {
     }
     const foliageTint = captureSubLevelFoliageTint(dimension, captured, origin);
     const worldData = this.#captureWorldData(dimension, captured, origin);
-    if (options?.removeWorldBlocks !== false) {
-      for (const block of worldBlocks) {
-        if (!block.isValid || block.isAir || block.isLiquid) continue;
+    const managed = this.createSubLevel(dimension, origin, captured, foliageTint, worldData);
+    if (options?.removeWorldBlocks === false) return managed;
+    // Supported blocks leave first, then foliage, then structural blocks.
+    const removals = [...captured].sort((left, right) => (
+      sourceRemovalOrder(left) - sourceRemovalOrder(right)
+      || left.localLocation.y - right.localLocation.y
+    ));
+    const removed: SubLevelBlock[] = [];
+    try {
+      for (const snapshot of removals) {
+        const block = dimension.getBlock(sourceLocation(origin, snapshot.localLocation));
+        if (!block?.isValid) throw new Error("A selected block became unavailable during capture.");
+        removed.push(snapshot);
         block.setType("minecraft:air");
       }
+      return managed;
+    } catch (error) {
+      for (const snapshot of [...removed].reverse()) {
+        const block = dimension.getBlock(sourceLocation(origin, snapshot.localLocation));
+        if (!block) continue;
+        block.setPermutation(BlockPermutation.resolve(snapshot.typeId, { ...snapshot.states }));
+        const items = worldData.get(blockLocationKey(snapshot.localLocation));
+        const inventory = block.getComponent("minecraft:inventory")?.container;
+        if (inventory && Array.isArray(items)) {
+          for (let slot = 0; slot < Math.min(inventory.size, items.length); slot++) {
+            inventory.setItem(slot, items[slot]);
+          }
+        }
+      }
+      const record = this.#recordsByHandleId.get(managed.handle.id)!;
+      this.#storage.deleteSubLevel(record.id);
+      this.#discardUncommittedRecord(record);
+      throw error;
     }
-    return this.createSubLevel(dimension, origin, captured, foliageTint, worldData);
   }
 
   /** Assembles, renders, and registers one sub-level from captured blocks. */
@@ -281,10 +334,30 @@ export class ServerSubLevelContainer {
       { ...block.localLocation },
       ...[...support.unsupportedKeys].map(parseBlockLocationKey)
     ];
-    const removedBlocks = handle.removeBlocksAtLocalLocations(removedLocations);
+    const previousBlocks = [...handle.blocks];
+    const previousBindings = this.#containerBindings(record);
+    const removedKeys = new Set(removedLocations.map(blockLocationKey));
+    const removedBlocks = [current, ...previousBlocks.filter(entry => (
+      blockLocationKey(entry.localLocation) !== targetKey
+      && removedKeys.has(blockLocationKey(entry.localLocation))
+    ))];
     if (removedBlocks.length === 0) return false;
-
-    if (support.stateUpdates.size > 0) this.#applyStateUpdates(record, support.stateUpdates);
+    const remaining = previousBlocks.filter(entry => !removedKeys.has(blockLocationKey(entry.localLocation)))
+      .map(entry => support.stateUpdates.get(blockLocationKey(entry.localLocation))?.snapshot ?? entry);
+    const bindings = previousBindings.filter(entry => !removedKeys.has(blockLocationKey(entry.localLocation)));
+    if (remaining.length > 0) this.#saveRecord(record, bindings, remaining);
+    else if (!this.#storage.deleteSubLevel(record.id)) {
+      throw new Error(`Could not delete naturally emptied sub-level ${record.id}.`);
+    }
+    try {
+      handle.removeBlocksAtLocalLocations(removedLocations);
+      if (support.stateUpdates.size > 0) this.#applyStateUpdates(record, support.stateUpdates);
+    } catch (error) {
+      handle.resetBlocks(previousBlocks);
+      this.#saveRecord(record, previousBindings, previousBlocks);
+      this.#recreateRender(record, previousBlocks);
+      throw error;
+    }
 
     const dimension = handle.dimension;
     for (const [index, removedBlock] of removedBlocks.entries()) {
@@ -308,14 +381,7 @@ export class ServerSubLevelContainer {
     const sound = resolveVanillaBlockBreakSound(block.typeId);
     dimension.playSound(sound.sound, targetPosition, { pitch: sound.pitch, volume: sound.volume });
 
-    if (handle.blocks.length === 0) {
-      if (!this.#storage.deleteSubLevel(record.id)) {
-        throw new Error(`Could not delete naturally emptied sub-level ${record.id}.`);
-      }
-      this.#destroyRecord(record, "natural");
-    } else {
-      this.#saveRecord(record);
-    }
+    if (handle.blocks.length === 0) this.#destroyRecord(record, "natural");
     return true;
   }
 
@@ -348,21 +414,21 @@ export class ServerSubLevelContainer {
     this.initialize();
     const record = this.#recordsByHandleId.get(handle.id);
     if (!record || record.removed || !handle.isValid) return false;
-    if (getSubLevelBlockRegistration(itemStack.typeId)?.placeable !== true) return false;
+    if (getSubLevelBlockRegistration(itemStack.typeId)?.placeable === false) return false;
     if (handle.getBlockAtLocalLocation(placement)) return false;
     const placed = buildPlacedBlock(player, itemStack.typeId, placement, cardinalDirection);
     if (!placed) return false;
 
-    if (!handle.addBlock(placed)) {
-      // The render route cannot append in place; rebuild the projection.
-      const blocks = [...handle.blocks, placed];
-      this.#recreateRender(record, blocks);
-      handle.resetBlocks(blocks);
-    }
+    const previousBlocks = [...handle.blocks];
     const previousBindings = new Set(
       this.#containerBindings(record).map(binding => binding.storageId)
     );
     try {
+      if (!resolveFancySubLevelBlock(placed) || !handle.addBlock(placed)) {
+        const blocks = [...handle.blocks, placed];
+        this.#recreateRender(record, blocks);
+        handle.resetBlocks(blocks);
+      }
       this.#blockBehaviors.get(placed.typeId)?.onBlockAdded?.({
         block: placed,
         dimension: handle.dimension,
@@ -372,12 +438,14 @@ export class ServerSubLevelContainer {
       this.#saveRecord(record);
       return true;
     } catch (error) {
-      handle.removeBlocksAtLocalLocations([placement]);
       for (const binding of this.#containerBindings(record)) {
         if (!previousBindings.has(binding.storageId)) {
           this.#containers.discardStorage(binding.storageId);
         }
       }
+      handle.resetBlocks(previousBlocks);
+      this.#recreateRender(record, previousBlocks);
+      this.#saveRecord(record);
       throw error;
     }
   }
@@ -449,6 +517,12 @@ export class ServerSubLevelContainer {
     }
     record.renderData = next;
     previous.remove();
+    record.handle.markContentChanged();
+    this.#containers.refreshModelStates(record.handle);
+    // Client pose release and renderer replacement must agree on the lid state.
+    system.run(() => {
+      if (!record.removed && record.renderData === next) this.#containers.refreshModelStates(record.handle);
+    });
   }
 
   #removeManagedSubLevel(record: ManagedSubLevelRecord): void {
@@ -539,10 +613,11 @@ export class ServerSubLevelContainer {
 
   #saveRecord(
     record: ManagedSubLevelRecord,
-    containerStorages = this.#containerBindings(record)
+    containerStorages = this.#containerBindings(record),
+    blocks = record.handle.blocks
   ): void {
     if (!this.#storage.saveSubLevel(record.id, {
-      blocks: [...record.handle.blocks],
+      blocks: [...blocks],
       containerStorages,
       dimensionId: record.handle.dimension.id,
       foliageTint: record.subLevel.foliageTint,
@@ -575,13 +650,32 @@ export class ServerSubLevelContainer {
 }
 
 function isRecordRegionLoaded(record: ManagedSubLevelRecord): boolean {
+  return isSubLevelRegionLoaded(record.handle.dimension, record.origin, record.handle.blocks);
+}
+
+function isSubLevelRegionLoaded(dimension: Dimension, origin: Vector3, blocks: readonly SubLevelBlock[]): boolean {
   try {
-    return record.handle.dimension.getBlock(
-      record.handle.localPointToWorld(record.handle.outlineAnchorLocal)
-    ) !== undefined;
+    const chunks = new Set<string>();
+    for (const block of blocks) {
+      const location = sourceLocation(origin, block.localLocation);
+      const chunk = `${Math.floor(location.x / 16)},${Math.floor(location.z / 16)}`;
+      if (chunks.has(chunk)) continue;
+      if (!dimension.getBlock(location)) return false;
+      chunks.add(chunk);
+    }
+    return true;
   } catch {
     return false;
   }
+}
+
+function sourceLocation(origin: Vector3, local: Vector3): Vector3 {
+  return { x: origin.x + local.x, y: origin.y + local.y, z: origin.z + local.z };
+}
+
+function sourceRemovalOrder(block: SubLevelBlock): number {
+  const registration = getSubLevelBlockRegistration(block.typeId);
+  return registration?.support ? 0 : registration?.category === "nature/leaves" ? 1 : 2;
 }
 
 function buildPlacedBlock(

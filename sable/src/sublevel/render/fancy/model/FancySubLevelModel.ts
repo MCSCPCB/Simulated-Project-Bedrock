@@ -115,6 +115,7 @@ export interface FancySubLevelModel {
 }
 
 export interface FancySubLevelBlock {
+  readonly category?: string;
   readonly block: SubLevelBlock;
   readonly model: FancySubLevelModel;
   readonly state: number;

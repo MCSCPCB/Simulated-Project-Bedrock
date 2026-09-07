@@ -65,7 +65,9 @@ class VanillaSubLevelRenderDispatcher {
         assignments,
         carriers,
         subLevel.onRenderEntityRemoved,
-        renderAnchor
+        renderAnchor,
+        (typeId, location) => spawnTaggedRenderEntity(subLevel.dimension, typeId, location, tags),
+        subLevel.onRenderEntityAdded
       );
     } catch (error) {
       for (const entity of entities) if (entity.isValid) entity.remove();

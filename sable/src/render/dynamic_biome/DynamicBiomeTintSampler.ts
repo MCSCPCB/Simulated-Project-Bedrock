@@ -1,5 +1,5 @@
 import type { Dimension, Vector3 } from "@minecraft/server";
-import { BIOME_FOLIAGE_CLIMATES } from "../../data/vanilla/colormap/BiomeFoliageClimates.js";
+import { BIOME_FOLIAGE_CLIMATES } from "../../data/vanilla/colormap/FoliageBiomeClimates.js";
 import type { SubLevelBlock, SubLevelFoliageTint } from "../../sublevel/SubLevel.js";
 import { resolveFancySubLevelBlock } from "../../sublevel/render/fancy/model/FancySubLevelModelRegistry.js";
 import {
@@ -44,7 +44,7 @@ export function captureSubLevelFoliageTint(
   origin: Vector3
 ): SubLevelFoliageTint {
   const foliage = blocks.filter(block => (
-    resolveFancySubLevelBlock(block)?.model.tint?.method === "foliage"
+    resolveFancySubLevelBlock(block)?.model.tint !== undefined
   ));
   if (foliage.length === 0) return { ...DEFAULT_SUBLEVEL_FOLIAGE_TINT };
   const worldX = foliage.map(block => origin.x + block.localLocation.x);

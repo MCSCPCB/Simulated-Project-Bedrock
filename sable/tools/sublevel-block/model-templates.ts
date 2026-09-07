@@ -133,7 +133,7 @@ export function createVanillaEntity(): JsonObject {
   for (const name of VANILLA_PROPERTY_NAMES) {
     const range: readonly [number, number] = name === "scale"
       ? [0, 16]
-      : name === "left_item_offset" ? [-3, 3] : name.startsWith("local_") || name.startsWith("left_local_")
+      : name === "left_item_offset" ? [-3, 3] : /^(?:left_)?local_[xyz]$/.test(name)
         ? [-512, 512] : [-400, 400];
     properties[`sable:${name}`] = property("float", range);
   }
@@ -307,12 +307,8 @@ function beeNestWrapperRotation(direction: number): readonly [number, number, nu
   return yaw === 0 ? undefined : [0, yaw, 0];
 }
 
-// A client entity merges every geometry's bones into one skeleton by name, so
-// same-named bones must carry identical rest transforms across all geometries,
-// and a fixed model orientation can never live in the geometry (pool members
-// would overwrite each other). Orientation is applied by the transform
-// animation on the slot bone instead — the source project's technique for its
-// state-driven log and cube-block rotations.
+// Keep the library's rest pose. Slot orientation comes from the transform
+// animation, following the source's state-driven log and cube-block rotations.
 function instantiateBones(
   channel: Pick<ModelChannel, "bones">,
   slot: number,
@@ -494,6 +490,8 @@ export function createFancyClientEntity(model: CompiledModel, format: "dense" | 
     if (format === "dense") {
       geometry.colormap_x = `geometry.${key}.colormap_x`;
       geometry.colormap_z = `geometry.${key}.colormap_z`;
+      geometry.colormap_compact_x = `geometry.${key}.colormap_compact_x`;
+      geometry.colormap_compact_z = `geometry.${key}.colormap_compact_z`;
       renderControllers.push({ [`controller.render.${key}.tint_multiply`]: "v.tint_kind >= 1" });
     } else {
       for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
@@ -589,18 +587,19 @@ function colormapClimateBones(channels: readonly ModelChannel[], slot: number, u
 function colormapGeometry(
   model: CompiledModel,
   key: string,
-  axis: "x" | "z"
+  axis: "x" | "z",
+  width = DENSE_WIDTH
 ): JsonObject {
   const channels = modelChannels(model);
   const bones: JsonObject[] = [...rootBoneChain()];
-  for (let slot = 0; slot < DENSE_SLOT_COUNT; slot++) {
+  for (let slot = 0; slot < width * width * 5; slot++) {
     const coordinate = axis === "x"
-      ? slot % DENSE_WIDTH
-      : Math.floor(slot / DENSE_WIDTH) % DENSE_DEPTH;
+      ? slot % width
+      : Math.floor(slot / width) % width;
     bones.push(...colormapClimateBones(channels, slot, coordinate * 16));
   }
   return {
-    description: geometryDescription(`geometry.${key}.colormap_${axis}`, [DENSE_WIDTH * 16, DENSE_DEPTH * 16]),
+    description: geometryDescription(`geometry.${key}.colormap_${width === 6 ? "compact_" : ""}${axis}`, [width * 16, width * 16]),
     bones
   };
 }
@@ -611,7 +610,10 @@ export function createFancyGeometry(model: CompiledModel, format: "dense" | "spa
     channelGeometry(format, key, channel)
   ));
   if (isTintMaterial(model) && format === "dense") {
-    geometries.push(colormapGeometry(model, key, "x"), colormapGeometry(model, key, "z"));
+    geometries.push(
+      colormapGeometry(model, key, "x"), colormapGeometry(model, key, "z"),
+      colormapGeometry(model, key, "x", 6), colormapGeometry(model, key, "z", 6)
+    );
   }
   return { format_version: "1.16.0", "minecraft:geometry": geometries };
 }
@@ -683,11 +685,11 @@ function denseColormapController(
   return {
     arrays: {
       geometries: {
-        "Array.colormap": ["Geometry.colormap_x", "Geometry.colormap_z"]
+        "Array.colormap": ["Geometry.colormap_x", "Geometry.colormap_z", "Geometry.colormap_compact_x", "Geometry.colormap_compact_z"]
       },
       textures: { "Array.colormaps": COLORMAP_TEXTURE_ARRAY }
     },
-    geometry: "Array.colormap[v.tint_axis_z]",
+    geometry: "Array.colormap[(v.layout_width == 6 ? 2 : 0) + v.tint_axis_z]",
     materials: [{ "*": "Material.tint_multiply" }],
     textures: ["Array.colormaps[math.max(0, (v.tint_kind) - 1)]"],
     uv_anim: {
@@ -706,6 +708,7 @@ function denseColormapController(
 
 function sparseColormapController(channel: ModelChannel, slot: number): JsonObject {
   const coordinate = `(v.tint_axis_z ? math.mod(math.floor(v.s${slot} / 262144), 64) : math.mod(math.floor(v.s${slot} / 64), 64))`;
+  const span = `(v.layout_width > 1 ? v.layout_width : ${SPARSE_SIZE})`;
   return {
     arrays: {
       textures: { "Array.colormaps": COLORMAP_TEXTURE_ARRAY }
@@ -715,12 +718,12 @@ function sparseColormapController(channel: ModelChannel, slot: number): JsonObje
     textures: ["Array.colormaps[math.max(0, (v.tint_kind) - 1)]"],
     uv_anim: {
       offset: [
-        `v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * ${coordinate} / ${SPARSE_SIZE})`,
-        `v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * ${coordinate} / ${SPARSE_SIZE})`
+        `v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * ${coordinate} / ${span})`,
+        `v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * ${coordinate} / ${span})`
       ],
       scale: [
-        `v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / ${SPARSE_SIZE})`,
-        `v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / ${SPARSE_SIZE})`
+        `v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / ${span})`,
+        `v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / ${span})`
       ]
     },
     part_visibility: [
@@ -851,7 +854,11 @@ export function createPoolClientEntity(pool: CompiledPool): JsonObject {
     initialize.push("v.lids_initialized = 0;");
   }
   const preAnimationLines = [...poseMolang()];
-  if (foliage.length > 0) preAnimationLines.push(...tintDecodeMolang());
+  if (foliage.length > 0) preAnimationLines.push(
+    ...tintDecodeMolang(),
+    "v.layout_width = 1 + math.mod(math.floor(q.property('sable:origin_y') / 4096), 32);",
+    "v.layout_depth = 1 + math.floor(q.property('sable:origin_y') / 131072);"
+  );
   preAnimationLines.push(...wordReadMolang());
   for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
     preAnimationLines.push(`v.o${slot} = math.floor(v.s${slot} / ${places.occupiedPlace});`);
@@ -983,18 +990,25 @@ export function createPoolAnimation(pool: CompiledPool): JsonObject {
   return { format_version: "1.8.0", animations };
 }
 
-/** Per-slot orientation selected by the slot's family, like the source cube rotation. */
+/** Select one angle per axis, as the source log and attachment animations do. */
 function poolSlotOrientation(
   orientations: readonly (readonly [number, number, number] | undefined)[],
   slot: number
 ): (string | number)[] | undefined {
   const components = [0, 1, 2].map(axis => {
-    const terms = orientations.flatMap((rotation, family) => (
-      rotation && rotation[axis] !== 0
-        ? [`(v.f${slot} == ${family} ? ${rotation[axis]} : 0)`]
-        : []
-    ));
-    return terms.length === 0 ? 0 : terms.join(" + ");
+    const familiesByAngle = new Map<number, number[]>();
+    orientations.forEach((rotation, family) => {
+      const angle = rotation?.[axis] ?? 0;
+      if (angle === 0) return;
+      const families = familiesByAngle.get(angle) ?? [];
+      families.push(family);
+      familiesByAngle.set(angle, families);
+    });
+    if (familiesByAngle.size === 0) return 0;
+    return [...familiesByAngle].reduceRight((fallback, [angle, families]) => {
+      const condition = families.map(family => `v.f${slot} == ${family}`).join(" || ");
+      return `(${condition}) ? ${angle} : (${fallback})`;
+    }, "0");
   });
   return components.every(component => component === 0) ? undefined : components;
 }
@@ -1022,8 +1036,10 @@ export function createPoolRenderController(pool: CompiledPool): JsonObject {
   });
   const foliage = poolFoliageMembers(pool);
   for (let slot = 0; slot < SPARSE_SLOT_COUNT && foliage.length > 0; slot++) {
-    const gradientX = `(math.mod(v.s${slot}, ${places.xSpan}) / ${places.xSpan})`;
-    const gradientZ = `(math.mod(math.floor(v.s${slot} / ${places.xSpan * places.ySpan}), ${places.zSpan}) / ${places.zSpan})`;
+    const width = `(v.layout_width > 1 ? v.layout_width : ${places.xSpan})`;
+    const depth = `(v.layout_depth > 1 ? v.layout_depth : ${places.zSpan})`;
+    const gradientX = `(math.mod(v.s${slot}, ${places.xSpan}) / ${width})`;
+    const gradientZ = `(math.mod(math.floor(v.s${slot} / ${places.xSpan * places.ySpan}), ${places.zSpan}) / ${depth})`;
     const visibility: JsonObject[] = [{ "*": false }];
     for (const family of foliage) {
       const channels = modelChannels(pool.members[family]!);
@@ -1045,8 +1061,8 @@ export function createPoolRenderController(pool: CompiledPool): JsonObject {
           `v.tint_uniform ? ((v.tint_pixel_v + 0.5) / 256) : ((0.5 + (v.tint_1) * 255 / 31) / 256 + (((v.tint_3) - (v.tint_1)) * 255 / 7936) * (v.tint_axis_z ? ${gradientZ} : ${gradientX}))`
         ],
         scale: [
-          `v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / (v.tint_axis_z ? ${places.zSpan} : ${places.xSpan}))`,
-          `v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / (v.tint_axis_z ? ${places.zSpan} : ${places.xSpan}))`
+          `v.tint_uniform ? 0 : ((((v.tint_2) - (v.tint_0)) * 255 / 7936) / (v.tint_axis_z ? ${depth} : ${width}))`,
+          `v.tint_uniform ? 0 : ((((v.tint_3) - (v.tint_1)) * 255 / 7936) / (v.tint_axis_z ? ${depth} : ${width}))`
         ]
       },
       part_visibility: visibility

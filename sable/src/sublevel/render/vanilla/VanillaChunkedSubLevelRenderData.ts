@@ -3,6 +3,8 @@ import type {
   SubLevelRenderBody
 } from "../../SubLevel.js";
 import {
+  BLOCK_CARRIER_CAPACITY,
+  BLOCK_CARRIER_ENTITY_TYPE_ID,
   type BlockAssignment,
   type BlockCarrier,
   type BlockSlot,
@@ -14,13 +16,13 @@ import {
   RENDER_ROTATION_WRITE_THRESHOLD_DEGREES,
   getContinuousRenderRotation,
   hasExactRiders,
+  ejectCurrentVehicle,
+  nativeRiders,
   hasRidersConsistentWithPendingMounts,
   scheduleRiderMountConfirmation,
   exceedsWriteThreshold,
   validEntityLocations
 } from "../SubLevelRenderEntityUtils.js";
-
-const EMPTY_RIDER_IDS = new Set<string>();
 
 /** Entity-backed renderer for a sub-level's paired hand-item block renders. */
 export class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
@@ -30,6 +32,8 @@ export class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
   readonly #body: SubLevelRenderBody;
   readonly #rendersByEntityId = new Map<string, LiveBlock>();
   readonly #onEntityRemoved?: (entityId: string) => void;
+  readonly #onEntityAdded?: (entityId: string) => void;
+  readonly #spawnEntity?: (typeId: string, location: Vector3) => Entity;
   readonly #renderAnchor: Vector3;
   #lastRenderX = Number.NaN;
   #lastRenderY = Number.NaN;
@@ -55,15 +59,23 @@ export class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
     onEntityRemoved?: (entityId: string) => void,
     renderAnchor: Vector3 = selectSubLevelRenderAnchor(
       assignments.map(assignment => assignment.block)
-    )
+    ),
+    spawnEntity?: (typeId: string, location: Vector3) => Entity,
+    onEntityAdded?: (entityId: string) => void
   ) {
     this.#body = body;
     this.#onEntityRemoved = onEntityRemoved;
+    this.#onEntityAdded = onEntityAdded;
+    this.#spawnEntity = spawnEntity;
     this.#renderAnchor = { ...renderAnchor };
     for (const carrier of carriers) {
       const liveCarrier: LiveBlockCarrier = {
+        auxiliaryRiderIds: new Set(),
+        dedicatedToPersistentRiders: false,
         entity: carrier.entity,
         pendingRiderIds: new Set(),
+        persistentRiders: new Map(),
+        persistentRiderIds: new Set(),
         riderIds: new Set(carrier.riderIds)
       };
       this.#carriers.push(liveCarrier);
@@ -141,8 +153,7 @@ export class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
     if (this.#knownIntegrityFailure) return false;
     const hasBlockRenders = this.#assignments.size > 0;
     if (hasBlockRenders !== (this.#rendersByEntityId.size > 0)) return false;
-    if (!hasBlockRenders) return false;
-    if (this.#carriers.length === 0) return false;
+    if (hasBlockRenders && this.#carriers.length === 0) return false;
     let assignedBlockCount = 0;
     for (const render of this.#rendersByEntityId.values()) {
       if (!render.entity.isValid || render.blockKeys.size === 0) return false;
@@ -154,15 +165,15 @@ export class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
         ? hasRidersConsistentWithPendingMounts(
           carrier.entity,
           carrier.riderIds,
-          EMPTY_RIDER_IDS,
-          EMPTY_RIDER_IDS,
+          carrier.auxiliaryRiderIds,
+          carrier.persistentRiderIds,
           carrier.pendingRiderIds
         )
         : hasExactRiders(
           carrier.entity,
           carrier.riderIds,
-          EMPTY_RIDER_IDS,
-          EMPTY_RIDER_IDS
+          carrier.auxiliaryRiderIds,
+          carrier.persistentRiderIds
         );
       if (!intact) return false;
     }
@@ -171,6 +182,107 @@ export class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
 
   hasKnownIntegrityFailure(): boolean {
     return this.#knownIntegrityFailure;
+  }
+
+  attachAuxiliaryRider(entity: Entity): boolean {
+    if (!entity.isValid) return false;
+    const carrier = this.#carriers.find(value => (
+      !value.dedicatedToPersistentRiders && value.entity.isValid && value.auxiliaryRiderIds.size === 0
+    ));
+    if (!carrier || carrier.riderIds.size > BLOCK_CARRIER_CAPACITY) return false;
+    if (!carrier.entity.getComponent("minecraft:rideable")?.addRider(entity)) return false;
+    carrier.auxiliaryRiderIds.add(entity.id);
+    this.#syncAuxiliaryRotation(entity);
+    return true;
+  }
+
+  detachAuxiliaryRider(entity: Entity): void {
+    const carrier = this.#carriers.find(value => value.auxiliaryRiderIds.has(entity.id));
+    if (!carrier) return;
+    carrier.auxiliaryRiderIds.delete(entity.id);
+    if (carrier.entity.isValid && entity.isValid) {
+      carrier.entity.getComponent("minecraft:rideable")?.ejectRider(entity);
+    }
+    this.#removeEmptyCarrier(carrier);
+  }
+
+  attachPersistentRider(entity: Entity): boolean {
+    if (!entity.isValid || !this.#spawnEntity) return false;
+    let carrier = this.#carriers.find(value => (
+      value.dedicatedToPersistentRiders && value.entity.isValid
+      && value.persistentRiderIds.size < BLOCK_CARRIER_CAPACITY
+    ));
+    if (!carrier) {
+      const carrierEntity = this.#spawnEntity(
+        BLOCK_CARRIER_ENTITY_TYPE_ID, this.#body.localPointToWorld(this.#renderAnchor)
+      );
+      if (!carrierEntity.getComponent("minecraft:rideable")) {
+        carrierEntity.remove();
+        throw new Error("Vanilla block carrier does not expose minecraft:rideable.");
+      }
+      carrier = {
+        auxiliaryRiderIds: new Set(),
+        dedicatedToPersistentRiders: true,
+        entity: carrierEntity,
+        pendingRiderIds: new Set(),
+        persistentRiders: new Map(),
+        persistentRiderIds: new Set(),
+        riderIds: new Set()
+      };
+      this.#carriers.push(carrier);
+      this.#onEntityAdded?.(carrierEntity.id);
+    }
+    ejectCurrentVehicle(entity);
+    if (!carrier.entity.getComponent("minecraft:rideable")?.addRider(entity)) return false;
+    carrier.persistentRiders.set(entity.id, entity);
+    carrier.persistentRiderIds.add(entity.id);
+    scheduleRiderMountConfirmation(
+      carrier.entity, entity, carrier.pendingRiderIds,
+      () => this.#body.isValid && carrier!.persistentRiderIds.has(entity.id),
+      () => { this.#knownIntegrityFailure = true; }, "persistent"
+    );
+    return true;
+  }
+
+  detachPersistentRider(entity: Entity, preserveEmptyCarrier = false): void {
+    const carrier = this.#carriers.find(value => value.persistentRiderIds.has(entity.id));
+    if (!carrier) return;
+    if (carrier.entity.isValid && entity.isValid) {
+      carrier.entity.getComponent("minecraft:rideable")?.ejectRider(entity);
+    }
+    carrier.pendingRiderIds.delete(entity.id);
+    carrier.persistentRiders.delete(entity.id);
+    carrier.persistentRiderIds.delete(entity.id);
+    if (!preserveEmptyCarrier) this.#removeEmptyCarrier(carrier, true);
+  }
+
+  removeEmptyPersistentRiderCarriers(): void {
+    for (const carrier of [...this.#carriers]) this.#removeEmptyCarrier(carrier, true);
+  }
+
+  transferPersistentRidersTo(target: SubLevelRenderData): void {
+    const riders = this.#carriers.flatMap(carrier => (
+      [...carrier.persistentRiders.values()].filter(entity => entity.isValid)
+    ));
+    if (riders.length === 0) return;
+    const detached: Entity[] = [];
+    try {
+      for (const rider of riders) {
+        detached.push(rider);
+        this.detachPersistentRider(rider, true);
+        if (!target.attachPersistentRider?.(rider)) {
+          throw new Error(`Could not reattach persistent sub-level entity ${rider.id}.`);
+        }
+      }
+    } catch (error) {
+      for (const rider of detached) {
+        target.detachPersistentRider?.(rider);
+        if (!this.attachPersistentRider(rider)) {
+          throw new Error(`Could not restore persistent sub-level entity ${rider.id}.`);
+        }
+      }
+      throw error;
+    }
   }
 
   releaseInitialPose(): void {
@@ -215,6 +327,12 @@ export class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
     }
     for (const carrier of this.#carriers) {
       carrier.pendingRiderIds.clear();
+      for (const rider of nativeRiders(carrier.entity)) {
+        if (carrier.auxiliaryRiderIds.has(rider.id) && rider.isValid) rider.remove();
+        else if (carrier.persistentRiderIds.has(rider.id) && rider.isValid) {
+          carrier.entity.getComponent("minecraft:rideable")?.ejectRider(rider);
+        }
+      }
       this.#onEntityRemoved?.(carrier.entity.id);
       if (carrier.entity.isValid) carrier.entity.remove();
     }
@@ -294,11 +412,30 @@ export class VanillaChunkedSubLevelRenderData implements SubLevelRenderData {
       if (rollChanged) entity.setProperty("sable:roll", rotation.z);
       if (pitchChanged || yawChanged || rollChanged) writes++;
     }
+    if (pitchChanged || yawChanged || rollChanged) {
+      for (const carrier of this.#carriers) {
+        for (const rider of nativeRiders(carrier.entity)) {
+          if (!carrier.auxiliaryRiderIds.has(rider.id)) continue;
+          this.#syncAuxiliaryRotation(rider);
+          writes++;
+        }
+      }
+    }
     return writes;
   }
 
-  #removeEmptyCarrier(carrier: LiveBlockCarrier): void {
-    if (carrier.riderIds.size > 0) return;
+  #syncAuxiliaryRotation(entity: Entity): void {
+    const rotation = this.#renderRotation;
+    if (!entity.isValid || !rotation) return;
+    entity.setProperty("sable:pitch", rotation.x);
+    entity.setProperty("sable:yaw", rotation.y);
+    entity.setProperty("sable:roll", rotation.z);
+  }
+
+  #removeEmptyCarrier(carrier: LiveBlockCarrier, removeDedicated = false): void {
+    if (carrier.riderIds.size > 0 || carrier.auxiliaryRiderIds.size > 0
+      || carrier.persistentRiderIds.size > 0
+      || (carrier.dedicatedToPersistentRiders && !removeDedicated)) return;
     const carrierIndex = this.#carriers.indexOf(carrier);
     if (carrierIndex >= 0) this.#carriers.splice(carrierIndex, 1);
     this.#onEntityRemoved?.(carrier.entity.id);
@@ -311,8 +448,12 @@ function blockKey(location: Vector3): string {
 }
 
 interface LiveBlockCarrier {
+  auxiliaryRiderIds: Set<string>;
+  dedicatedToPersistentRiders: boolean;
   entity: Entity;
   pendingRiderIds: Set<string>;
+  persistentRiders: Map<string, Entity>;
+  persistentRiderIds: Set<string>;
   riderIds: Set<string>;
 }
 

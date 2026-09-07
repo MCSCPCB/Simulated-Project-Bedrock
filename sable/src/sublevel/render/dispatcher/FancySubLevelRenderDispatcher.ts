@@ -130,13 +130,13 @@ class CompositeSubLevelRenderData implements SubLevelRenderData {
   }
   attachAuxiliaryRider(entity: Entity): boolean {
     return this.fancy.attachAuxiliaryRider?.(entity)
-      ?? this.vanilla.attachAuxiliaryRider?.(entity)
-      ?? false;
+      || this.vanilla.attachAuxiliaryRider?.(entity)
+      || false;
   }
   attachPersistentRider(entity: Entity): boolean {
     return this.fancy.attachPersistentRider?.(entity)
-      ?? this.vanilla.attachPersistentRider?.(entity)
-      ?? false;
+      || this.vanilla.attachPersistentRider?.(entity)
+      || false;
   }
   detachAuxiliaryRider(entity: Entity): void {
     this.fancy.detachAuxiliaryRider?.(entity);
@@ -152,7 +152,12 @@ class CompositeSubLevelRenderData implements SubLevelRenderData {
   }
   transferPersistentRidersTo(target: SubLevelRenderData): void {
     this.fancy.transferPersistentRidersTo?.(target);
-    this.vanilla.transferPersistentRidersTo?.(target);
+    try {
+      this.vanilla.transferPersistentRidersTo?.(target);
+    } catch (error) {
+      target.transferPersistentRidersTo?.(this.fancy);
+      throw error;
+    }
   }
 }
 

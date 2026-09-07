@@ -116,6 +116,11 @@ class SubLevelOutlineController {
   }
   tick(currentTick) {
     if (!this.#startupCleanupComplete) return;
+    for (const record of this.#records.values()) {
+      if (!record.entity.isValid || record.renderData !== record.handle.renderData) {
+        this.#destroyRecord(record);
+      }
+    }
     this.#miningProgress.prune(currentTick);
     this.#tickBreakOverlays(currentTick);
     const tickedPlayerIds = /* @__PURE__ */ new Set();
@@ -323,6 +328,7 @@ class SubLevelOutlineController {
       }
       record = {
         handle,
+        renderData: handle.renderData,
         contentRevision: handle.contentRevision,
         entity,
         readyTick: system.currentTick + OUTLINE_ENTITY_READY_DELAY_TICKS,

@@ -313,10 +313,6 @@ export class SubLevelContainerInteractionController {
     record.attached = false;
     record.lastLocation = undefined;
     this.#invalidateRuntimeReferences(record);
-    record.profile?.onUnexpectedRemoval?.(record.ownerId, {
-      localLocation: { ...record.localLocation },
-      storageId: record.storageId
-    });
   }
 
   registerSavedBindings(ownerId: string, bindings: readonly SubLevelContainerStorageBinding[]): void {
@@ -332,9 +328,6 @@ export class SubLevelContainerInteractionController {
     this.#bindingRegistrationComplete = true;
     for (const record of [...this.#recordByStorageId.values()]) {
       if (record.claimed) {
-        if (record.handle?.isValid && !record.entity?.isValid) {
-          this.#ensureStorageEntity(record, record.handle);
-        }
         continue;
       }
       this.#removeRecordIndexes(record);
@@ -360,7 +353,6 @@ export class SubLevelContainerInteractionController {
       }
       if (record.handle !== handle) record.attached = false;
       this.#setRecordHandle(record, handle);
-      this.#ensureStorageEntity(record, handle);
       this.#storageIdBySubLevelBlock.set(
         subLevelBlockKey(handle.id, binding.localLocation),
         binding.storageId
@@ -386,6 +378,17 @@ export class SubLevelContainerInteractionController {
       this.#setRecordHandle(record, undefined);
     }
     this.#removeUnusedStorageCarrier(handle);
+  }
+
+  refreshModelStates(handle: SubLevelInteractionHandle): void {
+    for (const record of this.#recordByStorageId.values()) {
+      const dimension = record.profile?.openStateDimension;
+      if (record.handle !== handle || dimension === undefined || record.viewers.size === 0) continue;
+      if (handle.getBlockAtLocalLocation(record.localLocation)?.typeId !== record.profile?.blockTypeId) continue;
+      if (!handle.setBlockModelState(record.localLocation, dimension, 1)) {
+        throw new Error(`Could not restore container ${record.storageId} open state.`);
+      }
+    }
   }
 
   createStorage(
@@ -559,32 +562,6 @@ export class SubLevelContainerInteractionController {
     const record = this.#recordByStorageId.get(storageId);
     if (!record) throw new Error(`Storage ${storageId} is not registered.`);
     return record;
-  }
-
-  #ensureStorageEntity(
-    record: ContainerStorageRecord,
-    handle: SubLevelInteractionHandle
-  ): void {
-    if (record.entity?.isValid) return;
-    const profile = this.#requireProfile(record);
-    const entity = handle.dimension.spawnEntity(
-      profile.storageEntityTypeId,
-      storageLocationFromCellCenter(handle.localPointToWorld(record.localLocation), profile)
-    );
-    try {
-      initializeStorageEntity(
-        entity,
-        record.ownerId,
-        record.storageId,
-        record.localLocation,
-        profile
-      );
-      record.entity = entity;
-      this.#storageIdByEntityId.set(entity.id, record.storageId);
-    } catch (error) {
-      if (entity.isValid) entity.remove();
-      throw error;
-    }
   }
 
   #activeStorageLocation(

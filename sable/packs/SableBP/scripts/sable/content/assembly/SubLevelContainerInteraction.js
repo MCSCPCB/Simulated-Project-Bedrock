@@ -211,10 +211,6 @@ class SubLevelContainerInteractionController {
     record.attached = false;
     record.lastLocation = void 0;
     this.#invalidateRuntimeReferences(record);
-    record.profile?.onUnexpectedRemoval?.(record.ownerId, {
-      localLocation: { ...record.localLocation },
-      storageId: record.storageId
-    });
   }
   registerSavedBindings(ownerId, bindings) {
     if (this.#bindingRegistrationComplete) {
@@ -228,9 +224,6 @@ class SubLevelContainerInteractionController {
     this.#bindingRegistrationComplete = true;
     for (const record of [...this.#recordByStorageId.values()]) {
       if (record.claimed) {
-        if (record.handle?.isValid && !record.entity?.isValid) {
-          this.#ensureStorageEntity(record, record.handle);
-        }
         continue;
       }
       this.#removeRecordIndexes(record);
@@ -251,7 +244,6 @@ class SubLevelContainerInteractionController {
       }
       if (record.handle !== handle) record.attached = false;
       this.#setRecordHandle(record, handle);
-      this.#ensureStorageEntity(record, handle);
       this.#storageIdBySubLevelBlock.set(
         subLevelBlockKey(handle.id, binding.localLocation),
         binding.storageId
@@ -276,6 +268,16 @@ class SubLevelContainerInteractionController {
       this.#setRecordHandle(record, void 0);
     }
     this.#removeUnusedStorageCarrier(handle);
+  }
+  refreshModelStates(handle) {
+    for (const record of this.#recordByStorageId.values()) {
+      const dimension = record.profile?.openStateDimension;
+      if (record.handle !== handle || dimension === void 0 || record.viewers.size === 0) continue;
+      if (handle.getBlockAtLocalLocation(record.localLocation)?.typeId !== record.profile?.blockTypeId) continue;
+      if (!handle.setBlockModelState(record.localLocation, dimension, 1)) {
+        throw new Error(`Could not restore container ${record.storageId} open state.`);
+      }
+    }
   }
   createStorage(ownerId, handle, localLocation) {
     const block = handle.getBlockAtLocalLocation(localLocation);
@@ -419,28 +421,6 @@ class SubLevelContainerInteractionController {
     const record = this.#recordByStorageId.get(storageId);
     if (!record) throw new Error(`Storage ${storageId} is not registered.`);
     return record;
-  }
-  #ensureStorageEntity(record, handle) {
-    if (record.entity?.isValid) return;
-    const profile = this.#requireProfile(record);
-    const entity = handle.dimension.spawnEntity(
-      profile.storageEntityTypeId,
-      storageLocationFromCellCenter(handle.localPointToWorld(record.localLocation), profile)
-    );
-    try {
-      initializeStorageEntity(
-        entity,
-        record.ownerId,
-        record.storageId,
-        record.localLocation,
-        profile
-      );
-      record.entity = entity;
-      this.#storageIdByEntityId.set(entity.id, record.storageId);
-    } catch (error) {
-      if (entity.isValid) entity.remove();
-      throw error;
-    }
   }
   #activeStorageLocation(record, handle, localLocation) {
     return storageLocationFromCellCenter(

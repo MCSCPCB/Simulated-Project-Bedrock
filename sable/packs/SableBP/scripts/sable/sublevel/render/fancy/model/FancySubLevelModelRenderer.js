@@ -100,7 +100,7 @@ class FancySubLevelModelRenderer {
     return this.#knownIntegrityFailure;
   }
   hasIntactEntities() {
-    if (this.#knownIntegrityFailure || this.#models.length === 0 || this.#carriers.length === 0) {
+    if (this.#knownIntegrityFailure || this.#models.length > 0 && this.#carriers.length === 0) {
       return false;
     }
     if (this.#models.some((model) => !model.entity.isValid)) return false;
@@ -142,8 +142,8 @@ class FancySubLevelModelRenderer {
   }
   attachAuxiliaryRider(entity) {
     if (!entity.isValid || this.#carriers.length === 0) return false;
-    const carrier = this.#carriers.find((value) => !value.dedicatedToPersistentRiders);
-    if (!carrier || !carrier.entity.isValid || carrier.auxiliaryRiderIds.size > 0 || carrier.modelIds.size >= FANCY_MODEL_CARRIER_CAPACITY) return false;
+    const carrier = this.#carriers.find((value) => !value.dedicatedToPersistentRiders && value.entity.isValid && value.auxiliaryRiderIds.size === 0);
+    if (!carrier || !carrier.entity.isValid || carrier.auxiliaryRiderIds.size > 0 || carrier.modelIds.size > FANCY_MODEL_CARRIER_CAPACITY) return false;
     if (!carrier.entity.getComponent("minecraft:rideable")?.addRider(entity)) return false;
     carrier.auxiliaryRiderIds.add(entity.id);
     this.#syncAuxiliaryRotation(entity);
@@ -199,12 +199,23 @@ class FancySubLevelModelRenderer {
   transferPersistentRidersTo(target) {
     const persistentRiders = this.#carriers.flatMap((carrier) => [...carrier.persistentRiders.values()].filter((rider) => rider.isValid));
     if (persistentRiders.length === 0) return;
-    for (const rider of persistentRiders) ejectCurrentVehicle(rider);
-    this.remove();
-    for (const rider of persistentRiders) {
-      if (!target.attachPersistentRider?.(rider)) {
-        throw new Error(`Could not reattach persistent sub-level entity ${rider.id}.`);
+    const detached = [];
+    try {
+      for (const rider of persistentRiders) {
+        detached.push(rider);
+        this.detachPersistentRider(rider, true);
+        if (!target.attachPersistentRider?.(rider)) {
+          throw new Error(`Could not reattach persistent sub-level entity ${rider.id}.`);
+        }
       }
+    } catch (error) {
+      for (const rider of detached) {
+        target.detachPersistentRider?.(rider);
+        if (!this.attachPersistentRider(rider)) {
+          throw new Error(`Could not restore persistent sub-level entity ${rider.id}.`);
+        }
+      }
+      throw error;
     }
   }
   removeBlocks(blockKeys) {
@@ -374,8 +385,8 @@ class FancySubLevelModelRenderer {
         const origin = packFancySubLevelOrigin(
           packed.anchorLocalLocation,
           this.#renderAnchor,
-          packed.format === "dense" ? packed.width : 1,
-          packed.format === "dense" ? packed.depth : 1
+          packed.width <= 32 ? packed.width : 1,
+          packed.depth <= 32 ? packed.depth : 1
         );
         const entity = this.#spawnEntity(
           packed.entityTypeId,

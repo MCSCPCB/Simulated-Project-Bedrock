@@ -110,6 +110,7 @@ interface OutlineViewer {
 
 interface SharedOutlineRecord {
   readonly handle: SubLevelInteractionHandle;
+  readonly renderData: SubLevelInteractionHandle["renderData"];
   readonly entity: Entity;
   readonly viewers: Map<string, OutlineViewer>;
   contentRevision: number;
@@ -240,6 +241,11 @@ export class SubLevelOutlineController {
 
   tick(currentTick: number): void {
     if (!this.#startupCleanupComplete) return;
+    for (const record of this.#records.values()) {
+      if (!record.entity.isValid || record.renderData !== record.handle.renderData) {
+        this.#destroyRecord(record);
+      }
+    }
     this.#miningProgress.prune(currentTick);
     this.#tickBreakOverlays(currentTick);
     const tickedPlayerIds = new Set<string>();
@@ -477,6 +483,7 @@ export class SubLevelOutlineController {
       }
       record = {
         handle,
+        renderData: handle.renderData,
         contentRevision: handle.contentRevision,
         entity,
         readyTick: system.currentTick + OUTLINE_ENTITY_READY_DELAY_TICKS,

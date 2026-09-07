@@ -5,6 +5,7 @@
 // captured into an entity projection.
 import { system, world } from "@minecraft/server";
 import { sableSubLevels } from "./sable/Sable.js";
+import "./rotation-probe.js";
 
 const SELECTION_ITEM_TYPE_ID = "minecraft:stick";
 
@@ -12,7 +13,14 @@ const SELECTION_ITEM_TYPE_ID = "minecraft:stick";
 const pendingCorners = new Map();
 
 world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
+     if (event.itemStack?.typeId !== SELECTION_ITEM_TYPE_ID) return;
+     event.cancel = true;
+     if (!event.isFirstEvent) return;
+     const { player, block } = event;
+     const dimensionId = block.dimension.id;
+     const clicked = { ...block.location };
      system.run(() => {
+          if (!player.isValid || player.dimension.id !== dimensionId) return;
           const first = pendingCorners.get(player.id);
           if (!first || first.dimensionId !== dimensionId) {
                pendingCorners.set(player.id, {

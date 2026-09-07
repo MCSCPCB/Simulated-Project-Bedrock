@@ -127,10 +127,10 @@ class CompositeSubLevelRenderData {
     return this.fancy.setBlockModelState?.(blockKeyValue, dimension, value) ?? false;
   }
   attachAuxiliaryRider(entity) {
-    return this.fancy.attachAuxiliaryRider?.(entity) ?? this.vanilla.attachAuxiliaryRider?.(entity) ?? false;
+    return this.fancy.attachAuxiliaryRider?.(entity) || this.vanilla.attachAuxiliaryRider?.(entity) || false;
   }
   attachPersistentRider(entity) {
-    return this.fancy.attachPersistentRider?.(entity) ?? this.vanilla.attachPersistentRider?.(entity) ?? false;
+    return this.fancy.attachPersistentRider?.(entity) || this.vanilla.attachPersistentRider?.(entity) || false;
   }
   detachAuxiliaryRider(entity) {
     this.fancy.detachAuxiliaryRider?.(entity);
@@ -146,7 +146,12 @@ class CompositeSubLevelRenderData {
   }
   transferPersistentRidersTo(target) {
     this.fancy.transferPersistentRidersTo?.(target);
-    this.vanilla.transferPersistentRidersTo?.(target);
+    try {
+      this.vanilla.transferPersistentRidersTo?.(target);
+    } catch (error) {
+      target.transferPersistentRidersTo?.(this.fancy);
+      throw error;
+    }
   }
 }
 function spawnTaggedEntity(subLevel, typeId, location, tags) {

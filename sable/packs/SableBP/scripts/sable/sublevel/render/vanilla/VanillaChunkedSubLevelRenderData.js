@@ -1,15 +1,20 @@
+import {
+  BLOCK_CARRIER_CAPACITY,
+  BLOCK_CARRIER_ENTITY_TYPE_ID
+} from "../SubLevelRenderData.js";
 import { selectSubLevelRenderAnchor } from "../../../util/SublevelRenderOffsetHelper.js";
 import {
   RENDER_POSITION_WRITE_THRESHOLD,
   RENDER_ROTATION_WRITE_THRESHOLD_DEGREES,
   getContinuousRenderRotation,
   hasExactRiders,
+  ejectCurrentVehicle,
+  nativeRiders,
   hasRidersConsistentWithPendingMounts,
   scheduleRiderMountConfirmation,
   exceedsWriteThreshold,
   validEntityLocations
 } from "../SubLevelRenderEntityUtils.js";
-const EMPTY_RIDER_IDS = /* @__PURE__ */ new Set();
 class VanillaChunkedSubLevelRenderData {
   #assignments = /* @__PURE__ */ new Map();
   #carriers = [];
@@ -17,6 +22,8 @@ class VanillaChunkedSubLevelRenderData {
   #body;
   #rendersByEntityId = /* @__PURE__ */ new Map();
   #onEntityRemoved;
+  #onEntityAdded;
+  #spawnEntity;
   #renderAnchor;
   #lastRenderX = Number.NaN;
   #lastRenderY = Number.NaN;
@@ -41,14 +48,20 @@ class VanillaChunkedSubLevelRenderData {
   }
   constructor(body, assignments, carriers, onEntityRemoved, renderAnchor = selectSubLevelRenderAnchor(
     assignments.map((assignment) => assignment.block)
-  )) {
+  ), spawnEntity, onEntityAdded) {
     this.#body = body;
     this.#onEntityRemoved = onEntityRemoved;
+    this.#onEntityAdded = onEntityAdded;
+    this.#spawnEntity = spawnEntity;
     this.#renderAnchor = { ...renderAnchor };
     for (const carrier of carriers) {
       const liveCarrier = {
+        auxiliaryRiderIds: /* @__PURE__ */ new Set(),
+        dedicatedToPersistentRiders: false,
         entity: carrier.entity,
         pendingRiderIds: /* @__PURE__ */ new Set(),
+        persistentRiders: /* @__PURE__ */ new Map(),
+        persistentRiderIds: /* @__PURE__ */ new Set(),
         riderIds: new Set(carrier.riderIds)
       };
       this.#carriers.push(liveCarrier);
@@ -119,8 +132,7 @@ class VanillaChunkedSubLevelRenderData {
     if (this.#knownIntegrityFailure) return false;
     const hasBlockRenders = this.#assignments.size > 0;
     if (hasBlockRenders !== this.#rendersByEntityId.size > 0) return false;
-    if (!hasBlockRenders) return false;
-    if (this.#carriers.length === 0) return false;
+    if (hasBlockRenders && this.#carriers.length === 0) return false;
     let assignedBlockCount = 0;
     for (const render of this.#rendersByEntityId.values()) {
       if (!render.entity.isValid || render.blockKeys.size === 0) return false;
@@ -131,14 +143,14 @@ class VanillaChunkedSubLevelRenderData {
       const intact = carrier.pendingRiderIds.size > 0 ? hasRidersConsistentWithPendingMounts(
         carrier.entity,
         carrier.riderIds,
-        EMPTY_RIDER_IDS,
-        EMPTY_RIDER_IDS,
+        carrier.auxiliaryRiderIds,
+        carrier.persistentRiderIds,
         carrier.pendingRiderIds
       ) : hasExactRiders(
         carrier.entity,
         carrier.riderIds,
-        EMPTY_RIDER_IDS,
-        EMPTY_RIDER_IDS
+        carrier.auxiliaryRiderIds,
+        carrier.persistentRiderIds
       );
       if (!intact) return false;
     }
@@ -146,6 +158,100 @@ class VanillaChunkedSubLevelRenderData {
   }
   hasKnownIntegrityFailure() {
     return this.#knownIntegrityFailure;
+  }
+  attachAuxiliaryRider(entity) {
+    if (!entity.isValid) return false;
+    const carrier = this.#carriers.find((value) => !value.dedicatedToPersistentRiders && value.entity.isValid && value.auxiliaryRiderIds.size === 0);
+    if (!carrier || carrier.riderIds.size > BLOCK_CARRIER_CAPACITY) return false;
+    if (!carrier.entity.getComponent("minecraft:rideable")?.addRider(entity)) return false;
+    carrier.auxiliaryRiderIds.add(entity.id);
+    this.#syncAuxiliaryRotation(entity);
+    return true;
+  }
+  detachAuxiliaryRider(entity) {
+    const carrier = this.#carriers.find((value) => value.auxiliaryRiderIds.has(entity.id));
+    if (!carrier) return;
+    carrier.auxiliaryRiderIds.delete(entity.id);
+    if (carrier.entity.isValid && entity.isValid) {
+      carrier.entity.getComponent("minecraft:rideable")?.ejectRider(entity);
+    }
+    this.#removeEmptyCarrier(carrier);
+  }
+  attachPersistentRider(entity) {
+    if (!entity.isValid || !this.#spawnEntity) return false;
+    let carrier = this.#carriers.find((value) => value.dedicatedToPersistentRiders && value.entity.isValid && value.persistentRiderIds.size < BLOCK_CARRIER_CAPACITY);
+    if (!carrier) {
+      const carrierEntity = this.#spawnEntity(
+        BLOCK_CARRIER_ENTITY_TYPE_ID,
+        this.#body.localPointToWorld(this.#renderAnchor)
+      );
+      if (!carrierEntity.getComponent("minecraft:rideable")) {
+        carrierEntity.remove();
+        throw new Error("Vanilla block carrier does not expose minecraft:rideable.");
+      }
+      carrier = {
+        auxiliaryRiderIds: /* @__PURE__ */ new Set(),
+        dedicatedToPersistentRiders: true,
+        entity: carrierEntity,
+        pendingRiderIds: /* @__PURE__ */ new Set(),
+        persistentRiders: /* @__PURE__ */ new Map(),
+        persistentRiderIds: /* @__PURE__ */ new Set(),
+        riderIds: /* @__PURE__ */ new Set()
+      };
+      this.#carriers.push(carrier);
+      this.#onEntityAdded?.(carrierEntity.id);
+    }
+    ejectCurrentVehicle(entity);
+    if (!carrier.entity.getComponent("minecraft:rideable")?.addRider(entity)) return false;
+    carrier.persistentRiders.set(entity.id, entity);
+    carrier.persistentRiderIds.add(entity.id);
+    scheduleRiderMountConfirmation(
+      carrier.entity,
+      entity,
+      carrier.pendingRiderIds,
+      () => this.#body.isValid && carrier.persistentRiderIds.has(entity.id),
+      () => {
+        this.#knownIntegrityFailure = true;
+      },
+      "persistent"
+    );
+    return true;
+  }
+  detachPersistentRider(entity, preserveEmptyCarrier = false) {
+    const carrier = this.#carriers.find((value) => value.persistentRiderIds.has(entity.id));
+    if (!carrier) return;
+    if (carrier.entity.isValid && entity.isValid) {
+      carrier.entity.getComponent("minecraft:rideable")?.ejectRider(entity);
+    }
+    carrier.pendingRiderIds.delete(entity.id);
+    carrier.persistentRiders.delete(entity.id);
+    carrier.persistentRiderIds.delete(entity.id);
+    if (!preserveEmptyCarrier) this.#removeEmptyCarrier(carrier, true);
+  }
+  removeEmptyPersistentRiderCarriers() {
+    for (const carrier of [...this.#carriers]) this.#removeEmptyCarrier(carrier, true);
+  }
+  transferPersistentRidersTo(target) {
+    const riders = this.#carriers.flatMap((carrier) => [...carrier.persistentRiders.values()].filter((entity) => entity.isValid));
+    if (riders.length === 0) return;
+    const detached = [];
+    try {
+      for (const rider of riders) {
+        detached.push(rider);
+        this.detachPersistentRider(rider, true);
+        if (!target.attachPersistentRider?.(rider)) {
+          throw new Error(`Could not reattach persistent sub-level entity ${rider.id}.`);
+        }
+      }
+    } catch (error) {
+      for (const rider of detached) {
+        target.detachPersistentRider?.(rider);
+        if (!this.attachPersistentRider(rider)) {
+          throw new Error(`Could not restore persistent sub-level entity ${rider.id}.`);
+        }
+      }
+      throw error;
+    }
   }
   releaseInitialPose() {
     if (!this.#initialPoseDeferred) return;
@@ -187,6 +293,12 @@ class VanillaChunkedSubLevelRenderData {
     }
     for (const carrier of this.#carriers) {
       carrier.pendingRiderIds.clear();
+      for (const rider of nativeRiders(carrier.entity)) {
+        if (carrier.auxiliaryRiderIds.has(rider.id) && rider.isValid) rider.remove();
+        else if (carrier.persistentRiderIds.has(rider.id) && rider.isValid) {
+          carrier.entity.getComponent("minecraft:rideable")?.ejectRider(rider);
+        }
+      }
       this.#onEntityRemoved?.(carrier.entity.id);
       if (carrier.entity.isValid) carrier.entity.remove();
     }
@@ -262,10 +374,26 @@ class VanillaChunkedSubLevelRenderData {
       if (rollChanged) entity.setProperty("sable:roll", rotation.z);
       if (pitchChanged || yawChanged || rollChanged) writes++;
     }
+    if (pitchChanged || yawChanged || rollChanged) {
+      for (const carrier of this.#carriers) {
+        for (const rider of nativeRiders(carrier.entity)) {
+          if (!carrier.auxiliaryRiderIds.has(rider.id)) continue;
+          this.#syncAuxiliaryRotation(rider);
+          writes++;
+        }
+      }
+    }
     return writes;
   }
-  #removeEmptyCarrier(carrier) {
-    if (carrier.riderIds.size > 0) return;
+  #syncAuxiliaryRotation(entity) {
+    const rotation = this.#renderRotation;
+    if (!entity.isValid || !rotation) return;
+    entity.setProperty("sable:pitch", rotation.x);
+    entity.setProperty("sable:yaw", rotation.y);
+    entity.setProperty("sable:roll", rotation.z);
+  }
+  #removeEmptyCarrier(carrier, removeDedicated = false) {
+    if (carrier.riderIds.size > 0 || carrier.auxiliaryRiderIds.size > 0 || carrier.persistentRiderIds.size > 0 || carrier.dedicatedToPersistentRiders && !removeDedicated) return;
     const carrierIndex = this.#carriers.indexOf(carrier);
     if (carrierIndex >= 0) this.#carriers.splice(carrierIndex, 1);
     this.#onEntityRemoved?.(carrier.entity.id);

@@ -1,0 +1,1073 @@
+import assert from "node:assert/strict";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { dirname, resolve, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import test from "node:test";
+import ts from "typescript";
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const sable = join(root, "sable");
+const baseline = join(root, ".sample/TreePhysics");
+const json = path => {
+  const result = ts.parseConfigFileTextToJson(path, readFileSync(path, "utf8"));
+  if (result.error) throw new Error(`Invalid JSON: ${path}`);
+  return result.config;
+};
+
+// Execute the actual source modules against a small native API fixture. The
+// baseline is loaded independently, so parity assertions do not reuse Sable logic.
+function moduleLoader(sourceRoot, server, overrides = {}) {
+  const cache = new Map();
+  function load(path) {
+    path = resolve(path);
+    const replacement = Object.entries(overrides).find(([key]) => resolve(sourceRoot, key) === path);
+    if (replacement) return replacement[1];
+    if (cache.has(path)) return cache.get(path).exports;
+    const module = { exports: {} };
+    cache.set(path, module);
+    const source = readFileSync(path, "utf8");
+    const code = ts.transpileModule(source, {
+      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 }
+    }).outputText;
+    const require = specifier => {
+      if (specifier === "@minecraft/server") return server;
+      if (specifier === "sable:sublevel-block-registry") {
+        return load(join(sable, "packs/SableBP/scripts/sable/generated/sublevel-block-registry.js"));
+      }
+      const target = specifier.startsWith("@src/")
+        ? join(sourceRoot, specifier.slice(5))
+        : resolve(dirname(path), specifier);
+      return load(existsSync(target) ? target : target.replace(/\.js$/, "") + ".ts");
+    };
+    new Function("require", "module", "exports", code)(require, module, module.exports);
+    return module.exports;
+  }
+  return path => load(join(sourceRoot, path));
+}
+
+function fixture() {
+  const entities = new Map();
+  const queued = [];
+  const signals = new Map();
+  const events = new Proxy({}, { get: (_, key) => ({
+    subscribe(callback) {
+      const listeners = signals.get(key) ?? [];
+      listeners.push(callback);
+      signals.set(key, listeners);
+    }
+  }) });
+  const system = {
+    currentTick: 0, beforeEvents: events,
+    run: callback => queued.push(callback), runTimeout: callback => queued.push(callback),
+    runInterval() {}
+  };
+  const cells = new Map();
+  const changes = [];
+  const loot = [];
+  const sounds = [];
+  const particles = [];
+  let nextId = 0;
+  const permutation = (typeId, states = {}) => ({
+    type: { id: typeId }, getAllStates: () => ({ ...states })
+  });
+  const dimension = {
+    id: "minecraft:overworld",
+    getBiome: () => ({ id: "minecraft:plains" }),
+    getBlock(location) {
+      const key = [location.x, location.y, location.z].map(Math.floor).join(",");
+      if (!cells.has(key)) {
+        const block = {
+          location: { x: Math.floor(location.x), y: Math.floor(location.y), z: Math.floor(location.z) },
+          dimension, isValid: true, permutation: permutation("minecraft:air"),
+          get typeId() { return this.permutation.type.id; },
+          get isAir() { return this.typeId === "minecraft:air"; },
+          get isLiquid() { return false; },
+          setType(typeId) { changes.push([key, typeId]); this.permutation = permutation(typeId); },
+          setPermutation(value) { this.permutation = value; }, getComponent() {}
+        };
+        cells.set(key, block);
+      }
+      return cells.get(key);
+    },
+    getEntities: () => [...entities.values()].filter(entity => entity.isValid),
+    spawnEntity(typeId, location) {
+      const slots = new Map();
+      const inventory = {
+        size: 27, getItem: slot => slots.get(slot), setItem: (slot, item) => slots.set(slot, item)
+      };
+      const entity = {
+        id: String(++nextId), typeId, dimension, location: { ...location }, isValid: true,
+        properties: {}, dynamic: {}, riders: [], vehicle: undefined, commands: [], events: [],
+        setProperty(key, value) { this.properties[key] = value; },
+        getProperty(key) { return this.properties[key] ?? 0; },
+        setDynamicProperty(key, value) { this.dynamic[key] = value; },
+        getDynamicProperty(key) { return this.dynamic[key]; },
+        teleport(value) { this.location = { ...value }; }, triggerEvent(name) { this.events.push(name); },
+        runCommand(command) { this.commands.push(command); }, addTag() { return true; },
+        remove() {
+          this.vehicle?.getComponent("minecraft:rideable").ejectRider(this);
+          for (const rider of [...this.riders]) this.getComponent("minecraft:rideable").ejectRider(rider);
+          this.isValid = false;
+        },
+        kill() { this.remove(); return true; },
+        getComponent(name) {
+          if (name === "minecraft:inventory") return { container: inventory };
+          if (name === "minecraft:riding") return this.vehicle ? { entityRidingOn: this.vehicle } : undefined;
+          if (name !== "minecraft:rideable") return undefined;
+          return {
+            getRiders: () => this.riders,
+            addRider: rider => {
+              if (this.riders.length >= 512) return false;
+              rider.vehicle?.getComponent(name).ejectRider(rider);
+              this.riders.push(rider); rider.vehicle = this; return true;
+            },
+            ejectRider: rider => {
+              this.riders = this.riders.filter(value => value !== rider);
+              rider.vehicle = undefined;
+            }
+          };
+        }
+      };
+      entities.set(entity.id, entity);
+      return entity;
+    },
+    playSound(...args) { sounds.push(args); }, spawnItem() {},
+    spawnParticle(...args) { particles.push(args); }
+  };
+  const server = {
+    system,
+    world: {
+      beforeEvents: events, afterEvents: events,
+      getDimension: () => dimension, getEntity: id => entities.get(id), getAllPlayers: () => [],
+      getLootTableManager: () => ({ generateLootFromBlockPermutation: (value, tool) => {
+        loot.push([value.type.id, tool]); return [];
+      } })
+    },
+    BlockPermutation: { resolve: permutation },
+    BlockTypes: { get: typeId => ({ id: typeId }) },
+    ItemTypes: { get: typeId => ({ id: typeId }) },
+    GameMode: { Creative: "creative", Survival: "survival", Spectator: "spectator", Adventure: "adventure" },
+    InputMode: { Touch: "touch", KeyboardAndMouse: "keyboard", Gamepad: "gamepad" },
+    EntitySwingSource: { Mine: "mine", Attack: "attack", Build: "build", Interact: "interact", None: "none" },
+    InputButton: { Sneak: "sneak" },
+    MolangVariableMap: class { values = {}; setFloat(key, value) { this.values[key] = value; } }
+  };
+  const load = moduleLoader(join(sable, "src"), server);
+  const reference = moduleLoader(join(baseline, "src"), server);
+  const flush = () => { system.currentTick++; const current = queued.splice(0); current.forEach(callback => callback()); };
+  return { load, reference, dimension, entities, system, server, changes, loot, sounds, particles, flush, permutation, signals };
+}
+
+const block = (typeId, x = 0, y = 0, z = 0, states = {}) => ({ typeId, localLocation: { x, y, z }, states });
+const body = {
+  isValid: true, getRotation: () => ({ x: 0, y: 0, z: 0 }),
+  localPointToWorld: value => ({ ...value })
+};
+
+function managedFixture() {
+  const f = fixture();
+  const { SubLevelInteractionSystem } = f.load("sublevel/system/SubLevelInteractionSystem.ts");
+  const { SubLevelBlockBehaviorRegistry } = f.load("api/block/SubLevelBlockBehaviors.ts");
+  const { SubLevelContainerInteractionController } = f.load("content/assembly/SubLevelContainerInteraction.ts");
+  const { ServerSubLevelContainer } = f.load("api/sublevel/ServerSubLevelContainer.ts");
+  const containers = new SubLevelContainerInteractionController();
+  const behaviors = new SubLevelBlockBehaviorRegistry();
+  const saved = new Map();
+  const storage = {
+    fail: false, listSubLevelIds: () => [...saved.keys()], loadSubLevel: id => saved.get(id),
+    saveSubLevel(id, value) { if (this.fail) return false; saved.set(id, { id, ...value }); return true; },
+    deleteSubLevel(id) { if (this.fail) return false; saved.delete(id); return true; }
+  };
+  const runtime = new SubLevelInteractionSystem();
+  const manager = new ServerSubLevelContainer(runtime, behaviors, containers, storage);
+  f.load("content/blocks/vanilla/chest/ChestSubLevelBehavior.ts").registerChestSubLevelBehavior({
+    behaviors, containers,
+    onNativeDeath: (owner, binding) => manager.handleContainerNativeDeath(owner, binding)
+  });
+  return { ...f, manager, containers, behaviors, storage, saved };
+}
+
+test("functional resource definitions retain baseline properties, geometry and animations", () => {
+  const pairs = [];
+  for (const name of ["block_outline", "block_crack"]) {
+    pairs.push([`TreePhysicsBP/entities/functional_entities/${name}.json`, `SableBP/entities/sable/sublevel/functional_entities/${name}.json`]);
+    for (const [dir, extension] of [["entity", ".json"], ["models/entity", ".geo.json"], ["animations", ".animation.json"], ["render_controllers", ".render_controllers.json"]]) {
+      pairs.push([`TreePhysicsRP/${dir}/functional_entities/${name}${extension}`, `SableRP/${dir}/sable/sublevel/functional_entities/${name}${extension}`]);
+    }
+  }
+  pairs.push(["TreePhysicsBP/entities/block_entities/chest.json", "SableBP/entities/sable/sublevel/block_entities/chest.json"]);
+  pairs.push(["TreePhysicsBP/blocks/functional_blocks/interaction_target.json", "SableBP/blocks/sable/sublevel/functional_blocks/interaction_target.json"]);
+  for (const [source, target] of pairs) {
+    const expected = JSON.parse(JSON.stringify(json(join(baseline, "packs/TreePhysics", source))).replaceAll("treephysics", "sable"));
+    const family = expected["minecraft:entity"]?.components["minecraft:type_family"].family;
+    if (family?.[0] === "fragment") family[0] = source.endsWith("/chest.json") ? "sable_persistent_rider" : "fancy_model";
+    assert.deepEqual(json(join(sable, "packs", target)), expected, target);
+  }
+});
+
+test("all generated geometries have unique bones and consistent shared rest transforms", () => {
+  const folder = join(sable, "packs/SableRP/models/entity/sable/sublevel/fancy");
+  for (const file of readdirSync(folder, { recursive: true }).filter(file => file.endsWith(".json"))) {
+    const rest = new Map();
+    for (const geometry of json(join(folder, file))["minecraft:geometry"]) {
+      const names = new Set();
+      for (const bone of geometry.bones) {
+        assert(!names.has(bone.name), `${file}: duplicate ${bone.name}`);
+        names.add(bone.name);
+        const transform = { parent: bone.parent, pivot: bone.pivot, rotation: bone.rotation };
+        if (rest.has(bone.name)) assert.deepEqual(transform, rest.get(bone.name), `${file}: conflicting ${bone.name}`);
+        else rest.set(bone.name, transform);
+      }
+    }
+  }
+});
+
+test("grid hit distance, face and starting-cell semantics match the baseline", () => {
+  const f = fixture();
+  const actual = f.load("content/raycast/SubLevelGridRaycast.ts").raycastSubLevelGrid;
+  const expected = f.reference("physics/contraption/GridRaycast.ts").raycastContraptionGrid;
+  const at = (x, y, z) => (x * 13 + y * 7 + z * 3) % 5 === 0 ? block("minecraft:stone", x, y, z) : undefined;
+  for (let i = 0; i < 400; i++) {
+    const origin = { x: i % 9 - 4.5, y: i % 7 - 3, z: i % 5 - 2 };
+    const direction = { x: i % 3 - 1, y: i % 5 - 2, z: i % 7 - 3 };
+    for (const skipContainingCell of [true, false]) {
+      assert.deepEqual(actual(at, origin, direction, 5, { skipContainingCell }), expected(at, origin, direction, 5, { skipContainingCell }));
+    }
+  }
+});
+
+test("mining speed, shared progress and touch deduplication match the baseline", () => {
+  const f = fixture();
+  const speed = f.load("content/punching/SubLevelMiningTime.ts");
+  const expectedSpeed = f.reference("content/tree/felling/Speed.ts");
+  for (const hardness of [0.2, 0.3, 1, 2, 2.5, 5]) {
+    for (const typeId of [undefined, "minecraft:wooden_axe", "minecraft:copper_axe", "minecraft:diamond_axe", "minecraft:golden_axe"]) {
+      for (const efficiencyLevel of [0, 1, 3, 5]) {
+        assert.equal(speed.getVanillaBlockBreakTicks(hardness, { typeId, efficiencyLevel }), expectedSpeed.getVanillaBlockBreakTicks(hardness, { typeId, efficiencyLevel }));
+      }
+    }
+  }
+  const actual = new (f.load("content/punching/SubLevelMiningProgress.ts").SubLevelMiningProgress)();
+  const expected = new (f.reference("content/tree/felling/MiningProgress.ts").MiningProgress)();
+  for (let tick = 0; tick < 100; tick++) {
+    for (const input of [{ type: "attack" }, { type: "touch", playerId: "a" }, { type: "touch", playerId: "b" }]) {
+      assert.deepEqual(actual.advance("1|0,0,0", tick * 3, 75, input), expected.advance("1|0,0,0", tick * 3, 75, input));
+    }
+  }
+});
+
+test("biome sampling includes the same fixed and climate tinted foliage", () => {
+  const f = fixture();
+  const capture = f.load("render/dynamic_biome/DynamicBiomeTintSampler.ts").captureSubLevelFoliageTint;
+  const expected = f.reference("content/tree/foliage/TintSampling.ts").captureTreeFoliageTint;
+  const blocks = [block("minecraft:oak_leaves"), block("minecraft:birch_leaves", 8, 3, 8), block("minecraft:spruce_leaves", 2, 7, 1), block("minecraft:cherry_leaves", -9, 1, -9)];
+  const origin = { x: 14, y: 62, z: 0 };
+  for (const biome of ["minecraft:swamp", "minecraft:plains", "minecraft:cherry_grove", "minecraft:pale_garden"]) {
+    f.dimension.getBiome = location => ({ id: location.x > 18 ? biome : "minecraft:forest" });
+    const snapshots = blocks.map(entry => ({ ...entry, kind: "leaf", location: { x: origin.x + entry.localLocation.x, y: origin.y + entry.localLocation.y, z: origin.z + entry.localLocation.z } }));
+    assert.deepEqual(capture(f.dimension, blocks, origin), expected(f.dimension, snapshots, origin));
+  }
+});
+
+test("registered block hardness matches every editable baseline block", () => {
+  const f = fixture();
+  const registry = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts");
+  const definitions = json(join(sable, "src/data/sublevel-block.json")).blocks;
+  const kinds = f.reference("content/tree/block/Blocks.ts");
+  const expected = f.reference("content/tree/felling/MiningTime.ts");
+  const actual = f.load("content/punching/SubLevelMiningTime.ts");
+  for (const typeId of Object.keys(definitions)) {
+    const kind = kinds.playerEditableContraptionBlockKind(typeId);
+    if (kind === undefined) continue;
+    assert.equal(actual.getSubLevelMiningTargetTicks(registry.getSubLevelBlockRegistration(typeId)?.hardness ?? 1), expected.getTreeMiningTargetTicks(kind, typeId), typeId);
+  }
+});
+
+test("leaf packing and climate quantization retain standard and compact footprints", () => {
+  const f = fixture();
+  const registry = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts");
+  const actual = f.load("sublevel/render/fancy/model/FancySubLevelModelLayout.ts");
+  const expected = f.reference("render/contraption/fragment/FragmentLayout.ts");
+  const tint = f.load("sublevel/render/fancy/model/FancySubLevelTintCodec.ts");
+  const referenceTint = f.reference("render/foliage/TintCodec.ts");
+  for (const width of [1, 5, 6, 7, 11, 13]) {
+    const blocks = [];
+    for (let x = -2; x < width - 2; x++) for (let z = 0; z < width; z++) {
+      blocks.push(block("minecraft:oak_leaves", x, (x + z + 2) % 3, z));
+    }
+    const sourceBlocks = blocks.map(entry => ({ ...entry, visual: { renderer: "leaf_fragment", family: 0, state: 1 } }));
+    const packed = actual.packFancySubLevelModels(blocks.map(registry.resolveFancySubLevelBlock)).models;
+    const referencePacked = expected.packFragments(sourceBlocks);
+    assert.equal(packed.length, referencePacked.length, `width ${width}`);
+    for (const fragment of referencePacked) {
+      const keys = fragment.assignments.map(entry => entry.blockKey).sort();
+      const model = packed.find(entry => entry.assignments.some(assignment => assignment.blockKey === keys[0]));
+      assert.deepEqual(model.assignments.map(entry => entry.blockKey).sort(), keys);
+      assert.deepEqual(model.anchorLocalLocation, fragment.anchorLocalLocation);
+      for (const axis of ["x", "z"]) {
+        const field = { gradientAxis: axis, mapKind: 1, uAtLocalOrigin: 0.25, uPerLocalX: 0.018, vAtLocalOrigin: 0.43, vPerLocalZ: -0.009 };
+        assert.equal(tint.packFancySubLevelTint(model, field), referenceTint.packFragmentFoliageTint(fragment, field));
+      }
+    }
+  }
+});
+
+test("restored model geometry retains baseline cube UVs and child transforms", () => {
+  const library = json(join(sable, "src/data/reference/model-geometry.json"));
+  const geos = ["fragments/tree/log_fragment", "fragments/tree/attachment_fragment", "fragments/cube_fragment_0"]
+    .flatMap(file => json(join(baseline, `packs/TreePhysics/TreePhysicsRP/models/entity/${file}.geo.json`))["minecraft:geometry"]);
+  const subtree = geometry => {
+    const names = new Set(["slot_0"]);
+    return geometry.bones.filter(bone => {
+      if (!names.has(bone.name) && !names.has(bone.parent)) return false;
+      names.add(bone.name); return true;
+    }).map((bone, index) => ({
+      ...bone, name: index,
+      parent: index === 0 ? undefined : geometry.bones.filter(bone => names.has(bone.name)).findIndex(parent => parent.name === bone.parent),
+      pivot: index === 0 ? [0, -16, 0] : bone.pivot
+    }));
+  };
+  const candidates = geos.map(subtree);
+  for (const [type, variants] of Object.entries(library)) for (const [variant, definition] of Object.entries(variants)) {
+    for (const [channel, value] of Object.entries(definition.channels)) {
+      const geometry = { bones: value.bones.map(bone => ({
+        ...bone, name: bone.name.replaceAll("{s}", "0"), parent: bone.parent?.replaceAll("{s}", "0")
+      })) };
+      const actual = subtree(geometry);
+      assert(candidates.some(expected => {
+        try { assert.deepEqual(actual, expected); return true; } catch { return false; }
+      }), `${type}/${variant}/${channel} differs from baseline geometry`);
+    }
+  }
+});
+
+test("ordinary renderers carry and rotate outlines, and empty mixed routes remain intact", () => {
+  const f = fixture();
+  const renderer = f.load("sublevel/render/SubLevelRenderer.ts").SubLevelRenderer;
+  for (const blocks of [[block("minecraft:stone")], [block("minecraft:stone"), block("minecraft:oak_log", 1)]]) {
+    const data = renderer.createRenderData({ body, dimension: f.dimension, blocks });
+    f.flush();
+    const outline = f.dimension.spawnEntity("sable:block_outline", { x: 0, y: 0, z: 0 });
+    assert.equal(data.attachAuxiliaryRider(outline), true);
+    assert(outline.vehicle);
+    assert.deepEqual(outline.properties, { "sable:pitch": 0, "sable:yaw": 0, "sable:roll": 0 });
+    data.removeBlocks(new Set(["1,0,0"]));
+    assert.equal(data.hasIntactEntities(), true);
+    data.remove();
+    assert.equal(outline.isValid, false);
+  }
+});
+
+test("capture does not remove source blocks when rendering fails", () => {
+  const f = managedFixture();
+  const source = f.dimension.getBlock({ x: 0, y: 0, z: 0 });
+  source.setType("minecraft:oak_log");
+  f.dimension.spawnEntity = () => { throw new Error("spawn failure"); };
+  assert.throws(() => f.manager.createSubLevelFromRegion(f.dimension, source.location, source.location), /spawn failure/);
+  assert.equal(source.typeId, "minecraft:oak_log");
+});
+
+test("capture removes attachments before foliage and structural supports", () => {
+  const f = managedFixture();
+  for (const entry of [block("minecraft:oak_log"), block("minecraft:oak_leaves", 0, 1), block("minecraft:vine", 1, 1, 0, { vine_direction_bits: 2 })]) {
+    f.dimension.getBlock(entry.localLocation).setPermutation(f.permutation(entry.typeId, entry.states));
+  }
+  f.manager.createSubLevelFromRegion(f.dimension, { x: 0, y: 0, z: 0 }, { x: 1, y: 1, z: 0 });
+  assert.deepEqual(f.changes.map(entry => entry[0]), ["1,1,0", "0,1,0", "0,0,0"]);
+});
+
+test("mined target keeps its tool when it was not the first captured block", () => {
+  const f = managedFixture();
+  const blocks = [block("minecraft:vine", 0, 0, 0, { vine_direction_bits: 1 }), block("minecraft:oak_log", 0, 0, 1)];
+  const managed = f.manager.createSubLevel(f.dimension, { x: 0, y: 0, z: 0 }, blocks);
+  const tool = { typeId: "minecraft:diamond_axe" };
+  assert(f.manager.breakBlockForPlayerEdit({}, tool, managed.handle, blocks[1]));
+  assert.deepEqual(f.loot, [["minecraft:oak_log", tool], ["minecraft:vine", undefined]]);
+});
+
+test("failed persistence leaves the live block and effects untouched", () => {
+  const f = managedFixture();
+  const target = block("minecraft:oak_log");
+  const managed = f.manager.createSubLevel(f.dimension, { x: 0, y: 0, z: 0 }, [target]);
+  f.storage.fail = true;
+  assert.throws(() => f.manager.breakBlockForPlayerEdit({}, undefined, managed.handle, target), /delete/);
+  assert.equal(managed.blockCount, 1);
+  assert.equal(f.loot.length, 0);
+});
+
+test("placement can cross between registered models and the ordinary render route", () => {
+  const f = managedFixture();
+  const target = block("minecraft:oak_log");
+  const managed = f.manager.createSubLevel(f.dimension, { x: 0, y: 0, z: 0 }, [target]);
+  assert(f.manager.placeBlockForPlayerEdit({}, { typeId: "minecraft:stone" }, managed.handle, target, { x: 1, y: 0, z: 0 }, "north"));
+  assert.equal(managed.blockCount, 2);
+  f.flush();
+  assert(managed.handle.renderData.hasIntactEntities());
+});
+
+test("unloaded saved structures retry without blocking loaded structures", () => {
+  const f = managedFixture();
+  for (const [id, x] of [["region_1", 64], ["region_2", 0]]) f.saved.set(id, {
+    id, origin: { x, y: 0, z: 0 }, dimensionId: f.dimension.id,
+    blocks: [block("minecraft:oak_log")], containerStorages: []
+  });
+  const getBlock = f.dimension.getBlock;
+  f.dimension.getBlock = location => location.x >= 64 ? undefined : getBlock(location);
+  f.manager.initialize();
+  f.manager.tick(20);
+  assert.equal([...f.entities.values()].filter(entity => entity.isValid).length, 2);
+  f.dimension.getBlock = getBlock;
+  f.manager.tick(40);
+  assert.equal([...f.entities.values()].filter(entity => entity.isValid).length, 4);
+});
+
+test("chest capture, multiple viewers, reconstruction and settlement preserve native inventory", () => {
+  const f = managedFixture();
+  const location = { x: 0, y: 0, z: 0 };
+  const source = f.dimension.getBlock(location);
+  source.setPermutation(f.permutation("minecraft:chest", { "minecraft:cardinal_direction": "south" }));
+  const items = new Map([[0, { typeId: "minecraft:diamond", amount: 13 }], [26, { typeId: "minecraft:apple", amount: 2 }]]);
+  source.getComponent = name => name === "minecraft:inventory"
+    ? { container: { size: 27, getItem: slot => items.get(slot) } } : undefined;
+  const managed = f.manager.createSubLevelFromRegion(f.dimension, location, location);
+  f.containers.start();
+  f.flush();
+  const chest = [...f.entities.values()].find(entity => entity.typeId === "sable:chest");
+  const inventory = chest.getComponent("minecraft:inventory").container;
+  assert.equal(source.typeId, "minecraft:air");
+  assert.deepEqual(inventory.getItem(0), items.get(0));
+  assert.deepEqual(inventory.getItem(26), items.get(26));
+  assert(chest.vehicle);
+  const target = managed.handle.blocks[0];
+  const first = { id: "first", typeId: "minecraft:player" };
+  const second = { id: "second", typeId: "minecraft:player" };
+  const emit = (name, event) => f.signals.get(name)?.forEach(callback => callback(event));
+  f.containers.syncTarget(first, managed.handle, target);
+  assert.equal(chest.vehicle, undefined);
+  assert.deepEqual(chest.location, { x: 0.5, y: 0.0625, z: 0.5 });
+  emit("entityContainerOpened", { entity: chest, openSource: { entity: first } });
+  f.containers.syncTarget(second, managed.handle, target);
+  emit("entityContainerOpened", { entity: chest, openSource: { entity: second } });
+  assert.deepEqual(f.sounds.map(entry => entry[0]), ["random.chestopen"]);
+  const oldRender = managed.handle.renderData;
+  assert(f.manager.placeBlockForPlayerEdit({}, { typeId: "minecraft:stone" }, managed.handle, target, { x: 1, y: 0, z: 0 }, "south"));
+  assert.notEqual(managed.handle.renderData, oldRender);
+  f.flush();
+  const openProperties = [...f.entities.values()]
+    .filter(entity => entity.isValid && entity.typeId.includes("fancy"))
+    .map(entity => ({ entity, properties: { ...entity.properties } }));
+  emit("entityContainerClosed", { entity: chest, closeSource: { entity: first } });
+  f.flush();
+  assert.equal(f.sounds.length, 1);
+  emit("entityContainerClosed", { entity: chest, closeSource: { entity: second } });
+  f.flush();
+  assert.deepEqual(f.sounds.map(entry => entry[0]), ["random.chestopen", "random.chestclosed"]);
+  assert(openProperties.some(({ entity, properties }) => JSON.stringify(entity.properties) !== JSON.stringify(properties)), "reconstructed chest must have an open lid before the last viewer closes it");
+  f.containers.releasePlayer(first.id);
+  f.containers.releasePlayer(second.id);
+  assert(chest.vehicle);
+  assert(managed.handle.renderData.hasIntactEntities());
+  assert.deepEqual(inventory.getItem(0), items.get(0));
+  assert(f.manager.breakBlockForPlayerEdit({}, undefined, managed.handle, target));
+  assert.equal(chest.isValid, false);
+  assert.equal(f.containers.getBindings(managed.id).length, 0);
+});
+
+test("container unload and saved binding reconciliation never spawn replacement inventories", () => {
+  const f = managedFixture();
+  const target = block("minecraft:chest", 0, 0, 0, { "minecraft:cardinal_direction": "north" });
+  const managed = f.manager.createSubLevel(f.dimension, { x: 0, y: 0, z: 0 }, [target]);
+  f.flush();
+  const chest = [...f.entities.values()].find(entity => entity.typeId === "sable:chest");
+  const inventory = chest.getComponent("minecraft:inventory").container;
+  inventory.setItem(3, { typeId: "minecraft:emerald", amount: 42 });
+  chest.remove();
+  f.containers.handleEntityRemove(chest.id);
+  assert.equal(f.containers.getBindings(managed.id).length, 1);
+  assert.equal(managed.blockCount, 1);
+  f.containers.bindSubLevel(managed.id, managed.handle, f.containers.getBindings(managed.id));
+  f.containers.completeSavedBindingRegistration();
+  f.flush();
+  assert.equal([...f.entities.values()].filter(entity => entity.typeId === "sable:chest").length, 1);
+  chest.isValid = true;
+  f.containers.handleEntityLoad(chest);
+  f.flush();
+  assert(chest.vehicle);
+  assert.deepEqual(inventory.getItem(3), { typeId: "minecraft:emerald", amount: 42 });
+  assert(managed.handle.renderData.hasIntactEntities());
+});
+
+test("persistent inventories survive a renderer change while mounted", () => {
+  const f = managedFixture();
+  const target = block("minecraft:chest", 0, 0, 0, { "minecraft:cardinal_direction": "west" });
+  const managed = f.manager.createSubLevel(f.dimension, { x: 0, y: 0, z: 0 }, [target]);
+  f.flush();
+  const chest = [...f.entities.values()].find(entity => entity.typeId === "sable:chest");
+  const oldCarrier = chest.vehicle;
+  assert(f.manager.placeBlockForPlayerEdit({}, { typeId: "minecraft:stone" }, managed.handle, target, { x: 1, y: 0, z: 0 }, "south"));
+  f.flush();
+  assert(chest.isValid && chest.vehicle && chest.vehicle !== oldCarrier);
+  assert(managed.handle.renderData.hasIntactEntities());
+});
+
+test("ordinary carrier leaves its 512th native seat available for the outline", () => {
+  const f = fixture();
+  const renderer = f.load("sublevel/render/SubLevelRenderer.ts").SubLevelRenderer;
+  const blocks = Array.from({ length: 1022 }, (_, index) => block("minecraft:stone", index % 32, Math.floor(index / 32)));
+  const data = renderer.createRenderData({ body, dimension: f.dimension, blocks });
+  f.flush();
+  assert.equal(data.entityCount, 512);
+  const outline = f.dimension.spawnEntity("sable:block_outline", { x: 0, y: 0, z: 0 });
+  assert(data.attachAuxiliaryRider(outline));
+  assert.equal(outline.vehicle.riders.length, 512);
+  assert(data.hasIntactEntities());
+});
+
+test("block sounds and particle emissions match the baseline for registered tree blocks", () => {
+  const f = fixture();
+  const actualSounds = f.load("content/sublevel_sounds/SubLevelBlockSounds.ts");
+  const expectedSounds = f.reference("data/BlockSound.ts");
+  const particles = f.load("content/particle/SubLevelBlockParticles.ts");
+  const referenceParticles = f.reference("render/particle/BlockParticles.ts");
+  const kinds = f.reference("content/tree/block/Blocks.ts");
+  const definitions = json(join(sable, "src/data/sublevel-block.json")).blocks;
+  const field = { gradientAxis: "z", mapKind: 1, uAtLocalOrigin: 0.35, uPerLocalX: 0.018, vAtLocalOrigin: 0.43, vPerLocalZ: -0.009 };
+  for (const typeId of Object.keys(definitions)) {
+    for (const name of ["resolveVanillaBlockBreakSound", "resolveVanillaBlockHitSound", "resolveVanillaBlockPlaceSound"]) {
+      for (const random of [0, 0.3, 1]) assert.deepEqual(actualSounds[name](typeId, () => random), expectedSounds[name](typeId, () => random), typeId);
+    }
+    const kind = kinds.playerEditableContraptionBlockKind(typeId);
+    if (kind === undefined) continue;
+    const entry = block(typeId, 2, 1, 5, {
+      pillar_axis: "y", "minecraft:cardinal_direction": "north", hanging: true,
+      propagule_stage: 2, direction: 1, age: 1, honey_level: 5, tip: true,
+      vine_direction_bits: 11, creaking_heart_state: "awake"
+    });
+    f.particles.length = 0;
+    referenceParticles.spawnBlockParticle(f.dimension, entry.localLocation, { ...entry, kind }, entry.localLocation, field, { kind: "destruct", profile: referenceParticles.BLOCK_BREAK_PARTICLE_PROFILE });
+    particles.spawnSubLevelBlockDestructParticle(f.dimension, entry.localLocation, entry, field, particles.BLOCK_BREAK_PARTICLE_PROFILE);
+    assert.equal(f.particles.length, 2, typeId);
+    assert.deepEqual(f.particles[1].slice(1), f.particles[0].slice(1), typeId);
+  }
+});
+
+// These resources use the arithmetic/query subset shared by JavaScript and
+// Molang. Evaluate their emitted expressions, not a second model selector.
+function resourceEvaluator(entity, client) {
+  const v = new Proxy({}, { get: (target, key) => target[key] ?? 0 });
+  const q = { property: name => entity.getProperty(name), delta_time: 0.05, body_x_rotation: 0, body_y_rotation: 0 };
+  const math = {
+    ...Object.fromEntries(Object.getOwnPropertyNames(Math).map(name => [name, Math[name]])),
+    mod: (a, b) => a % b, clamp: (x, a, b) => Math.max(a, Math.min(b, x)),
+    lerprotate: (a, b, t) => a + (((b - a + 540) % 360) - 180) * t
+  };
+  const cache = new Map();
+  const run = (source, arrays = {}, statement = false) => {
+    if (typeof source !== "string") return source;
+    const key = `${statement}|${source}`;
+    let fn = cache.get(key);
+    if (!fn) {
+      fn = new Function("v", "q", "math", "Array", "Texture", "Geometry", "Material", statement ? source : `return (${source});`);
+      cache.set(key, fn);
+    }
+    return fn(v, q, math, arrays, client.textures, client.geometry, client.materials);
+  };
+  for (const code of [...client.scripts.initialize, ...client.scripts.pre_animation]) run(code, {}, true);
+  return run;
+}
+
+function modelResourceReader(pack, folder) {
+  const clients = new Map();
+  const base = join(pack, "entity", folder);
+  for (const path of readdirSync(base, { recursive: true }).filter(file => file.endsWith(".json"))) {
+    const client = json(join(base, path))["minecraft:client_entity"].description;
+    clients.set(client.identifier, { client, path: join(folder, path).replace(/\.json$/, "") });
+  }
+  const cache = new Map();
+  return entity => {
+    const record = clients.get(entity.typeId);
+    assert(record, `missing client entity ${entity.typeId}`);
+    if (cache.has(entity.typeId)) return cache.get(entity.typeId);
+    const resources = {
+      client: record.client,
+      geometries: new Map(json(join(pack, "models/entity", `${record.path}.geo.json`))["minecraft:geometry"].map(g => [g.description.identifier, g])),
+      animations: json(join(pack, "animations", `${record.path}.animation.json`)).animations,
+      controllers: json(join(pack, "render_controllers", `${record.path}.render_controllers.json`)).render_controllers
+    };
+    cache.set(entity.typeId, resources);
+    return resources;
+  };
+}
+
+function activeModelSurfaces(entity, resources, transformed = false) {
+  const { client, geometries, animations, controllers } = resources;
+  const evaluate = resourceEvaluator(entity, client);
+  const poses = new Map();
+  for (const entry of client.scripts.animate) {
+    const [alias, condition] = typeof entry === "string" ? [entry, true] : Object.entries(entry)[0];
+    if (!evaluate(condition)) continue;
+    for (const [name, pose] of Object.entries(animations[client.animations[alias]].bones)) {
+      const combined = poses.get(name) ?? {};
+      for (const channel of ["position", "rotation", "scale"]) {
+        if (pose[channel] === undefined) continue;
+        const identity = channel === "scale" ? 1 : 0;
+        const values = Array.isArray(pose[channel]) ? pose[channel] : Array(3).fill(pose[channel]);
+        combined[channel] = values.map((value, axis) => {
+          const previous = combined[channel]?.[axis] ?? identity;
+          return channel === "scale" ? previous * Number(evaluate(value)) : previous + Number(evaluate(value));
+        });
+      }
+      poses.set(name, combined);
+    }
+  }
+  const surfaces = [];
+  for (const entry of client.render_controllers) {
+    const [id, condition] = typeof entry === "string" ? [entry, true] : Object.entries(entry)[0];
+    if (!evaluate(condition)) continue;
+    const controller = controllers[id];
+    const arrays = {};
+    for (const values of Object.values(controller.arrays ?? {})) {
+      for (const [name, members] of Object.entries(values)) arrays[name.slice(6)] = members.map(value => evaluate(value));
+    }
+    const material = evaluate(controller.materials[0]["*"], arrays);
+    if (material.includes("multiply")) continue;
+    const geometry = geometries.get(evaluate(controller.geometry, arrays));
+    assert(geometry, `${id}: missing geometry`);
+    const skeleton = new Map(geometry.bones.map(bone => [bone.name, bone]));
+    const visibility = Object.assign({}, ...(controller.part_visibility ?? []));
+    for (const bone of geometry.bones) {
+      if (!bone.cubes || !evaluate(visibility[bone.name] ?? visibility["*"] ?? true, arrays)) continue;
+      const position = [0, 0, 0];
+      const rotations = [];
+      const transforms = [];
+      let hidden = false;
+      for (let name = bone.name; name; name = skeleton.get(name).parent) {
+        const ancestor = skeleton.get(name);
+        const pose = poses.get(name) ?? {};
+        if (pose.scale?.some(value => value === 0)) hidden = true;
+        (pose.position ?? [0, 0, 0]).forEach((value, axis) => position[axis] += value);
+        const rotation = [0, 1, 2].map(axis => (pose.rotation?.[axis] ?? 0) + (ancestor.rotation?.[axis] ?? 0));
+        transforms.push({ pivot: ancestor.pivot ?? [0, 0, 0], rotation, position: pose.position ?? [0, 0, 0], scale: pose.scale ?? [1, 1, 1] });
+        if (rotation.some(value => value !== 0)) {
+          const pivot = [...(ancestor.pivot ?? [0, 0, 0])];
+          // Translating a pivot along its sole rotation axis changes no vertex.
+          if (rotation.filter(value => value !== 0).length === 1) pivot[rotation.findIndex(value => value !== 0)] = 0;
+          rotations.unshift({ pivot, rotation });
+        }
+      }
+      if (hidden) continue;
+      for (const cube of bone.cubes) {
+        if (transformed) {
+          const corners = [
+            [0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0],
+            [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1]
+          ].map(corner => {
+            let point = corner.map((value, axis) => cube.origin[axis] + value * cube.size[axis]);
+            if (cube.rotation) point = transformPoint(point, { pivot: cube.pivot ?? [0, 0, 0], rotation: cube.rotation });
+            for (const transform of transforms) point = transformPoint(point, transform);
+            const location = entity.vehicle?.location ?? entity.location;
+            return point.map((value, axis) => Math.round((value + [location.x, location.y, -location.z][axis] * 16) * 1e6) / 1e6 || 0);
+          });
+          const faces = { north: [0, 1, 2, 3], south: [5, 4, 7, 6], west: [4, 0, 6, 2], east: [1, 5, 3, 7], up: [2, 3, 6, 7], down: [4, 5, 0, 1] };
+          for (const [face, uv] of Object.entries(cube.uv)) {
+            surfaces.push({
+              texture: evaluate(controller.textures[0], arrays), material,
+              light: controller.light_color_multiplier ?? 1,
+              textureSize: [geometry.description.texture_width, geometry.description.texture_height],
+              uv, vertices: faces[face].map(index => corners[index])
+            });
+          }
+          continue;
+        }
+        surfaces.push({
+          texture: evaluate(controller.textures[0], arrays), material,
+          light: controller.light_color_multiplier ?? 1,
+          textureSize: [geometry.description.texture_width, geometry.description.texture_height],
+          cube, position: position.map(value => value || 0), rotations
+        });
+      }
+    }
+  }
+  return surfaces.sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+}
+
+// Compare composed resource transforms; this does not emulate the Bedrock client.
+function transformPoint(point, { pivot, rotation, position = [0, 0, 0], scale = [1, 1, 1] }) {
+  let value = point.map((coordinate, axis) => (coordinate - pivot[axis]) * scale[axis]);
+  for (const axis of [0, 1, 2]) {
+    const angle = rotation[axis] * Math.PI / 180;
+    const a = (axis + 1) % 3;
+    const b = (axis + 2) % 3;
+    const next = [...value];
+    next[a] = value[a] * Math.cos(angle) - value[b] * Math.sin(angle);
+    next[b] = value[a] * Math.sin(angle) + value[b] * Math.cos(angle);
+    value = next;
+  }
+  return value.map((coordinate, axis) => coordinate + pivot[axis] + position[axis]);
+}
+
+test("reported log and chest captures preserve the saved states and client rotation inputs", () => {
+  const f = managedFixture();
+  const reader = modelResourceReader(join(sable, "packs/SableRP"), "sable/sublevel/fancy");
+  // These states and descriptor words were read from the reported test world's
+  // saved records and actors, independently of the resource comparison harness.
+  const cases = [
+    {
+      origin: { x: 4, y: 70, z: 34 },
+      blocks: [
+        block("minecraft:oak_log", 0, 0, 0, { old_log_type: "oak", pillar_axis: "z" }),
+        block("minecraft:oak_log", 0, 0, 1, { old_log_type: "oak", pillar_axis: "y" })
+      ],
+      entityTypeId: "sable:fancy_pool_logs_and_wood_0",
+      words: [9041887, 8521695],
+      rotations: [[90, 0, 0], [0, 0, 0]]
+    },
+    {
+      origin: { x: 6, y: 70, z: 34 },
+      blocks: [block("minecraft:chest", 0, 0, 0, { facing_direction: 2, "minecraft:cardinal_direction": "north" })],
+      entityTypeId: "sable:fancy_model_chest_sparse",
+      words: [8255425],
+      rotations: [[0, 360, 0]]
+    }
+  ];
+  for (const sample of cases) {
+    const at = entry => Object.fromEntries(["x", "y", "z"].map(axis => [axis, sample.origin[axis] + entry.localLocation[axis]]));
+    for (const entry of sample.blocks) f.dimension.getBlock(at(entry)).setPermutation(f.permutation(entry.typeId, entry.states));
+    const managed = f.manager.createSubLevelFromRegion(f.dimension, sample.origin, at(sample.blocks.at(-1)));
+    f.flush();
+    assert.deepEqual(managed.handle.blocks.map(entry => entry.states), sample.blocks.map(entry => entry.states));
+    assert.deepEqual(f.saved.get(managed.id).blocks.map(entry => entry.states), sample.blocks.map(entry => entry.states));
+    const renders = managed.handle.renderData.entityIds.map(id => f.entities.get(id)).filter(entity => !entity.typeId.includes("carrier"));
+    assert.equal(renders.length, 1);
+    const entity = renders[0];
+    assert.equal(entity.typeId, sample.entityTypeId);
+    assert.deepEqual(sample.words.map((_, index) => entity.getProperty(`sable:s${index}`)), sample.words);
+    const resources = reader(entity);
+    const evaluate = resourceEvaluator(entity, resources.client);
+    const animation = resources.animations[resources.client.animations.transform];
+    for (let slot = 0; slot < sample.blocks.length; slot++) {
+      const pose = animation.bones[`slot_${slot}`];
+      assert.deepEqual(pose.rotation.map(value => evaluate(value)), sample.rotations[slot]);
+      assert.equal(Number(evaluate(pose.scale)), 1);
+    }
+  }
+});
+
+test("native rotation probe selects both paths and cleans up without changing world blocks", () => {
+  const f = fixture();
+  f.system.afterEvents = f.server.world.afterEvents;
+  const { SubLevelInteractionSystem } = f.load("sublevel/system/SubLevelInteractionSystem.ts");
+  const runtime = new SubLevelInteractionSystem();
+  const loadProbe = moduleLoader(join(sable, "packs/SableBP/scripts"), f.server, {
+    "sable/Sable.js": { sableInteractionSystem: runtime }
+  });
+  const probe = loadProbe("rotation-probe.js");
+  const player = { id: "probe-player", location: { x: 0, y: 70, z: 0 }, dimension: f.dimension };
+  const rows = probe.createRotationProbe(player);
+  f.flush();
+  assert.equal(rows.length, 2);
+  assert(rows[0].packing.models.every(model => model.format === "pool"));
+  assert(rows[1].packing.models.every(model => model.format === "sparse"));
+  assert.equal(rows[0].packing.models.length, 2);
+  assert.equal(rows[1].packing.models.length, 7);
+  assert.deepEqual(rows[0].handle.blocks, rows[1].handle.blocks);
+  for (const row of rows) for (const id of row.renderer.entityIds) {
+    assert(runtime.isVisualEntity(f.dimension.id, id), `unregistered probe entity ${id}`);
+  }
+  probe.clearRotationProbe(player.id);
+  assert(rows.every(row => !row.handle.isValid));
+  assert.equal(f.dimension.getEntities().length, 0);
+  assert.equal(f.changes.length, 0);
+  const spawn = f.dimension.spawnEntity;
+  f.dimension.spawnEntity = (...args) => {
+    if (f.dimension.getEntities().length >= 4) throw new Error("probe spawn failure");
+    return spawn(...args);
+  };
+  assert.throws(() => probe.createRotationProbe(player), /probe spawn failure/);
+  f.flush();
+  assert.equal(f.dimension.getEntities().length, 0);
+  assert.equal(f.changes.length, 0);
+});
+
+test("mixed orientations retain baseline face transforms across pool, dense and sparse resources", () => {
+  const f = fixture();
+  const registry = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts");
+  const layout = f.load("sublevel/render/fancy/model/FancySubLevelModelLayout.ts");
+  const expectedLayout = f.reference("render/contraption/fragment/FragmentLayout.ts");
+  const visual = f.reference("render/contraption/fragment/FragmentVisual.ts").createFragmentVisual;
+  const kinds = f.reference("content/tree/block/Blocks.ts");
+  const ActualRenderer = f.load("sublevel/render/fancy/model/FancySubLevelModelRenderer.ts").FancySubLevelModelRenderer;
+  const ExpectedRenderer = f.reference("render/contraption/fragment/FragmentRenderer.ts").FragmentRenderer;
+  const actualReader = modelResourceReader(join(sable, "packs/SableRP"), "sable/sublevel/fancy");
+  const expectedReader = modelResourceReader(join(baseline, "packs/TreePhysics/TreePhysicsRP"), "fragments");
+  const entries = [];
+  const add = (typeId, states) => {
+    const index = entries.length;
+    entries.push(block(typeId, index % 11 - 5, Math.floor(index / 11) - 3, index % 7 - 2, states));
+  };
+  for (const typeId of ["oak_log", "birch_log", "stripped_spruce_log", "oak_wood"]) {
+    for (const pillar_axis of ["x", "y", "z"]) add(`minecraft:${typeId}`, { pillar_axis });
+  }
+  for (const cardinal_direction of ["south", "west", "north", "east"]) add("minecraft:chest", { "minecraft:cardinal_direction": cardinal_direction });
+  for (const direction of [0, 1, 2, 3]) {
+    for (const honey_level of [0, 5]) add("minecraft:bee_nest", { direction, honey_level });
+    for (const age of [0, 1, 2]) add("minecraft:cocoa", { direction, age });
+  }
+  for (const pillar_axis of ["x", "y", "z"]) {
+    for (const creaking_heart_state of ["uprooted", "dormant", "awake"]) add("minecraft:creaking_heart", { pillar_axis, creaking_heart_state });
+  }
+  const sourceBlock = entry => {
+    const snapshot = { ...entry, kind: kinds.playerEditableContraptionBlockKind(entry.typeId) };
+    const result = { ...entry, visual: visual(snapshot) };
+    assert(result.visual, entry.typeId);
+    return result;
+  };
+  const formats = new Set();
+  const layouts = [entries, entries.flatMap(entry => [0, 1, 2].map(index => ({
+    ...entry, localLocation: { ...entry.localLocation, x: entry.localLocation.x + index * 24 }
+  }))), [...entries, ...["x", "y", "z"].flatMap((pillar_axis, axis) => Array.from({ length: 27 }, (_, index) => (
+    block("minecraft:birch_wood", 20 + axis * 4 + index % 3, Math.floor(index / 9), 20 + Math.floor(index / 3) % 3, { pillar_axis })
+  )))]];
+  for (const targets of layouts) for (const rotation of [{ x: 0, y: 0, z: 0 }, { x: 23, y: -41, z: 17 }]) {
+    const renderBody = { ...body, getRotation: () => rotation };
+    for (const pooled of [true, false]) {
+      const resolved = targets.map(registry.resolveFancySubLevelBlock).map(entry => pooled ? entry : { ...entry, model: { ...entry.model, pool: undefined } });
+      const packs = layout.packFancySubLevelModels(resolved).models;
+      packs.forEach(pack => formats.add(pack.format));
+      assert.equal(packs.some(pack => pack.format === "pool"), pooled);
+      const actual = new ActualRenderer(renderBody, packs, f.dimension.spawnEntity, undefined, undefined, { x: 0, y: 0, z: 0 });
+      const expected = new ExpectedRenderer(renderBody, expectedLayout.packFragments(targets.map(sourceBlock)), f.dimension.spawnEntity, undefined, undefined, { x: 0, y: 0, z: 0 });
+      actual.sync(true); expected.sync(true);
+      actual.releaseInitialPose(); expected.releaseInitialPose();
+      const surfaces = (renderer, reader) => renderer.entityIds
+        .map(id => f.entities.get(id)).filter(entity => !entity.typeId.includes("carrier"))
+        .flatMap(entity => activeModelSurfaces(entity, reader(entity), true))
+        .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+      assert.deepEqual(surfaces(actual, actualReader), surfaces(expected, expectedReader), `pool=${pooled} rotation=${JSON.stringify(rotation)}`);
+      actual.remove(); expected.remove();
+    }
+  }
+  assert.deepEqual([...formats].sort(), ["dense", "pool", "sparse"]);
+});
+
+test("all registered state variants select baseline textures, materials, visible cubes and rotations", () => {
+  const f = fixture();
+  const actualReader = modelResourceReader(join(sable, "packs/SableRP"), "sable/sublevel/fancy");
+  const expectedReader = modelResourceReader(join(baseline, "packs/TreePhysics/TreePhysicsRP"), "fragments");
+  const definitions = json(join(sable, "src/data/sublevel-block.json")).blocks;
+  const registry = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts");
+  const layout = f.load("sublevel/render/fancy/model/FancySubLevelModelLayout.ts");
+  const ExpectedRenderer = f.reference("render/contraption/fragment/FragmentRenderer.ts").FragmentRenderer;
+  const ActualRenderer = f.load("sublevel/render/fancy/model/FancySubLevelModelRenderer.ts").FancySubLevelModelRenderer;
+  const expectedLayout = f.reference("render/contraption/fragment/FragmentLayout.ts");
+  const visual = f.reference("render/contraption/fragment/FragmentVisual.ts").createFragmentVisual;
+  const kinds = f.reference("content/tree/block/Blocks.ts");
+  const stateValues = {
+    pillar_axis: ["y", "x", "z"], cardinal_direction: ["south", "west", "north", "east"],
+    old_log_type: ["oak", "spruce", "birch", "jungle"], new_log_type: ["acacia", "dark_oak"],
+    old_leaf_type: ["oak", "spruce", "birch", "jungle"], new_leaf_type: ["acacia", "dark_oak"],
+    direction: [0, 1, 2, 3], age: [0, 1, 2], honey_level: [0, 1, 4, 5],
+    hanging: [true], propagule_stage: [0, 1, 2, 3, 4], tip: [false, true],
+    vine_direction_bits: Array.from({ length: 16 }, (_, i) => i),
+    creaking_heart_state: ["uprooted", "dormant", "awake"]
+  };
+  const field = { gradientAxis: "x", mapKind: 1, uAtLocalOrigin: 0.4, uPerLocalX: 0, vAtLocalOrigin: 0.7, vPerLocalZ: 0 };
+  let checked = 0;
+  for (const [typeId, definition] of Object.entries(definitions)) {
+    let permutations = [{}];
+    for (const name of definition.states) {
+      const values = stateValues[name.replace("minecraft:", "")];
+      assert(values, `uncovered state ${name}`);
+      const nativeName = name.endsWith(":cardinal_direction") ? name : name.replace("minecraft:", "");
+      permutations = permutations.flatMap(states => values.map(value => ({ ...states, [nativeName]: value })));
+    }
+    for (const states of permutations) {
+      const target = block(typeId, 0, 0, 0, states);
+      const source = { ...target, kind: kinds.playerEditableContraptionBlockKind(typeId) };
+      source.visual = visual(source);
+      if (!source.visual) continue;
+      const expected = new ExpectedRenderer(body, expectedLayout.packFragments([source]), f.dimension.spawnEntity, field, undefined, target.localLocation);
+      const actual = new ActualRenderer(body, layout.packFancySubLevelModels([registry.resolveFancySubLevelBlock(target)]).models, f.dimension.spawnEntity, field, undefined, target.localLocation);
+      expected.sync(true); expected.releaseInitialPose();
+      actual.sync(true); actual.releaseInitialPose();
+      const surfaces = (renderer, reader) => renderer.entityIds
+        .map(id => f.entities.get(id)).filter(entity => !entity.typeId.includes("carrier"))
+        .flatMap(entity => activeModelSurfaces(entity, reader(entity)));
+      assert.deepEqual(surfaces(actual, actualReader), surfaces(expected, expectedReader), `${typeId} ${JSON.stringify(states)}`);
+      actual.remove(); expected.remove();
+      checked++;
+    }
+  }
+  assert(checked >= 200, `only ${checked} states were compared`);
+});
+
+test("vine sampling buckets and UV gradients match mixed baseline attachments", () => {
+  const f = fixture();
+  const registry = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts");
+  const layout = f.load("sublevel/render/fancy/model/FancySubLevelModelLayout.ts");
+  const sourceLayout = f.reference("render/contraption/fragment/FragmentLayout.ts");
+  const visual = f.reference("render/contraption/fragment/FragmentVisual.ts").createFragmentVisual;
+  const kinds = f.reference("content/tree/block/Blocks.ts");
+  const actualTint = f.load("sublevel/render/fancy/model/FancySubLevelTintCodec.ts");
+  const sourceTint = f.reference("render/foliage/TintCodec.ts");
+  const ActualRenderer = f.load("sublevel/render/fancy/model/FancySubLevelModelRenderer.ts").FancySubLevelModelRenderer;
+  const ExpectedRenderer = f.reference("render/contraption/fragment/FragmentRenderer.ts").FragmentRenderer;
+  const actualReader = modelResourceReader(join(sable, "packs/SableRP"), "sable/sublevel/fancy");
+  const expectedReader = modelResourceReader(join(baseline, "packs/TreePhysics/TreePhysicsRP"), "fragments");
+  for (const axis of ["x", "z"]) {
+    const entries = Array.from({ length: 40 }, (_, index) => block("minecraft:vine", index % 13 - 3, index % 7, Math.floor(index / 4), { vine_direction_bits: index % 15 + 1 }));
+    entries.push(block("minecraft:muddy_mangrove_roots", -9, 1, -8), block("minecraft:hanging_roots", 3, 10, 4));
+    const source = entries.map(entry => {
+      const snapshot = { ...entry, kind: kinds.playerEditableContraptionBlockKind(entry.typeId) };
+      return { ...entry, visual: visual(snapshot) };
+    });
+    const actual = layout.packFancySubLevelModels(entries.map(registry.resolveFancySubLevelBlock)).models;
+    const expected = sourceLayout.packFragments(source);
+    assert(actual.some(pack => pack.format === "pool"), "vine state variants must share model pool entities");
+    assert(actual.filter(pack => pack.tint?.method === "foliage").length <= expected.length);
+    const field = { gradientAxis: axis, mapKind: 1, uAtLocalOrigin: 0.35, uPerLocalX: 0.018, vAtLocalOrigin: 0.43, vPerLocalZ: -0.009 };
+    for (const entry of entries.filter(entry => entry.typeId === "minecraft:vine")) {
+      const key = [entry.localLocation.x, entry.localLocation.y, entry.localLocation.z].join(",");
+      const actualPack = actual.find(pack => pack.assignments.some(a => a.blockKey === key));
+      const expectedPack = expected.find(pack => pack.assignments.some(a => a.blockKey === key));
+      assert.deepEqual(actualPack.anchorLocalLocation, expectedPack.anchorLocalLocation, key);
+      assert.equal(actualTint.packFancySubLevelTint(actualPack, field), sourceTint.packFragmentFoliageTint(expectedPack, field), key);
+    }
+    const actualRender = new ActualRenderer(body, actual, f.dimension.spawnEntity, field, undefined, { x: 0, y: 0, z: 0 });
+    const expectedRender = new ExpectedRenderer(body, expected, f.dimension.spawnEntity, field, undefined, { x: 0, y: 0, z: 0 });
+    actualRender.sync(true); expectedRender.sync(true);
+    actualRender.releaseInitialPose(); expectedRender.releaseInitialPose();
+    const surfaces = (renderer, reader) => renderer.entityIds
+      .map(id => f.entities.get(id)).filter(entity => !entity.typeId.includes("carrier"))
+      .flatMap(entity => activeModelSurfaces(entity, reader(entity)))
+      .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+    assert.deepEqual(surfaces(actualRender, actualReader), surfaces(expectedRender, expectedReader));
+    const samples = (renderer, reader) => renderer.entityIds.flatMap(id => {
+      const entity = f.entities.get(id);
+      if (entity.typeId.includes("carrier")) return [];
+      const { client, controllers } = reader(entity);
+      const evaluate = resourceEvaluator(entity, client);
+      return client.render_controllers.flatMap(entry => {
+        const [name, condition] = typeof entry === "string" ? [entry, true] : Object.entries(entry)[0];
+        const controller = controllers[name];
+        if (!evaluate(condition) || !controller.uv_anim) return [];
+        const visible = (controller.part_visibility ?? []).some(part => Object.entries(part).some(([bone, value]) => bone !== "*" && evaluate(value)));
+        if (!visible) return [];
+        return [{ offset: controller.uv_anim.offset.map(value => evaluate(value)), scale: controller.uv_anim.scale.map(value => evaluate(value)) }];
+      });
+    }).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+    assert.deepEqual(samples(actualRender, actualReader), samples(expectedRender, expectedReader));
+    actualRender.remove(); expectedRender.remove();
+  }
+});
+
+test("touch mining a container and native tap arbitration retain baseline gestures", () => {
+  function run(reference, tap) {
+    const f = fixture();
+    const calls = [];
+    const target = { subLevelId: 1, contraptionId: 1, blockKey: "0,0,0", face: "up" };
+    class Outline {
+      start() {}
+      setInteractionTargetSuppressor() {}
+      captureActionTarget() { return target; }
+      handleBreak() { calls.push("break"); }
+      handlePlace() { calls.push("place"); }
+      isManagedInteractionTarget() { return true; }
+    }
+    const outlineExports = {
+      SubLevelOutlineController: Outline, ContraptionOutlineController: Outline,
+      INTERACTION_REACH: 5, WORLD_BLOCK_OCCLUSION_EPSILON: 0.001
+    };
+    const load = moduleLoader(join(reference ? baseline : sable, "src"), f.server, {
+      "content/block_outline_render/SubLevelOutlineController.ts": outlineExports,
+      "content/contraption/interaction/OutlineController.ts": outlineExports,
+      "api/player/ActivePlayerRegistry.ts": { ActivePlayerRegistry: class { start() {} } },
+      "service/ActivePlayerRegistry.ts": { ActivePlayerRegistry: class { start() {} } }
+    });
+    const handle = { raycast: () => ({ block: block("minecraft:chest"), distance: 2 }) };
+    const runtime = {
+      hasSubLevels: () => true, getRaycastRevision: () => 0, getRaycastCandidates: () => [handle],
+      getDimension: () => ({ hasContraptions: () => true, contraptionRevision: 0, getRaycastCandidates: () => [handle] })
+    };
+    const Controller = reference
+      ? load("content/player/Interaction.ts").PlayerInteractionController
+      : load("content/punching/SubLevelPlayerInteraction.ts").SubLevelPlayerInteractionController;
+    const controller = new Controller(runtime);
+    const handler = { hasSyncTargets: () => true, canInteract: () => true, interact: () => true };
+    if (reference) controller.setContraptionInteractHandler(handler);
+    else controller.setBlockInteractHandler(handler);
+    controller.start();
+    const item = { typeId: "minecraft:diamond_axe" };
+    f.server.BlockTypes.get = id => id === item.typeId ? undefined : { id };
+    const player = {
+      id: "player", isValid: true, isSneaking: false, dimension: f.dimension, selectedSlotIndex: 0,
+      inputInfo: { lastInputModeUsed: f.server.InputMode.Touch }, getGameMode: () => f.server.GameMode.Survival,
+      getHeadLocation: () => ({ x: 0, y: 0, z: 0 }), getViewDirection: () => ({ x: 0, y: 0, z: 1 }),
+      getBlockFromViewDirection: () => undefined,
+      getComponent: () => ({ container: { getItem: () => item } })
+    };
+    f.signals.get("playerSwingStart").forEach(callback => callback({ player, swingSource: f.server.EntitySwingSource.Mine, heldItemStack: item }));
+    if (tap) f.signals.get("playerInteractWithBlock").forEach(callback => callback({ player, itemStack: item, isFirstEvent: true }));
+    f.flush();
+    return calls;
+  }
+  for (const tap of [false, true]) assert.deepEqual(run(false, tap), run(true, tap), `tap=${tap}`);
+});
+
+test("reloaded stale render entities are reclaimed without touching live renderers or inventories", () => {
+  const f = managedFixture();
+  const target = block("minecraft:chest", 0, 0, 0, { "minecraft:cardinal_direction": "south" });
+  const managed = f.manager.createSubLevel(f.dimension, target.localLocation, [target]);
+  f.flush();
+  const owned = [...f.entities.values()];
+  const stale = f.dimension.spawnEntity("sable:fancy_model_oak_log_dense", target.localLocation);
+  for (const entity of [...owned, stale]) f.manager.handleVisualEntityLoad(entity);
+  f.flush();
+  assert.equal(stale.isValid, false);
+  assert(owned.every(entity => entity.isValid));
+  assert(managed.handle.renderData.hasIntactEntities());
+});
+
+test("one unreadable saved record cannot prevent other structures from restoring or reuse its id", () => {
+  const f = managedFixture();
+  f.saved.set("region_9", undefined);
+  f.saved.set("region_2", {
+    id: "region_2", dimensionId: f.dimension.id, origin: { x: 0, y: 0, z: 0 },
+    blocks: [block("minecraft:oak_log")], containerStorages: []
+  });
+  f.manager.initialize();
+  f.manager.tick(20);
+  assert.equal([...f.entities.values()].filter(entity => entity.isValid).length, 2);
+  assert.equal(f.manager.createSubLevel(f.dimension, { x: 3, y: 0, z: 0 }, [block("minecraft:oak_log")]).id, "region_10");
+});
+
+test("failed storage mounting during reconstruction rolls back with the original inventory attached", () => {
+  const f = managedFixture();
+  const target = block("minecraft:chest", 0, 0, 0, { "minecraft:cardinal_direction": "south" });
+  const managed = f.manager.createSubLevel(f.dimension, target.localLocation, [target]);
+  f.flush();
+  const chest = [...f.entities.values()].find(entity => entity.typeId === "sable:chest");
+  chest.getComponent("minecraft:inventory").container.setItem(4, { typeId: "minecraft:diamond", amount: 8 });
+  let failed = false;
+  const spawn = f.dimension.spawnEntity;
+  f.dimension.spawnEntity = (...args) => {
+    const entity = spawn(...args);
+    const getComponent = entity.getComponent;
+    entity.getComponent = name => {
+      const component = getComponent.call(entity, name);
+      if (name !== "minecraft:rideable") return component;
+      const addRider = component.addRider;
+      return { ...component, addRider(rider) {
+        if (!failed && rider === chest) { failed = true; throw new Error("mount failure"); }
+        return addRider(rider);
+      } };
+    };
+    return entity;
+  };
+  assert.throws(() => f.manager.placeBlockForPlayerEdit({}, { typeId: "minecraft:stone" }, managed.handle, target, { x: 1, y: 0, z: 0 }, "south"), /mount failure/);
+  f.flush();
+  assert.equal(managed.blockCount, 1);
+  assert(chest.isValid && chest.vehicle, "the original inventory must remain attached after rollback");
+  assert.deepEqual(chest.getComponent("minecraft:inventory").container.getItem(4), { typeId: "minecraft:diamond", amount: 8 });
+  assert(managed.handle.renderData.hasIntactEntities());
+});

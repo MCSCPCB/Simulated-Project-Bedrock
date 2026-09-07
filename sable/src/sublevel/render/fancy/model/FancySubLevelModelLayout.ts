@@ -22,9 +22,12 @@ interface DenseCandidate {
   readonly depth: number;
 }
 
-// The foliage colormap layer bakes per-slot climate UVs for this exact box, so
-// foliage-tinted models cannot use any other dense shape.
-const FOLIAGE_DENSE_CANDIDATE: DenseCandidate = { depth: 7, height: 5, width: 7 };
+// Climate UVs are baked for these two footprints in the resource pack.
+const FOLIAGE_DENSE_CANDIDATES: readonly DenseCandidate[] = [
+  { depth: 7, height: 5, width: 7 },
+  { depth: 6, height: 5, width: 6 }
+];
+const SURFACE_FOLIAGE_LAYOUT: DenseCandidate = { width: 7, height: 4, depth: 7 };
 
 const DENSE_CANDIDATES: readonly DenseCandidate[] = createDenseCandidates();
 
@@ -96,8 +99,13 @@ export function packFancySubLevelModels(
   }
 
   const packedGroups: { readonly blocks: FancySubLevelBlock[]; packs: PackedFancySubLevelModel[] }[] = [];
+  const surfaceBlocks = blocks.filter(entry => (
+    entry.model.description.type !== "full_block"
+    && entry.model.description.type !== "chest"
+    && (entry.model.description.type !== "pillar" || entry.category === "nature/other_natural_blocks")
+  ));
   for (const group of groups.values()) {
-    const packs = packModelGroup(group);
+    const packs = packModelGroup(group, surfaceBlocks);
     if (!packs) {
       unsupported.push(...group);
       continue;
@@ -105,7 +113,7 @@ export function packFancySubLevelModels(
     packedGroups.push({ blocks: group, packs });
   }
 
-  const models = applyPoolPacking(packedGroups);
+  const models = applyPoolPacking(packedGroups, surfaceBlocks);
   models.sort(comparePackedModels);
   return { models, unsupported };
 }
@@ -115,10 +123,21 @@ export function packFancySubLevelModels(
  * remainder entities. All dense candidates are scored against evicting their
  * emptiest buckets into the group-wide sparse packing.
  */
-function packModelGroup(group: readonly FancySubLevelBlock[]): PackedFancySubLevelModel[] | undefined {
+function packModelGroup(
+  group: readonly FancySubLevelBlock[],
+  surfaceBlocks: readonly FancySubLevelBlock[]
+): PackedFancySubLevelModel[] | undefined {
   const model = group[0]!.model;
   const foliage = model.tint?.method === "foliage";
-  const candidates = foliage ? [FOLIAGE_DENSE_CANDIDATE] : DENSE_CANDIDATES;
+  if (foliage && model.description.type !== "full_block") {
+    const context = surfaceBlocks.length > 0 ? surfaceBlocks : group;
+    return packSparseBlocks(model, {
+      x: chooseAxisOrigin(context, "x", SURFACE_FOLIAGE_LAYOUT.width),
+      y: chooseAxisOrigin(context, "y", SURFACE_FOLIAGE_LAYOUT.height),
+      z: chooseAxisOrigin(context, "z", SURFACE_FOLIAGE_LAYOUT.depth)
+    }, group, SURFACE_FOLIAGE_LAYOUT);
+  }
+  const candidates = foliage ? FOLIAGE_DENSE_CANDIDATES : DENSE_CANDIDATES;
   const sparseOrigin = {
     x: chooseCenteredAxisOrigin(group, "x", FANCY_MODEL_SPARSE_SIZE),
     y: chooseCenteredAxisOrigin(group, "y", FANCY_MODEL_SPARSE_SIZE),
@@ -249,15 +268,18 @@ function packDenseBucket(
 function packSparseBlocks(
   model: FancySubLevelModel,
   origin: Vector3,
-  blocks: readonly FancySubLevelBlock[]
+  blocks: readonly FancySubLevelBlock[],
+  layout: DenseCandidate = {
+    width: FANCY_MODEL_SPARSE_SIZE, height: FANCY_MODEL_SPARSE_SIZE, depth: FANCY_MODEL_SPARSE_SIZE
+  }
 ): PackedFancySubLevelModel[] {
   const result: PackedFancySubLevelModel[] = [];
   for (const [anchorLocalLocation, bucket] of bucketBlocks(
     blocks,
     origin,
-    FANCY_MODEL_SPARSE_SIZE,
-    FANCY_MODEL_SPARSE_SIZE,
-    FANCY_MODEL_SPARSE_SIZE
+    layout.width,
+    layout.height,
+    layout.depth
   )) {
     bucket.sort(compareBlocks);
     for (let start = 0; start < bucket.length; start += FANCY_MODEL_SPARSE_SLOT_COUNT) {
@@ -283,12 +305,12 @@ function packSparseBlocks(
         anchorLocalLocation,
         assignments,
         blockCount: chunk.length,
-        depth: FANCY_MODEL_SPARSE_SIZE,
+        depth: layout.depth,
         entityTypeId: model.sparseEntityTypeId,
         format: "sparse",
-        height: FANCY_MODEL_SPARSE_SIZE,
+        height: layout.height,
         ...(model.tint ? { tint: model.tint } : {}),
-        width: FANCY_MODEL_SPARSE_SIZE,
+        width: layout.width,
         words
       });
     }
@@ -301,14 +323,16 @@ function packSparseBlocks(
  * shared pool entities need fewer entities than the per-model results.
  */
 function applyPoolPacking(
-  packedGroups: readonly { readonly blocks: FancySubLevelBlock[]; packs: PackedFancySubLevelModel[] }[]
+  packedGroups: readonly { readonly blocks: FancySubLevelBlock[]; packs: PackedFancySubLevelModel[] }[],
+  surfaceBlocks: readonly FancySubLevelBlock[]
 ): PackedFancySubLevelModel[] {
   const byPool = new Map<string, { readonly blocks: FancySubLevelBlock[]; packs: PackedFancySubLevelModel[] }[]>();
   for (const group of packedGroups) {
     const model = group.blocks[0]!.model;
     const pool = model.pool;
-    // Foliage-tinted models stay on their dense colormap entities.
-    if (!pool || model.tint?.method === "foliage") continue;
+    // Cube foliage retains the dense climate geometry; surface foliage shares
+    // descriptor entities within the same climate buckets as its sparse route.
+    if (!pool || (model.tint?.method === "foliage" && model.description.type === "full_block")) continue;
     const members = byPool.get(pool.entityTypeId);
     if (members) members.push(group);
     else byPool.set(pool.entityTypeId, [group]);
@@ -330,7 +354,7 @@ function applyPoolPacking(
       const member = members[prefix - 1]!;
       prefixBlocks.push(...member.blocks);
       remainder -= member.packs.length;
-      const pooled = packPoolBlocks(pool, prefixBlocks);
+      const pooled = packPoolBlocks(pool, prefixBlocks, surfaceBlocks);
       if (!pooled) break;
       const total = pooled.length + remainder;
       if (total < bestTotal) {
@@ -347,16 +371,23 @@ function applyPoolPacking(
 
 function packPoolBlocks(
   pool: FancySubLevelModelPool,
-  blocks: readonly FancySubLevelBlock[]
+  blocks: readonly FancySubLevelBlock[],
+  surfaceBlocks: readonly FancySubLevelBlock[]
 ): PackedFancySubLevelModel[] | undefined {
-  const width = 2 ** pool.xBits;
-  const height = 2 ** pool.yBits;
-  const depth = 2 ** pool.zBits;
+  const hasFoliage = blocks.some(entry => entry.model.tint?.method === "foliage");
+  const width = hasFoliage ? SURFACE_FOLIAGE_LAYOUT.width : 2 ** pool.xBits;
+  const height = hasFoliage ? SURFACE_FOLIAGE_LAYOUT.height : 2 ** pool.yBits;
+  const depth = hasFoliage ? SURFACE_FOLIAGE_LAYOUT.depth : 2 ** pool.zBits;
   const familyPlace = 2 ** (pool.xBits + pool.yBits + pool.zBits);
   const statePlace = familyPlace * 2 ** pool.familyBits;
   const stateShift = pool.xBits + pool.yBits + pool.zBits + pool.familyBits;
   const occupiedPlace = statePlace * 2 ** pool.stateBits;
-  const origin = {
+  const context = surfaceBlocks.length > 0 ? surfaceBlocks : blocks;
+  const origin = hasFoliage ? {
+    x: chooseAxisOrigin(context, "x", width),
+    y: chooseAxisOrigin(context, "y", height),
+    z: chooseAxisOrigin(context, "z", depth)
+  } : {
     x: chooseCenteredAxisOrigin(blocks, "x", width),
     y: chooseCenteredAxisOrigin(blocks, "y", height),
     z: chooseCenteredAxisOrigin(blocks, "z", depth)

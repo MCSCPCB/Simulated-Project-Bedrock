@@ -59,6 +59,7 @@ sableContainerInteraction.start();
 sablePlayerInteraction.start();
 
 world.afterEvents.entityLoad.subscribe(event => {
+  sableSubLevels.handleVisualEntityLoad(event.entity);
   sablePlayerInteraction.handleVisualEntityLoad(event.entity);
   sableContainerInteraction.handleEntityLoad(event.entity);
 });
