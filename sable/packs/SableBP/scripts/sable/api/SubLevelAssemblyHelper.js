@@ -15,6 +15,16 @@ const LEGACY_LEAF_ITEMS = {
   oak: "minecraft:oak_leaves",
   spruce: "minecraft:spruce_leaves"
 };
+const HORIZONTAL_FACING_ROTATIONS = {
+  // Vanilla hand-item geometry has a quarter-turn baseline relative to the
+  // cardinal model basis used by the fancy route. These are local item yaw
+  // values; the vanilla animation applies the corresponding opposite bone
+  // rotation when publishing them.
+  south: { x: 0, y: 270, z: 0 },
+  west: { x: 0, y: 180, z: 0 },
+  north: { x: 0, y: 90, z: 0 },
+  east: { x: 0, y: 0, z: 0 }
+};
 function captureSubLevelBlock(block, origin) {
   const permutation = block.permutation;
   const typeId = permutation.type.id;
@@ -68,6 +78,11 @@ function heldBlockRotation(states) {
   const axis = states.pillar_axis ?? states["minecraft:pillar_axis"];
   if (axis === "x") return { x: 0, y: 0, z: 90 };
   if (axis === "z") return { x: 90, y: 0, z: 0 };
+  const horizontalFacing = states["minecraft:cardinal_direction"] ?? states.cardinal_direction ?? states["minecraft:horizontal_facing_direction"] ?? states.horizontal_facing_direction ?? states["minecraft:facing_direction"] ?? states.facing_direction;
+  if (typeof horizontalFacing === "string") {
+    const rotation = HORIZONTAL_FACING_ROTATIONS[horizontalFacing];
+    if (rotation) return { ...rotation };
+  }
   const blockFace = states["minecraft:block_face"] ?? states.block_face;
   if (blockFace === "east" || blockFace === "west") return { x: 0, y: 0, z: 90 };
   if (blockFace === "north" || blockFace === "south") return { x: 90, y: 0, z: 0 };

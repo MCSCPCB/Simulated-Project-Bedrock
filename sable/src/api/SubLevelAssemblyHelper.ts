@@ -22,6 +22,23 @@ const LEGACY_LEAF_ITEMS: Readonly<Record<string, string>> = {
   spruce: "minecraft:spruce_leaves"
 };
 
+// Named horizontal-facing states share the vanilla cardinal convention. The
+// values are expressed in the local yaw basis of the vanilla hand-item route;
+// that route's zero state is quarter-turned relative to the fancy model route,
+// and its projected Z direction is reversed while X remains aligned.
+// Numeric direction states are intentionally excluded: their meanings differ
+// between vanilla blocks and cannot be inferred generically.
+const HORIZONTAL_FACING_ROTATIONS: Readonly<Record<string, Vector3>> = {
+  // Vanilla hand-item geometry has a quarter-turn baseline relative to the
+  // cardinal model basis used by the fancy route. These are local item yaw
+  // values; the vanilla animation applies the corresponding opposite bone
+  // rotation when publishing them.
+  south: { x: 0, y: 270, z: 0 },
+  west: { x: 0, y: 180, z: 0 },
+  north: { x: 0, y: 90, z: 0 },
+  east: { x: 0, y: 0, z: 0 }
+};
+
 /**
  * Captures one world block into the sub-level block form the render routes
  * consume: full permutation states, the hand-held item mapping, the
@@ -94,6 +111,18 @@ function heldBlockRotation(
   const axis = states.pillar_axis ?? states["minecraft:pillar_axis"];
   if (axis === "x") return { x: 0, y: 0, z: 90 };
   if (axis === "z") return { x: 90, y: 0, z: 0 };
+
+  const horizontalFacing = states["minecraft:cardinal_direction"]
+    ?? states.cardinal_direction
+    ?? states["minecraft:horizontal_facing_direction"]
+    ?? states.horizontal_facing_direction
+    ?? states["minecraft:facing_direction"]
+    ?? states.facing_direction;
+  if (typeof horizontalFacing === "string") {
+    const rotation = HORIZONTAL_FACING_ROTATIONS[horizontalFacing];
+    if (rotation) return { ...rotation };
+  }
+
   const blockFace = states["minecraft:block_face"] ?? states.block_face;
   if (blockFace === "east" || blockFace === "west") return { x: 0, y: 0, z: 90 };
   if (blockFace === "north" || blockFace === "south") return { x: 90, y: 0, z: 0 };

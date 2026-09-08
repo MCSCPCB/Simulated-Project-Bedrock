@@ -766,6 +766,36 @@ test("reported log and chest captures preserve the saved states and client rotat
   }
 });
 
+test("vanilla capture resolves canonical named horizontal facing states", () => {
+  const f = fixture();
+  const capture = f.load("api/SubLevelAssemblyHelper.ts").captureSubLevelBlock;
+  const cases = [
+    ["minecraft:cardinal_direction", "south", [0, 270, 0]],
+    ["minecraft:cardinal_direction", "west", [0, 180, 0]],
+    ["minecraft:cardinal_direction", "north", [0, 90, 0]],
+    ["minecraft:cardinal_direction", "east", [0, 0, 0]],
+    ["cardinal_direction", "north", [0, 90, 0]],
+    ["minecraft:horizontal_facing_direction", "west", [0, 180, 0]],
+    ["minecraft:facing_direction", "east", [0, 0, 0]]
+  ];
+  for (const [stateName, stateValue, expected] of cases) {
+    const typeId = "custom:unregistered_directional_block";
+    const worldBlock = {
+      location: { x: 4, y: 8, z: 12 },
+      permutation: f.permutation(typeId, { [stateName]: stateValue }),
+      getComponent: () => undefined
+    };
+    const captured = capture(worldBlock, { x: 4, y: 8, z: 12 });
+    assert.deepEqual(captured.rotation, { x: expected[0], y: expected[1], z: expected[2] });
+  }
+  const numericDirection = {
+    location: { x: 0, y: 0, z: 0 },
+    permutation: f.permutation("custom:ambiguous_directional_block", { direction: 2 }),
+    getComponent: () => undefined
+  };
+  assert.equal(capture(numericDirection, { x: 0, y: 0, z: 0 }).rotation, undefined);
+});
+
 test("native rotation probe selects both paths and cleans up without changing world blocks", () => {
   const f = fixture();
   f.system.afterEvents = f.server.world.afterEvents;
