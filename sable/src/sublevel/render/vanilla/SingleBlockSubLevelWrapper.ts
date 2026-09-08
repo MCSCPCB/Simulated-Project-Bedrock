@@ -70,15 +70,15 @@ function setBlockRenderTransform(
 ): void {
   entity.setProperty(
     `sable:${prefix}local_x`,
-    block.localLocation.x - renderAnchor.x
+    block.localLocation.x - renderAnchor.x + (block.visualOffset?.x ?? 0)
   );
   entity.setProperty(
     `sable:${prefix}local_y`,
-    block.localLocation.y - renderAnchor.y
+    block.localLocation.y - renderAnchor.y + (block.visualYOffset ?? 0) + (block.visualOffset?.y ?? 0)
   );
   entity.setProperty(
     `sable:${prefix}local_z`,
-    block.localLocation.z - renderAnchor.z
+    block.localLocation.z - renderAnchor.z + (block.visualOffset?.z ?? 0)
   );
   entity.setProperty(`sable:${prefix}local_pitch`, block.rotation?.x ?? 0);
   entity.setProperty(`sable:${prefix}local_yaw`, block.rotation?.y ?? 0);

@@ -14,7 +14,10 @@ const FIXED_PALE_GARDEN_PALETTE_U = 23 / FOLIAGE_TINT_COORDINATE_STEPS;
 const FIXED_PALETTE_V = 16 / FOLIAGE_TINT_COORDINATE_STEPS;
 function captureSubLevelFoliageTint(dimension, blocks, origin) {
   const foliage = blocks.filter((block) => resolveFancySubLevelBlock(block)?.model.tint !== void 0);
-  if (foliage.length === 0) return { ...DEFAULT_SUBLEVEL_FOLIAGE_TINT };
+  if (foliage.length === 0) {
+    const anchor = sampleFoliage(dimension, origin, origin);
+    return foliageFieldFromSamples([anchor]);
+  }
   const worldX = foliage.map((block) => origin.x + block.localLocation.x);
   const worldZ = foliage.map((block) => origin.z + block.localLocation.z);
   const minimumX = Math.min(...worldX);
@@ -35,25 +38,30 @@ function captureSubLevelFoliageTint(dimension, blocks, origin) {
   ]);
   const samples = locations.map((location) => sampleFoliage(dimension, location, origin));
   const source = chooseFoliageColorSource(samples);
-  if (source.kind === FOLIAGE_COLORMAP_FIXED) {
-    const palette = source.palette ?? "cherry_grove";
+  return foliageFieldFromSamples(samples.filter((sample) => sample.kind === source.kind), source);
+}
+function foliageFieldFromSamples(samples, source) {
+  const selectedSource = source ?? chooseFoliageColorSource(samples);
+  if (selectedSource.kind === FOLIAGE_COLORMAP_FIXED) {
+    const palette = selectedSource.palette ?? "cherry_grove";
     const uv = fixedPaletteUv(palette);
     return {
       gradientAxis: "x",
-      mapKind: source.kind,
+      mapKind: selectedSource.kind,
       uAtLocalOrigin: uv.u,
       uPerLocalX: 0,
       vAtLocalOrigin: uv.v,
       vPerLocalZ: 0
     };
   }
-  const selectedSamples = samples.filter((sample) => sample.kind === source.kind);
+  const selectedSamples = samples.filter((sample) => sample.kind === selectedSource.kind);
+  if (selectedSamples.length === 0) return { ...DEFAULT_SUBLEVEL_FOLIAGE_TINT };
   const xFit = fitFoliageAxis(selectedSamples, "x");
   const zFit = fitFoliageAxis(selectedSamples, "z");
   const fit = zFit.error < xFit.error ? zFit : xFit;
   return {
     gradientAxis: fit.axis,
-    mapKind: source.kind,
+    mapKind: selectedSource.kind,
     uAtLocalOrigin: fit.u.intercept,
     uPerLocalX: fit.u.slope,
     vAtLocalOrigin: fit.v.intercept,

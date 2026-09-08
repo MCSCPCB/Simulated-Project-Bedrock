@@ -109,6 +109,7 @@ export function cloneSubLevelBlock(block: SubLevelBlock): SubLevelBlock {
   if (block.mapColor) cloned.mapColor = { ...block.mapColor };
   if (block.rotation) cloned.rotation = { ...block.rotation };
   if (block.states) cloned.states = { ...block.states };
+  if (block.visualOffset) cloned.visualOffset = { ...block.visualOffset };
   return cloned;
 }
 
@@ -125,7 +126,9 @@ function isSerializedSubLevelBlock(value: unknown): value is SubLevelBlock {
     "rotation",
     "runtimeCollidable",
     "states",
-    "typeId"
+    "typeId",
+    "visualYOffset",
+    "visualOffset"
   ])
     && typeof block.typeId === "string"
     && block.typeId.length > 0
@@ -134,6 +137,8 @@ function isSerializedSubLevelBlock(value: unknown): value is SubLevelBlock {
     && (block.collidable === undefined || typeof block.collidable === "boolean")
     && (block.collisionResponse === undefined || typeof block.collisionResponse === "boolean")
     && (block.runtimeCollidable === undefined || typeof block.runtimeCollidable === "boolean")
+    && (block.visualYOffset === undefined || isFiniteNumber(block.visualYOffset))
+    && (block.visualOffset === undefined || isVector(block.visualOffset))
     && isCollisionShape(block.collisionShape)
     && (block.rotation === undefined || isVector(block.rotation))
     && (block.states === undefined || isBlockStates(block.states))

@@ -206,7 +206,8 @@ class SubLevelOutlineController {
         result.handle,
         result.hit.block,
         placement,
-        cardinalDirection
+        cardinalDirection,
+        result.hit.face
       );
     } catch (error) {
       restoreSelectedBlock(player, consumed);

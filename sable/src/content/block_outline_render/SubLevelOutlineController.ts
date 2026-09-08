@@ -156,7 +156,8 @@ export type SubLevelBlockPlaceHandler = (
   handle: SubLevelInteractionHandle,
   block: import("../../sublevel/SubLevel.js").SubLevelBlock,
   placement: Vector3,
-  cardinalDirection: "north" | "east" | "south" | "west"
+  cardinalDirection: "north" | "east" | "south" | "west",
+  placementFace: import("../raycast/SubLevelGridRaycast.js").SubLevelBlockFace
 ) => boolean;
 
 export type SubLevelBlockPlacementEffectHandler = (
@@ -349,7 +350,8 @@ export class SubLevelOutlineController {
         result.handle,
         result.hit.block,
         placement,
-        cardinalDirection
+        cardinalDirection,
+        result.hit.face
       );
     } catch (error) {
       restoreSelectedBlock(player, consumed);

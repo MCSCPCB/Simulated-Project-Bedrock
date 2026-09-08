@@ -418,6 +418,105 @@ test("placement can cross between registered models and the ordinary render rout
   assert(managed.handle.renderData.hasIntactEntities());
 });
 
+test("placement preserves vanilla facing, pillar axis and the creation foliage anchor", () => {
+  const f = managedFixture();
+  const target = block("minecraft:oak_log");
+  const managed = f.manager.createSubLevel(f.dimension, { x: 0, y: 0, z: 0 }, [target]);
+  const previousResolve = f.server.BlockPermutation.resolve;
+  f.server.BlockPermutation.resolve = (typeId) => previousResolve(
+    typeId,
+    typeId === "minecraft:chest"
+      ? { "minecraft:cardinal_direction": "south" }
+      : typeId === "minecraft:oak_log"
+        ? { "minecraft:pillar_axis": "y" }
+        : { "minecraft:distance": 7 }
+  );
+  assert(f.manager.placeBlockForPlayerEdit(
+    {}, { typeId: "minecraft:chest" }, managed.handle, target,
+    { x: 1, y: 0, z: 0 }, "south", "east"
+  ));
+  assert.equal(
+    managed.handle.getBlockAtLocalLocation({ x: 1, y: 0, z: 0 }).states["minecraft:cardinal_direction"],
+    "north"
+  );
+  assert(f.manager.placeBlockForPlayerEdit(
+    {}, { typeId: "minecraft:oak_log" }, managed.handle, target,
+    { x: 0, y: 1, z: 0 }, "south", "east"
+  ));
+  assert.equal(
+    managed.handle.getBlockAtLocalLocation({ x: 0, y: 1, z: 0 }).states["minecraft:pillar_axis"],
+    "x"
+  );
+  f.server.BlockPermutation.resolve = typeId => previousResolve(
+    typeId,
+    typeId === "custom:unregistered_log"
+      ? { "minecraft:pillar_axis": "y" }
+      : { "minecraft:distance": 7 }
+  );
+  assert(f.manager.placeBlockForPlayerEdit(
+    {}, { typeId: "custom:unregistered_log" }, managed.handle, target,
+    { x: 0, y: 1, z: 1 }, "south", "north"
+  ));
+  assert.deepEqual(
+    managed.handle.getBlockAtLocalLocation({ x: 0, y: 1, z: 1 }).rotation,
+    { x: 90, y: 0, z: 0 }
+  );
+  f.dimension.getBiome = () => ({ id: "minecraft:swamp" });
+  assert(f.manager.placeBlockForPlayerEdit(
+    {}, { typeId: "minecraft:oak_leaves" }, managed.handle, target,
+    { x: 0, y: 0, z: 1 }, "south", "up"
+  ));
+  assert.equal(f.saved.get(managed.id).foliageTint.mapKind, 1);
+});
+
+test("placement writes vanilla numeric direction states from their own placement rules", () => {
+  const f = managedFixture();
+  const target = block("minecraft:oak_log");
+  const managed = f.manager.createSubLevel(f.dimension, { x: 0, y: 0, z: 0 }, [target]);
+  const previousResolve = f.server.BlockPermutation.resolve;
+  f.server.BlockPermutation.resolve = (typeId) => previousResolve(
+    typeId,
+    typeId === "minecraft:bee_nest"
+      ? { "minecraft:direction": 0, "minecraft:honey_level": 0 }
+      : typeId === "minecraft:cocoa"
+        ? { "minecraft:direction": 0, "minecraft:age": 0 }
+        : { "minecraft:distance": 7 }
+  );
+  assert(f.manager.placeBlockForPlayerEdit(
+    {}, { typeId: "minecraft:bee_nest" }, managed.handle, target,
+    { x: 1, y: 0, z: 0 }, "south", "up"
+  ));
+  assert.equal(
+    managed.handle.getBlockAtLocalLocation({ x: 1, y: 0, z: 0 }).states["minecraft:direction"],
+    2
+  );
+  assert(f.manager.placeBlockForPlayerEdit(
+    {}, { typeId: "minecraft:cocoa" }, managed.handle, target,
+    { x: 0, y: 1, z: 0 }, "south", "east"
+  ));
+  assert.equal(
+    managed.handle.getBlockAtLocalLocation({ x: 0, y: 1, z: 0 }).states["minecraft:direction"],
+    1
+  );
+});
+
+test("placed foliage reuses the immutable creation gradient after the world biome changes", () => {
+  const f = managedFixture();
+  const managed = f.manager.createSubLevel(
+    f.dimension,
+    { x: 0, y: 0, z: 0 },
+    [block("minecraft:oak_leaves")]
+  );
+  const creationTint = structuredClone(f.saved.get(managed.id).foliageTint);
+  f.dimension.getBiome = () => ({ id: "minecraft:swamp" });
+  assert(f.manager.placeBlockForPlayerEdit(
+    {}, { typeId: "minecraft:oak_leaves" }, managed.handle,
+    managed.handle.getBlockAtLocalLocation({ x: 0, y: 0, z: 0 }),
+    { x: 1, y: 0, z: 0 }, "south", "up"
+  ));
+  assert.deepEqual(f.saved.get(managed.id).foliageTint, creationTint);
+});
+
 test("unloaded saved structures retry without blocking loaded structures", () => {
   const f = managedFixture();
   for (const [id, x] of [["region_1", 64], ["region_2", 0]]) f.saved.set(id, {
@@ -771,12 +870,12 @@ test("vanilla capture resolves canonical named horizontal facing states", () => 
   const capture = f.load("api/SubLevelAssemblyHelper.ts").captureSubLevelBlock;
   const cases = [
     ["minecraft:cardinal_direction", "south", [0, 270, 0]],
-    ["minecraft:cardinal_direction", "west", [0, 180, 0]],
+    ["minecraft:cardinal_direction", "west", [0, 0, 0]],
     ["minecraft:cardinal_direction", "north", [0, 90, 0]],
-    ["minecraft:cardinal_direction", "east", [0, 0, 0]],
+    ["minecraft:cardinal_direction", "east", [0, 180, 0]],
     ["cardinal_direction", "north", [0, 90, 0]],
-    ["minecraft:horizontal_facing_direction", "west", [0, 180, 0]],
-    ["minecraft:facing_direction", "east", [0, 0, 0]]
+    ["minecraft:horizontal_facing_direction", "west", [0, 0, 0]],
+    ["minecraft:facing_direction", "east", [0, 180, 0]]
   ];
   for (const [stateName, stateValue, expected] of cases) {
     const typeId = "custom:unregistered_directional_block";
@@ -794,6 +893,56 @@ test("vanilla capture resolves canonical named horizontal facing states", () => 
     getComponent: () => undefined
   };
   assert.equal(capture(numericDirection, { x: 0, y: 0, z: 0 }).rotation, undefined);
+});
+
+test("vanilla capture resolves partial-block offsets and directional state families", () => {
+  const f = fixture();
+  const helper = f.load("api/SubLevelAssemblyHelper.ts");
+  const capture = (typeId, states) => helper.captureSubLevelBlock({
+    location: { x: 0, y: 0, z: 0 },
+    permutation: f.permutation(typeId, states),
+    getComponent: () => undefined
+  }, { x: 0, y: 0, z: 0 });
+
+  assert.deepEqual(capture("minecraft:oak_stairs", {
+    weirdo_direction: 0, upside_down_bit: false
+  }).rotation, { x: 0, y: 270, z: 0 });
+  assert.deepEqual(capture("minecraft:oak_stairs", {
+    weirdo_direction: 0, upside_down_bit: true
+  }).rotation, { x: 180, y: 90, z: 0 });
+  assert.deepEqual(capture("minecraft:oak_trapdoor", {
+    direction: 0, upside_down_bit: false
+  }).rotation, { x: 0, y: 90, z: 0 });
+  assert.equal(capture("minecraft:oak_trapdoor", {
+    direction: 0, upside_down_bit: false
+  }).visualYOffset, -6.5 / 16);
+  assert.equal(capture("minecraft:oak_trapdoor", {
+    direction: 0, upside_down_bit: true
+  }).visualYOffset, 6.5 / 16);
+  assert.equal(capture("minecraft:oak_slab", {
+    "minecraft:vertical_half": "bottom"
+  }).visualYOffset, -4 / 16);
+  assert.equal(capture("minecraft:oak_slab", {
+    "minecraft:vertical_half": "top"
+  }).visualYOffset, 4 / 16);
+  assert.deepEqual(capture("minecraft:player_head", {
+    facing_direction: 0
+  }).rotation, { x: 270, y: 0, z: 0 });
+  assert.deepEqual(capture("minecraft:player_head", {
+    facing_direction: 5
+  }).rotation, { x: 90, y: 0, z: 0 });
+  assert.deepEqual(capture("minecraft:player_head", {
+    facing_direction: 0
+  }).visualOffset, { x: -0.25, y: 0, z: 0.25 });
+  assert.deepEqual(capture("minecraft:barrel", {
+    facing_direction: 0
+  }).rotation, { x: 0, y: 90, z: 90 });
+  assert.deepEqual(capture("minecraft:dispenser", {
+    facing_direction: 1
+  }).rotation, { x: 0, y: 90, z: 270 });
+  assert.deepEqual(capture("minecraft:beehive", {
+    direction: 0
+  }).rotation, { x: 0, y: 90, z: 0 });
 });
 
 test("native rotation probe selects both paths and cleans up without changing world blocks", () => {
@@ -830,6 +979,83 @@ test("native rotation probe selects both paths and cleans up without changing wo
   f.flush();
   assert.equal(f.dimension.getEntities().length, 0);
   assert.equal(f.changes.length, 0);
+});
+
+test("rotation census probe pairs Fancy and ordinary Vanilla cardinal models", () => {
+  const f = fixture();
+  f.system.afterEvents = f.server.world.afterEvents;
+  const { SubLevelInteractionSystem } = f.load("sublevel/system/SubLevelInteractionSystem.ts");
+  const runtime = new SubLevelInteractionSystem();
+  const loadProbe = moduleLoader(join(sable, "packs/SableBP/scripts"), f.server, {
+    "sable/Sable.js": { sableInteractionSystem: runtime }
+  });
+  const probe = loadProbe("rotation-probe.js");
+  const player = { id: "census-player", location: { x: 0, y: 70, z: 0 }, dimension: f.dimension };
+  const rows = probe.createRotationCensusProbe(player);
+  f.flush();
+  assert.deepEqual(rows.map(row => row.label), ["FANCY CHEST", "VANILLA TRAPPED CHEST"]);
+  assert(rows.every(row => row.blocks.length === 4));
+  assert.deepEqual(rows[0].blocks.map(block => block.states["minecraft:cardinal_direction"]), ["north", "east", "south", "west"]);
+  assert.deepEqual(rows[1].blocks.map(block => block.states["minecraft:cardinal_direction"]), ["north", "east", "south", "west"]);
+  assert(rows[1].blocks.every(block => block.rotation));
+  assert(rows.every(row => row.renderData.entityIds.length > 0));
+  assert.deepEqual(
+    [0, 1, 2, 3].map(index => f.dimension.getBlock({ x: -6 + index * 2, y: 72, z: 3 }).typeId),
+    ["minecraft:diamond_block", "minecraft:gold_block", "minecraft:emerald_block", "minecraft:redstone_block"]
+  );
+  probe.clearRotationProbe(player.id);
+  assert(rows.every(row => !row.handle.isValid));
+  assert.deepEqual(
+    [0, 1, 2, 3].map(index => f.dimension.getBlock({ x: -6 + index * 2, y: 72, z: 3 }).typeId),
+    ["minecraft:air", "minecraft:air", "minecraft:air", "minecraft:air"]
+  );
+  assert.equal(f.dimension.getEntities().length, 0);
+
+  const pillarRows = probe.createPillarAxisCensusProbe(player);
+  f.flush();
+  assert.deepEqual(pillarRows.map(row => row.label), ["FANCY OAK LOG", "VANILLA BASALT"]);
+  assert.deepEqual(pillarRows[1].blocks.map(block => block.states["minecraft:pillar_axis"]), ["y", "x", "z"]);
+  assert(pillarRows[1].blocks.slice(1).every(block => block.rotation));
+  probe.clearRotationProbe(player.id);
+  assert.equal(f.dimension.getEntities().length, 0);
+
+  const directionRows = probe.createDirectionCensusProbe(player);
+  f.flush();
+  assert.deepEqual(directionRows.map(row => row.label), ["FANCY BEE NEST", "VANILLA BEEHIVE"]);
+  assert.deepEqual(directionRows[1].blocks.map(block => block.states["minecraft:direction"]), [0, 1, 2, 3]);
+  probe.clearRotationProbe(player.id);
+  assert.equal(f.dimension.getEntities().length, 0);
+
+  const facingRows = probe.createFacingDirectionCensusProbe(player);
+  f.flush();
+  assert.deepEqual(facingRows.map(row => row.label), ["VANILLA BARREL", "VANILLA DISPENSER"]);
+  assert.deepEqual(facingRows[0].blocks.map(block => block.states["minecraft:facing_direction"]), [0, 1, 2, 3, 4, 5]);
+  probe.clearRotationProbe(player.id);
+  assert.equal(f.dimension.getEntities().length, 0);
+
+  const torchRows = probe.createTorchFacingCensusProbe(player);
+  f.flush();
+  assert.deepEqual(torchRows.map(row => row.label), ["VANILLA TORCH", "VANILLA REDSTONE TORCH"]);
+  assert.deepEqual(torchRows[0].blocks.map(block => block.states.torch_facing_direction), ["west", "east", "north", "south", "top"]);
+  probe.clearRotationProbe(player.id);
+  assert.equal(f.dimension.getEntities().length, 0);
+
+  const stairsRows = probe.createStairsCensusProbe(player);
+  f.flush();
+  assert.deepEqual(stairsRows.map(row => row.label), ["VANILLA STONE STAIRS", "VANILLA ANDESITE STAIRS"]);
+  assert.deepEqual(stairsRows[0].blocks.map(block => block.states.weirdo_direction), [0, 1, 2, 3]);
+  probe.clearRotationProbe(player.id);
+  assert.equal(f.dimension.getEntities().length, 0);
+
+  const nativeRows = probe.createNativeStateCensusProbe(player);
+  f.flush();
+  assert.deepEqual(nativeRows.map(row => row.label), [
+    "BARREL", "DISPENSER", "PLAYER HEAD 0"
+  ]);
+  assert(nativeRows.every(row => row.blocks.length > 0 && row.nativeBlocks.length > row.blocks.length));
+  probe.clearRotationProbe(player.id);
+  assert.equal(f.dimension.getEntities().length, 0);
+
 });
 
 test("chest fronts follow world cardinal directions in pool, sparse and dense projections", () => {

@@ -15,9 +15,15 @@ import {
   type Player,
   type Vector3
 } from "@minecraft/server";
-import { captureSubLevelBlocks } from "../SubLevelAssemblyHelper.js";
+import {
+  captureSubLevelBlocks,
+  resolveSubLevelBlockRotation,
+  resolveSubLevelBlockVisualOffset,
+  resolveSubLevelBlockVisualYOffset
+} from "../SubLevelAssemblyHelper.js";
 import { captureSubLevelFoliageTint } from "../../render/dynamic_biome/DynamicBiomeTintSampler.js";
 import type { SubLevel, SubLevelBlock } from "../../sublevel/SubLevel.js";
+import type { SubLevelBlockFace } from "../../content/raycast/SubLevelGridRaycast.js";
 import type { SubLevelRenderData } from "../../sublevel/render/SubLevelRenderData.js";
 import { SubLevelRenderer } from "../../sublevel/render/SubLevelRenderer.js";
 import {
@@ -70,7 +76,7 @@ export interface ManagedSubLevel {
 
 interface ManagedSubLevelRecord {
   readonly id: string;
-  readonly subLevel: SubLevel;
+  subLevel: SubLevel;
   readonly handle: SubLevelInteractionHandle;
   readonly origin: Vector3;
   renderData: SubLevelRenderData;
@@ -282,7 +288,9 @@ export class ServerSubLevelContainer {
   ): ManagedSubLevel {
     this.initialize();
     const id = `region_${this.#nextSubLevelId++}`;
-    const record = this.#createRuntimeRecord(id, dimension, origin, blocks, foliageTint);
+    const anchoredFoliageTint = foliageTint
+      ?? captureSubLevelFoliageTint(dimension, blocks, origin);
+    const record = this.#createRuntimeRecord(id, dimension, origin, blocks, anchoredFoliageTint);
     const handle = record.handle;
     this.#recordsByHandleId.set(handle.id, record);
     try {
@@ -409,14 +417,21 @@ export class ServerSubLevelContainer {
     handle: SubLevelInteractionHandle,
     _supportBlock: SubLevelBlock,
     placement: Vector3,
-    cardinalDirection: "north" | "east" | "south" | "west"
+    cardinalDirection: "north" | "east" | "south" | "west",
+    placementFace?: SubLevelBlockFace
   ): boolean {
     this.initialize();
     const record = this.#recordsByHandleId.get(handle.id);
     if (!record || record.removed || !handle.isValid) return false;
     if (getSubLevelBlockRegistration(itemStack.typeId)?.placeable === false) return false;
     if (handle.getBlockAtLocalLocation(placement)) return false;
-    const placed = buildPlacedBlock(player, itemStack.typeId, placement, cardinalDirection);
+    const placed = buildPlacedBlock(
+      player,
+      itemStack.typeId,
+      placement,
+      cardinalDirection,
+      placementFace
+    );
     if (!placed) return false;
 
     const previousBlocks = [...handle.blocks];
@@ -426,6 +441,10 @@ export class ServerSubLevelContainer {
     try {
       if (!resolveFancySubLevelBlock(placed) || !handle.addBlock(placed)) {
         const blocks = [...handle.blocks, placed];
+        record.subLevel = {
+          ...record.subLevel,
+          blocks
+        };
         this.#recreateRender(record, blocks);
         handle.resetBlocks(blocks);
       }
@@ -601,6 +620,7 @@ export class ServerSubLevelContainer {
       saved.origin,
       saved.blocks,
       saved.foliageTint
+        ?? captureSubLevelFoliageTint(world.getDimension(saved.dimensionId), saved.blocks, saved.origin)
     );
     this.#recordsByHandleId.set(record.handle.id, record);
     try {
@@ -682,7 +702,8 @@ function buildPlacedBlock(
   _player: Player,
   typeId: string,
   placement: Vector3,
-  cardinalDirection: "north" | "east" | "south" | "west"
+  cardinalDirection: "north" | "east" | "south" | "west",
+  placementFace?: SubLevelBlockFace
 ): SubLevelBlock | undefined {
   let states: Record<string, boolean | number | string>;
   try {
@@ -691,16 +712,110 @@ function buildPlacedBlock(
     return undefined;
   }
   if (states["minecraft:cardinal_direction"] !== undefined) {
-    states["minecraft:cardinal_direction"] = cardinalDirection;
+    states["minecraft:cardinal_direction"] = oppositeCardinalDirection(cardinalDirection);
+  } else if (states.cardinal_direction !== undefined) {
+    states.cardinal_direction = oppositeCardinalDirection(cardinalDirection);
   }
+  const directionState = states["minecraft:direction"] !== undefined
+    ? "minecraft:direction"
+    : states.direction !== undefined ? "direction" : undefined;
+  if (directionState) {
+    const direction = resolvePlacedDirection(typeId, cardinalDirection, placementFace);
+    if (direction !== undefined) states[directionState] = direction;
+  }
+  const facingState = states["minecraft:facing_direction"] !== undefined
+    ? "minecraft:facing_direction"
+    : states.facing_direction !== undefined ? "facing_direction" : undefined;
+  if (facingState) {
+    const facing = placementFace ? facingDirectionForFace(placementFace) : facingDirectionForCardinal(cardinalDirection);
+    if (facing !== undefined) states[facingState] = facing;
+  }
+  const stairDirectionState = states["minecraft:weirdo_direction"] !== undefined
+    ? "minecraft:weirdo_direction"
+    : states.weirdo_direction !== undefined ? "weirdo_direction" : undefined;
+  if (stairDirectionState) states[stairDirectionState] = directionForCardinal(cardinalDirection);
+  const upsideDownState = states["minecraft:upside_down_bit"] !== undefined
+    ? "minecraft:upside_down_bit"
+    : states.upside_down_bit !== undefined ? "upside_down_bit" : undefined;
+  if (upsideDownState && placementFace) states[upsideDownState] = placementFace === "down";
+  const verticalHalfState = states["minecraft:vertical_half"] !== undefined
+    ? "minecraft:vertical_half"
+    : states.vertical_half !== undefined ? "vertical_half" : undefined;
+  if (verticalHalfState && placementFace) states[verticalHalfState] = placementFace === "down" ? "top" : "bottom";
+  const axisState = states["minecraft:pillar_axis"] !== undefined
+    ? "minecraft:pillar_axis"
+    : states.pillar_axis !== undefined ? "pillar_axis" : undefined;
+  if (axisState && placementFace) {
+    states[axisState] = placementFace === "east" || placementFace === "west"
+      ? "x"
+      : placementFace === "north" || placementFace === "south" ? "z" : "y";
+  }
+  const rotation = resolveSubLevelBlockRotation(typeId, states);
+  const visualYOffset = resolveSubLevelBlockVisualYOffset(typeId, states);
+  const visualOffset = resolveSubLevelBlockVisualOffset(typeId, states);
   return {
     localLocation: { ...placement },
     states,
     typeId,
+    ...(rotation ? { rotation } : {}),
+    ...(visualYOffset !== 0 ? { visualYOffset } : {}),
+    ...(visualOffset ? { visualOffset } : {}),
     ...(getSubLevelBlockRegistration(typeId)?.passable === true
       ? { collisionResponse: false }
       : {})
   };
+}
+
+function oppositeCardinalDirection(
+  direction: "north" | "east" | "south" | "west"
+): "north" | "east" | "south" | "west" {
+  if (direction === "north") return "south";
+  if (direction === "south") return "north";
+  if (direction === "east") return "west";
+  return "east";
+}
+
+/** Resolve the two vanilla numeric direction contracts used by registered models. */
+function resolvePlacedDirection(
+  typeId: string,
+  cardinalDirection: "north" | "east" | "south" | "west",
+  placementFace?: SubLevelBlockFace
+): number | undefined {
+  if (typeId === "minecraft:cocoa" && placementFace) {
+    // Cocoa's direction points from the cocoa block toward its supporting log.
+    if (placementFace === "north") return 0;
+    if (placementFace === "east") return 1;
+    if (placementFace === "south") return 2;
+    if (placementFace === "west") return 3;
+  }
+  if (typeId === "minecraft:bee_nest") {
+    // Bee-nest direction follows the same south, west, north, east state order
+    // as Bedrock's other four-way attachment states. Its front faces the player.
+    const facing = oppositeCardinalDirection(cardinalDirection);
+    return facing === "south" ? 0
+      : facing === "west" ? 1
+        : facing === "north" ? 2 : 3;
+  }
+  const name = typeId.slice(typeId.indexOf(":") + 1);
+  if (name === "beehive" || name.endsWith("_trapdoor") || name === "trapdoor"
+    || name === "bed" || name.endsWith("_bed") || name.endsWith("_door")
+    || name.endsWith("_fence_gate") || name === "fence_gate") {
+    return directionForCardinal(cardinalDirection);
+  }
+  return undefined;
+}
+
+function directionForCardinal(direction: "north" | "east" | "south" | "west"): number {
+  return direction === "south" ? 0 : direction === "west" ? 1 : direction === "north" ? 2 : 3;
+}
+
+function facingDirectionForFace(face: SubLevelBlockFace): number {
+  return face === "down" ? 0 : face === "up" ? 1 : face === "north" ? 2
+    : face === "south" ? 3 : face === "west" ? 4 : 5;
+}
+
+function facingDirectionForCardinal(direction: "north" | "east" | "south" | "west"): number {
+  return direction === "north" ? 2 : direction === "south" ? 3 : direction === "west" ? 4 : 5;
 }
 
 /** Vanilla loot for a projected block, via the loot table manager. */

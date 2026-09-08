@@ -33,6 +33,10 @@ export interface SubLevelBlock {
   readonly runtimeCollidable?: boolean;
   readonly states?: SubLevelBlockStates;
   readonly typeId: string;
+  /** Item-route vertical correction for partial vanilla geometry. */
+  readonly visualYOffset?: number;
+  /** Item-route horizontal correction that affects rendering only. */
+  readonly visualOffset?: Vector3;
 }
 
 export interface SubLevelRenderBody {

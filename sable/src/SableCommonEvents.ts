@@ -37,8 +37,16 @@ sablePlayerInteraction.setBlockBreakHandler((player, itemStack, handle, block) =
 sablePlayerInteraction.setBlockMiningEffectHandler((handle, block) => {
   sableSubLevels.emitBlockMiningEffects(handle, block);
 });
-sablePlayerInteraction.setBlockPlaceHandler((player, itemStack, handle, block, placement, direction) => (
-  sableSubLevels.placeBlockForPlayerEdit(player, itemStack, handle, block, placement, direction)
+sablePlayerInteraction.setBlockPlaceHandler((player, itemStack, handle, block, placement, direction, placementFace) => (
+  sableSubLevels.placeBlockForPlayerEdit(
+    player,
+    itemStack,
+    handle,
+    block,
+    placement,
+    direction,
+    placementFace
+  )
 ));
 sablePlayerInteraction.setBlockPlacementEffectHandler((handle, block) => {
   sableSubLevels.emitBlockPlacementEffects(handle, block);
