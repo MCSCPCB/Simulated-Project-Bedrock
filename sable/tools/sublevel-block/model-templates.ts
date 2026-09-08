@@ -303,8 +303,12 @@ function pillarWrapperRotation(axis: string): readonly [number, number, number] 
 }
 
 function beeNestWrapperRotation(direction: number): readonly [number, number, number] | undefined {
-  const modelDirection = direction === 0 ? 0 : 4 - direction;
-  const yaw = (modelDirection - 2) * 90;
+  // Sable's model space already mirrors the world Z axis when it projects
+  // entity vertices. The TreePhysics attachment encoding inverted all four
+  // state values for its own projection, which reverses the two X-facing
+  // bee-nest states in Sable. Keep the Z-facing states unchanged and express
+  // the native direction directly in Sable's yaw convention.
+  const yaw = (direction - 2) * 90;
   return yaw === 0 ? undefined : [0, yaw, 0];
 }
 

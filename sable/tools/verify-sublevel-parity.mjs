@@ -159,6 +159,19 @@ function fixture() {
 }
 
 const block = (typeId, x = 0, y = 0, z = 0, states = {}) => ({ typeId, localLocation: { x, y, z }, states });
+
+// TreePhysics stores bee-nest X-facing states in the opposite order because
+// its attachment projection uses the inverse horizontal model basis. Sable's
+// model projection keeps the world Z inversion but uses its own X basis, so
+// only the two X-facing state values are swapped when constructing a
+// TreePhysics comparison fixture.
+const treePhysicsComparableEntry = entry => {
+  if (entry.typeId !== "minecraft:bee_nest") return entry;
+  const direction = entry.states?.direction;
+  if (direction !== 1 && direction !== 3) return entry;
+  return { ...entry, states: { ...entry.states, direction: 4 - direction } };
+};
+
 const body = {
   isValid: true, getRotation: () => ({ x: 0, y: 0, z: 0 }),
   localPointToWorld: value => ({ ...value })
@@ -891,7 +904,7 @@ test("mixed non-chest orientations retain baseline face transforms across pool, 
       packs.forEach(pack => formats.add(pack.format));
       assert.equal(packs.some(pack => pack.format === "pool"), pooled);
       const actual = new ActualRenderer(renderBody, packs, f.dimension.spawnEntity, undefined, undefined, { x: 0, y: 0, z: 0 });
-      const expected = new ExpectedRenderer(renderBody, expectedLayout.packFragments(targets.map(sourceBlock)), f.dimension.spawnEntity, undefined, undefined, { x: 0, y: 0, z: 0 });
+      const expected = new ExpectedRenderer(renderBody, expectedLayout.packFragments(targets.map(entry => sourceBlock(treePhysicsComparableEntry(entry)))), f.dimension.spawnEntity, undefined, undefined, { x: 0, y: 0, z: 0 });
       actual.sync(true); expected.sync(true);
       actual.releaseInitialPose(); expected.releaseInitialPose();
       const surfaces = (renderer, reader) => renderer.entityIds
@@ -941,7 +954,7 @@ test("registered non-chest state variants select baseline textures, materials, v
     }
     for (const states of permutations) {
       const target = block(typeId, 0, 0, 0, states);
-      const source = { ...target, kind: kinds.playerEditableContraptionBlockKind(typeId) };
+      const source = { ...treePhysicsComparableEntry(target), kind: kinds.playerEditableContraptionBlockKind(typeId) };
       source.visual = visual(source);
       if (!source.visual) continue;
       const expected = new ExpectedRenderer(body, expectedLayout.packFragments([source]), f.dimension.spawnEntity, field, undefined, target.localLocation);

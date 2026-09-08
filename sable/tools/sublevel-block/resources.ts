@@ -122,7 +122,7 @@ function collectTextTargets(
       rp: ["pack.name=Sable 资源包 1.0.0", "pack.description=作者：MINECRAFT-SCPCB"]
     }
   };
-  const structureName = { en_US: "Structure", zh_CN: "结构" } as const;
+  const structureName = { en_US: "Contraption", zh_CN: "结构" } as const;
   const chestName = { en_US: "Chest", zh_CN: "箱子" } as const;
   for (const language of TEXT_LANGUAGES) {
     const rpLines = [
