@@ -1,1 +1,88 @@
-{"materials":{"version":"1.0.0","tint_multiply:alpha_block_color":{"+defines":["USE_UV_ANIM"],"+states":["Blending","DisableDepthWrite","DisableAlphaWrite"],"depthFunc":"Equal","blendSrc":"DestColor","blendDst":"Zero","+samplerStates":[{"samplerIndex":0,"textureWrap":"Clamp","textureFilter":"Bilinear"}]},"block_crack_multiply:alpha_block_color":{"+states":["Blending","DisableDepthWrite","DisableAlphaWrite"],"depthFunc":"LessEqual","blendSrc":"DestColor","blendDst":"Zero"},"block_outline:entity_emissive_alpha":{"depthFunc":"Always"}}}
+{
+    "materials": {
+        "version": "1.0.0",
+        "block_crack_multiply:alpha_block_color": {
+            "+states": [
+                "Blending",
+                "DisableDepthWrite",
+                "DisableAlphaWrite"
+            ],
+            "depthFunc": "LessEqual",
+            "blendSrc": "DestColor",
+            "blendDst": "Zero"
+        },
+        "block_outline:entity_emissive_alpha": {
+            "depthFunc": "Always"
+        },
+
+        "blend_block:alpha_block": {
+            "+defines": [
+                "ALPHA_TEST",
+                "USE_UV_ANIM"
+            ],
+            "+states": [
+                "EnableAlphaToCoverage",
+                "Blending"
+            ]
+        },
+        "translucent_block:alpha_block": {
+            "+defines": [
+                "USE_UV_ANIM"
+            ],
+            "+states": [
+                "Blending"
+            ]
+        },
+        "opaque_block_emissive:opaque_block": {
+            "+defines": [
+                "USE_EMISSIVE",
+                "USE_UV_ANIM"
+            ]
+        },
+        "redstone_torch_block_emissive:alpha_block": {
+            "+defines": [
+                "ALPHA_TEST",
+                "USE_EMISSIVE",
+                "USE_UV_ANIM"
+            ],
+            "-defines": [
+                "FANCY"
+            ]
+        },
+        "opaque_block_flipbook:opaque_block": {
+            "+defines": [
+                "USE_UV_ANIM"
+            ]
+        },
+        "alpha_block_flipbook:alpha_block": {
+            "+defines": [
+                "USE_UV_ANIM"
+            ]
+        },
+        "alpha_block_color_flipbook:alpha_block_color": {
+            "+defines": [
+                "USE_UV_ANIM"
+            ]
+        },
+        "tint_multiply:alpha_block_color": {
+            "+defines": [
+                "USE_UV_ANIM"
+            ],
+            "+states": [
+                "Blending",
+                "DisableDepthWrite",
+                "DisableAlphaWrite"
+            ],
+            "depthFunc": "Equal",
+            "blendSrc": "DestColor",
+            "blendDst": "Zero",
+            "+samplerStates": [
+                {
+                    "samplerIndex": 0,
+                    "textureWrap": "Clamp",
+                    "textureFilter": "Bilinear"
+                }
+            ]
+        }
+    }
+}

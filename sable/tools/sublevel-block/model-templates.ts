@@ -359,14 +359,63 @@ function hasFixedTint(model: CompiledModel): boolean {
 }
 
 function baseMaterial(model: CompiledModel): string {
-  if (model.material === "opaque") return "opaque_block";
-  return model.model.type === "chest" ? "alpha_block" : "alpha_block_color";
+  if (model.material === "blend") return "blend_block";
+  if (model.material === "translucent") return "translucent_block";
+  if (model.material === "opaque_emissive") return "opaque_block_emissive";
+  // This is a selective material: the model keeps its normal cutout base and
+  // bones named redstone_torch* are redirected to the emissive material below.
+  if (model.material === "redstone_torch_emissive") return "alpha_block";
+  if (model.material === "opaque") return model.flipbook ? "opaque_block_flipbook" : "opaque_block";
+  if (model.material === "alpha_test") {
+    if (model.model.type === "chest") return model.flipbook ? "alpha_block_flipbook" : "alpha_block";
+    return model.flipbook ? "alpha_block_flipbook" : "alpha_block_color";
+  }
+  return model.flipbook ? "alpha_block_color_flipbook" : "alpha_block_color";
+}
+
+function redstoneTorchMaterialBindings(names: readonly string[]): JsonObject {
+  const bindings: JsonObject = {};
+  for (const name of names) {
+    if (/(^|_)redstone_torch(?:$|_)/i.test(name)) {
+      bindings[name] = "Material.redstone_torch";
+    }
+  }
+  return bindings;
+}
+
+function controllerMaterials(
+  model: CompiledModel,
+  defaultMaterial: string,
+  boneNames: readonly string[]
+): JsonObject[] {
+  return [{
+    "*": `Material.${defaultMaterial}`,
+    ...(model.material === "redstone_torch_emissive"
+      ? redstoneTorchMaterialBindings(boneNames)
+      : {})
+  }];
+}
+
+function flipbookAnimation(model: CompiledModel): JsonObject | undefined {
+  const flipbook = model.flipbook;
+  if (!flipbook) return undefined;
+  const elapsedFrames = `(Math.floor(query.life_time * 20.0 / ${flipbook.ticksPerFrame}.0))`;
+  const frame = flipbook.loop
+    ? `Math.mod(${elapsedFrames}, ${flipbook.frameCount}.0)`
+    : `Math.min(${flipbook.frameCount - 1}.0, ${elapsedFrames})`;
+  const fraction = `(${frame} / ${flipbook.frameCount}.0)`;
+  return {
+    offset: flipbook.axis === "u" ? [fraction, 0.0] : [0.0, fraction],
+    scale: flipbook.axis === "u"
+      ? [1.0 / flipbook.frameCount, 1.0]
+      : [1.0, 1.0 / flipbook.frameCount]
+  };
 }
 
 // Mirrors TreePhysics: leaf-style cutout blocks render without the shared
 // 0.88 light multiplier, every other fragment controller keeps it.
 function lightColorMultiplier(model: CompiledModel): JsonObject {
-  return model.model.type === "full_block" && model.material !== "opaque"
+  return model.model.type === "full_block" && model.material !== "opaque" && model.material !== "opaque_emissive"
     ? {}
     : { light_color_multiplier: 0.88 };
 }
@@ -484,6 +533,9 @@ export function createFancyClientEntity(model: CompiledModel, format: "dense" | 
     initialize.push("v.lids_initialized = 0;");
   }
   const materials: JsonObject = { default: baseMaterial(model) };
+  if (model.material === "redstone_torch_emissive") {
+    materials.redstone_torch = "redstone_torch_block_emissive";
+  }
   if (isTintMaterial(model)) materials.tint_multiply = "tint_multiply";
   const textures: JsonObject = {};
   for (const channel of channels) textures[channel.name] = channel.texture;
@@ -742,15 +794,20 @@ export function createFancyRenderController(model: CompiledModel, format: "dense
   const key = modelKeyName(model, format);
   const channels = modelChannels(model);
   const controllers: JsonObject = {};
-  for (const channel of channels) {
+  channels.forEach((channel) => {
     controllers[`controller.render.${key}.${channel.name}`] = {
       geometry: `Geometry.${channel.name}`,
       ...lightColorMultiplier(model),
-      materials: [{ "*": "Material.default" }],
+      materials: controllerMaterials(
+        model,
+        "default",
+        Array.from({ length: slotCountOf(format) }, (_, slot) => channelBoneNames(channel, slot)).flat()
+      ),
       textures: [`Texture.${channel.name}`],
+      ...(flipbookAnimation(model) ? { uv_anim: flipbookAnimation(model) } : {}),
       part_visibility: slotVisibility(format, channel)
     };
-  }
+  });
   if (isTintMaterial(model)) {
     if (channels.length !== 1) {
       throw new Error(`Model ${model.key} uses a tint material with multiple texture channels.`);
@@ -808,9 +865,15 @@ function poolTintMembers(pool: CompiledPool): number[] {
   return pool.members.flatMap((member, family) => isTintMaterial(member) ? [family] : []);
 }
 
-function poolMaterialKind(member: CompiledModel): "opaque" | "cutout" | "color" {
-  if (member.material === "opaque") return "opaque";
-  return member.model.type === "chest" ? "cutout" : "color";
+function poolMaterialKind(member: CompiledModel): string {
+  if (member.material === "blend" || member.material === "translucent"
+    || member.material === "opaque_emissive" || member.material === "redstone_torch_emissive"
+    || member.flipbook) {
+    return baseMaterial(member);
+  }
+  const kind = member.material === "opaque" ? "opaque"
+    : member.model.type === "chest" ? "cutout" : "color";
+  return kind;
 }
 
 function poolSlotCondition(slot: number, family: number): string {
@@ -829,6 +892,9 @@ export function createPoolClientEntity(pool: CompiledPool): JsonObject {
   const renderControllers: unknown[] = [];
   pool.members.forEach((member, family) => {
     materials[poolMaterialKind(member)] = baseMaterial(member);
+    if (member.material === "redstone_torch_emissive") {
+      materials.redstone_torch = "redstone_torch_block_emissive";
+    }
     for (const channel of modelChannels(member)) {
       textures[`m${family}_${channel.name}`] = channel.texture;
       geometry[`m${family}_${channel.name}`] = `geometry.${key}.m${family}_${channel.name}`;
@@ -1033,8 +1099,16 @@ export function createPoolRenderController(pool: CompiledPool): JsonObject {
       controllers[`controller.render.${key}.m${family}_${channel.name}`] = {
         geometry: `Geometry.m${family}_${channel.name}`,
         ...lightColorMultiplier(member),
-        materials: [{ "*": `Material.${poolMaterialKind(member)}` }],
+        materials: controllerMaterials(
+          member,
+          poolMaterialKind(member),
+          Array.from(
+            { length: SPARSE_SLOT_COUNT },
+            (_, slot) => channelBoneNames(channel, slot, `m${family}_`)
+          ).flat()
+        ),
         textures: [`Texture.m${family}_${channel.name}`],
+        ...(flipbookAnimation(member) ? { uv_anim: flipbookAnimation(member) } : {}),
         part_visibility: visibility
       };
     }

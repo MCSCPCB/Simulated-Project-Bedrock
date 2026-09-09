@@ -6,7 +6,10 @@ const MODEL_TYPES = new Set([
   "full_block", "pillar", "chest", "bee_nest", "cocoa", "vine", "hanging_roots",
   "mangrove_propagule", "pale_hanging_moss", "mangrove_roots", "creaking_heart"
 ]);
-const MATERIALS = new Set(["opaque", "alpha_test", "alpha_test_tint", "opaque_tint"]);
+const MATERIALS = new Set([
+  "opaque", "alpha_test", "alpha_test_tint", "opaque_tint",
+  "blend", "translucent", "opaque_emissive", "redstone_torch_emissive",
+]);
 const TINT_MATERIALS = new Set(["alpha_test_tint", "opaque_tint"]);
 const DIRECTIONS = new Set(["north", "east", "south", "west"]);
 const FULL_FACES = ["up", "down", "north", "south", "east", "west"] as const;
@@ -77,9 +80,16 @@ const SUPPORT_RULES = new Set([
   "none", "facing_log", "above_solid", "above_leaf", "moss_column", "vine_faces"
 ]);
 export interface RawVariant extends RawRenderDefinition { readonly condition: string; }
+export interface RawFlipbook {
+  readonly ticks_per_frame: number;
+  readonly frame_count: number;
+  readonly axis?: "u" | "v";
+  readonly loop?: boolean;
+}
 export interface RawRenderDefinition {
   readonly model: Record<string, unknown>;
   readonly tint?: { readonly method: string; readonly color?: string };
+  readonly flipbook?: RawFlipbook;
 }
 
 export interface CompiledModelPool {
@@ -99,9 +109,17 @@ export interface CompiledModel {
   readonly poolKey: string;
   readonly denseEntityTypeId: string;
   readonly sparseEntityTypeId: string;
-  readonly material: "opaque" | "alpha_test" | "alpha_test_tint" | "opaque_tint";
+  readonly material:
+    | "opaque" | "alpha_test" | "alpha_test_tint" | "opaque_tint"
+    | "blend" | "translucent" | "opaque_emissive" | "redstone_torch_emissive";
   readonly model: Record<string, unknown>;
   readonly tint?: { readonly method: "foliage" | "fixed"; readonly color?: string; readonly palette?: number };
+  readonly flipbook?: {
+    readonly ticksPerFrame: number;
+    readonly frameCount: number;
+    readonly axis: "u" | "v";
+    readonly loop: boolean;
+  };
   pool?: CompiledModelPool;
 }
 
@@ -241,6 +259,7 @@ export function toRuntimeRegistry(compiled: CompiledRegistry): Record<string, un
       material: model.material,
       model: model.model,
       ...(model.tint ? { tint: model.tint } : {}),
+      ...(model.flipbook ? { flipbook: model.flipbook } : {}),
       ...(model.pool ? { pool: model.pool } : {})
     };
     strippedByKey.set(model.key, stripped);
@@ -344,13 +363,14 @@ function obtainModel(
   const type = model.type;
   // A vanilla model routes the matching block states to the hand-held route.
   if (type === "vanilla") {
-    if (definition.tint) throw new Error(`${path}: vanilla models take no tint.`);
+    if (definition.tint || definition.flipbook) throw new Error(`${path}: vanilla models take no tint or flipbook animation.`);
     return null;
   }
   if (typeof type !== "string" || !MODEL_TYPES.has(type)) throw new Error(`${path}: unsupported model.type.`);
   validateModel(model, path);
   const tint = validateTint(material, definition.tint, path, paletteByColor);
-  const key = hashModel(material, model, tint);
+  const flipbook = validateFlipbook(definition.flipbook, path);
+  const key = hashModel(material, model, tint, flipbook);
   const existing = modelsByKey.get(key);
   if (existing) return existing;
   const name = uniqueModelName(usedNames, suffix ? `${blockName}_${suffix}` : blockName);
@@ -363,7 +383,8 @@ function obtainModel(
     name,
     poolKey,
     sparseEntityTypeId: `sable:fancy_model_${name}_sparse`,
-    ...(tint ? { tint } : {})
+    ...(tint ? { tint } : {}),
+    ...(flipbook ? { flipbook } : {})
   };
   modelsByKey.set(key, compiled);
   return compiled;
@@ -511,6 +532,31 @@ function validateTint(
   throw new Error(`${path}: tint must use foliage or a six-digit fixed color.`);
 }
 
+function validateFlipbook(
+  flipbook: RawRenderDefinition["flipbook"],
+  path: string
+): CompiledModel["flipbook"] {
+  if (flipbook === undefined) return undefined;
+  if (!flipbook || !Number.isInteger(flipbook.ticks_per_frame) || flipbook.ticks_per_frame <= 0) {
+    throw new Error(`${path}: flipbook.ticks_per_frame must be a positive integer.`);
+  }
+  if (!Number.isInteger(flipbook.frame_count) || flipbook.frame_count <= 0) {
+    throw new Error(`${path}: flipbook.frame_count must be a positive integer.`);
+  }
+  if (flipbook.axis !== undefined && flipbook.axis !== "u" && flipbook.axis !== "v") {
+    throw new Error(`${path}: flipbook.axis must be "u" or "v".`);
+  }
+  if (flipbook.loop !== undefined && typeof flipbook.loop !== "boolean") {
+    throw new Error(`${path}: flipbook.loop must be a boolean.`);
+  }
+  return {
+    ticksPerFrame: flipbook.ticks_per_frame,
+    frameCount: flipbook.frame_count,
+    axis: flipbook.axis ?? "v",
+    loop: flipbook.loop ?? true
+  };
+}
+
 function validateResource(value: unknown, path: string): void {
   if (typeof value !== "string" || value.length === 0 || /[\r\n]/.test(value)) throw new Error(`${path}: resource path required.`);
 }
@@ -520,9 +566,14 @@ function validateBlockId(value: string): void {
 function validateStateName(value: string, path: string): void {
   if (!/^[a-z0-9_.-]+:[a-z0-9_./-]+$/.test(value)) throw new Error(`${path}: invalid state ${value}.`);
 }
-function hashModel(material: string, model: Record<string, unknown>, tint: CompiledModel["tint"]): string {
+function hashModel(
+  material: string,
+  model: Record<string, unknown>,
+  tint: CompiledModel["tint"],
+  flipbook: CompiledModel["flipbook"]
+): string {
   return createHash("sha256")
-    .update(JSON.stringify(sortValue({ material, model, tint })))
+    .update(JSON.stringify(sortValue({ material, model, tint, flipbook })))
     .digest("hex");
 }
 function sortValue(value: unknown): unknown {

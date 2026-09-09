@@ -1,6 +1,15 @@
 import type { SubLevelBlock, SubLevelBlockMapColor } from "../../../SubLevel.js";
 
-export type FancySubLevelMaterial = "opaque" | "alpha_test" | "alpha_test_tint" | "opaque_tint";
+export type FancySubLevelMaterial =
+  | "opaque" | "alpha_test" | "alpha_test_tint" | "opaque_tint"
+  | "blend" | "translucent" | "opaque_emissive" | "redstone_torch_emissive";
+
+export interface FancySubLevelFlipbook {
+  readonly ticksPerFrame: number;
+  readonly frameCount: number;
+  readonly axis: "u" | "v";
+  readonly loop: boolean;
+}
 
 /** Descriptor pool an individual model can share with its neighbours. */
 export interface FancySubLevelModelPool {
@@ -110,6 +119,7 @@ export interface FancySubLevelModel {
   readonly material: FancySubLevelMaterial;
   readonly description: FancySubLevelModelDescription;
   readonly tint?: FancySubLevelTint;
+  readonly flipbook?: FancySubLevelFlipbook;
   readonly state?: FancySubLevelModelState;
   readonly pool?: FancySubLevelModelPool;
 }
@@ -139,6 +149,7 @@ export interface CompiledFancySubLevelModel {
   readonly material: FancySubLevelMaterial;
   readonly model: FancySubLevelModelDescription;
   readonly tint?: FancySubLevelTint;
+  readonly flipbook?: FancySubLevelFlipbook;
   readonly pool?: FancySubLevelModelPool;
 }
 

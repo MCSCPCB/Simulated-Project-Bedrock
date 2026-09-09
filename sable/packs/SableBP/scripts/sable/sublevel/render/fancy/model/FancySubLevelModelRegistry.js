@@ -55,6 +55,7 @@ function materializeModel(compiled) {
     material: compiled.material,
     description: compiled.model,
     tint: compiled.tint,
+    flipbook: compiled.flipbook,
     state: createFancySubLevelModelState(compiled.model),
     pool: compiled.pool
   };

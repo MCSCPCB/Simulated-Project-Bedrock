@@ -73,7 +73,11 @@ export function collectDestructParticleTargets(
       texture,
       tinted: false
     };
-    visual.alpha ||= model.material === "alpha_test" || model.material === "alpha_test_tint";
+    visual.alpha ||= model.material === "alpha_test"
+      || model.material === "alpha_test_tint"
+      || model.material === "blend"
+      || model.material === "translucent"
+      || model.material === "redstone_torch_emissive";
     visual.tinted ||= model.tint !== undefined;
     if (description.type === "chest") {
       // Chest particles sample an opaque region of the entity atlas; the cutout

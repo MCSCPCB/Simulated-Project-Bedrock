@@ -31,7 +31,10 @@ Fancy 路线按注册表逐方块渲染：已注册的方块由框架编译出�
 
 ```ts
 type BlockRegistration = {
-  materials: "opaque" | "alpha_test" | "alpha_test_tint" | "opaque_tint";
+  materials:
+    | "opaque" | "alpha_test" | "alpha_test_tint" | "opaque_tint"
+    | "blend" | "translucent" | "opaque_emissive"
+    | "redstone_torch_emissive";
   category: string;
   domain?: string;
   hardness?: number;
@@ -39,8 +42,8 @@ type BlockRegistration = {
   passable?: boolean;
   support?: "none" | "facing_log" | "above_solid" | "above_leaf" | "moss_column" | "vine_faces";
   states: string[];
-  variants: { condition: string; model: ModelDescription; tint?: TintDescription }[];
-  default: { model: ModelDescription; tint?: TintDescription };
+  variants: { condition: string; model: ModelDescription; tint?: TintDescription; flipbook?: FlipbookDescription }[];
+  default: { model: ModelDescription; tint?: TintDescription; flipbook?: FlipbookDescription };
 };
 ```
 
@@ -67,6 +70,10 @@ type BlockRegistration = {
 | `alpha_test` | 镂空贴图方块，如树叶、藤蔓。 |
 | `alpha_test_tint` | 镂空且需要染色的方块。必须为每个模型提供 `tint`。 |
 | `opaque_tint` | 不透明且需要染色的方块。必须为每个模型提供 `tint`。 |
+| `blend` | 透明方块，如玻璃、玻璃板. |
+| `translucent` | 半透明方块，如冰、史莱姆外壳。 |
+| `opaque_emissive` | 不透明且自发光的方块。 |
+| `redstone_torch_emissive` | 红石火把自发光材质。 |
 
 ### 支撑规则
 
@@ -120,6 +127,19 @@ type BlockRegistration = {
 | --- | --- |
 | `{ "method": "fixed", "color": "#RRGGBB" }` | 固定颜色乘算，如白桦、云杉树叶。 |
 | `{ "method": "foliage" }` | 按子世界的 `foliageTint` 气候场取色，支持跨结构渐变；未提供时使用平原气候。 |
+
+### 翻页贴图
+
+帧序列方块使用 `flipbook` 定义动画：
+
+```json
+"flipbook": {
+  "ticks_per_frame": 2, // 每帧游戏刻
+  "frame_count": 8, // 帧数
+  "axis": "v", // `u` 或 `v`
+  "loop": true // 控制循环播放
+}
+```
 
 ### 示例
 

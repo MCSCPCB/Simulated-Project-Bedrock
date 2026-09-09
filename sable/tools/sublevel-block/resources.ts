@@ -140,33 +140,6 @@ function collectTextTargets(
   targets.set("SableRP/texts/languages.json", languagesJson);
 }
 
-function entityMaterials(): JsonObject {
-  return {
-    materials: {
-      version: "1.0.0",
-      "tint_multiply:alpha_block_color": {
-        "+defines": ["USE_UV_ANIM"],
-        "+states": ["Blending", "DisableDepthWrite", "DisableAlphaWrite"],
-        depthFunc: "Equal",
-        blendSrc: "DestColor",
-        blendDst: "Zero",
-        "+samplerStates": [
-          { samplerIndex: 0, textureWrap: "Clamp", textureFilter: "Bilinear" }
-        ]
-      },
-      "block_crack_multiply:alpha_block_color": {
-        "+states": ["Blending", "DisableDepthWrite", "DisableAlphaWrite"],
-        depthFunc: "LessEqual",
-        blendSrc: "DestColor",
-        blendDst: "Zero"
-      },
-      "block_outline:entity_emissive_alpha": {
-        depthFunc: "Always"
-      }
-    }
-  };
-}
-
 function jsonText(value: JsonObject): string {
   const rawNumberPattern = new RegExp(`"${rawJsonNumber(0).slice(0, -3)}(-?(?:\\d+(?:\\.\\d+)?))"`, "g");
   return JSON.stringify(value).replace(rawNumberPattern, "$1");
@@ -299,7 +272,6 @@ export async function writeSablePacks(
     );
   }
 
-  targets.set("SableRP/materials/entity.material", jsonText(entityMaterials()));
   targets.set("SableRP/textures/colormap/foliage_fixed.tga", fixedColormapTga(fixedTintPalette));
   collectTextTargets(models, pools, targets);
 
