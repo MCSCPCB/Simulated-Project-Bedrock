@@ -42,5 +42,5 @@
 
 ## 5.如何获得fancy适配所需要的原版方块相关数据
 
-访问以下目录，这里包含基岩版所有方块的所有信息和数据，如果你在工作过程中发现有某种方块在这里面也找不到的信息或数据，则那个方块的适配可以暂时搁置，工作后及时汇报给我。
+访问以下目录，这里包含基岩版所有方块的所有信息和数据，如果你在工作前发现有某种方块在这里面也找不到的信息或数据，则停下工作，及时汇报给我。
 D:\Software\Games\MINECRAFT\MCBE Addon Dev Project\Vibe_Coding_Project\Simulated-Project-Bedrock\.sample\VanillaBlock
