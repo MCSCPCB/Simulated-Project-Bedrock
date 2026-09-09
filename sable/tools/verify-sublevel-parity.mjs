@@ -748,6 +748,19 @@ test("block sounds and particle emissions match the baseline for registered tree
   }
 });
 
+test("vanilla mining hit sounds cover non-tree blocks such as beacons", () => {
+  const f = fixture();
+  const sounds = f.load("content/sublevel_sounds/SubLevelBlockSounds.ts");
+  assert.equal(
+    sounds.resolveVanillaBlockHitSound("minecraft:beacon", () => 0).sound,
+    "hit.stone"
+  );
+  assert.equal(
+    sounds.resolveVanillaBlockBreakSound("minecraft:beacon", () => 0).sound,
+    "random.glass"
+  );
+});
+
 // These resources use the arithmetic/query subset shared by JavaScript and
 // Molang. Evaluate their emitted expressions, not a second model selector.
 function resourceEvaluator(entity, client) {
