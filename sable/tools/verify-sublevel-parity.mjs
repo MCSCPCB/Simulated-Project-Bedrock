@@ -418,6 +418,19 @@ test("placement can cross between registered models and the ordinary render rout
   assert(managed.handle.renderData.hasIntactEntities());
 });
 
+test("vanilla item rendering applies the default quarter-turn only without explicit rotation", () => {
+  const f = fixture();
+  const wrapper = f.load("sublevel/render/vanilla/SingleBlockSubLevelWrapper.ts");
+  const body = { localPointToWorld: value => ({ ...value }) };
+  const unrotated = block("minecraft:stone");
+  const defaultEntity = wrapper.createBlockRenderPair(f.dimension, body, { x: 0, y: 0, z: 0 }, unrotated, undefined, []);
+  assert.equal(defaultEntity.getProperty("sable:local_yaw"), 90);
+
+  const explicitlyRotated = { ...block("minecraft:chest"), rotation: { x: 0, y: 180, z: 0 } };
+  const explicitEntity = wrapper.createBlockRenderPair(f.dimension, body, { x: 0, y: 0, z: 0 }, explicitlyRotated, undefined, []);
+  assert.equal(explicitEntity.getProperty("sable:local_yaw"), 180);
+});
+
 test("placement preserves vanilla facing, pillar axis and the creation foliage anchor", () => {
   const f = managedFixture();
   const target = block("minecraft:oak_log");
@@ -427,9 +440,13 @@ test("placement preserves vanilla facing, pillar axis and the creation foliage a
     typeId,
     typeId === "minecraft:chest"
       ? { "minecraft:cardinal_direction": "south" }
-      : typeId === "minecraft:oak_log"
-        ? { "minecraft:pillar_axis": "y" }
-        : { "minecraft:distance": 7 }
+      : typeId === "minecraft:anvil"
+        ? { "minecraft:cardinal_direction": "south" }
+      : typeId === "minecraft:chiseled_bookshelf"
+        ? { "minecraft:direction": 0, books_stored: 0 }
+        : typeId === "minecraft:oak_log"
+          ? { "minecraft:pillar_axis": "y" }
+          : { "minecraft:distance": 7 }
   );
   assert(f.manager.placeBlockForPlayerEdit(
     {}, { typeId: "minecraft:chest" }, managed.handle, target,
@@ -438,6 +455,22 @@ test("placement preserves vanilla facing, pillar axis and the creation foliage a
   assert.equal(
     managed.handle.getBlockAtLocalLocation({ x: 1, y: 0, z: 0 }).states["minecraft:cardinal_direction"],
     "north"
+  );
+  assert(f.manager.placeBlockForPlayerEdit(
+    {}, { typeId: "minecraft:anvil" }, managed.handle, target,
+    { x: 2, y: 0, z: 0 }, "south", "up"
+  ));
+  assert.equal(
+    managed.handle.getBlockAtLocalLocation({ x: 2, y: 0, z: 0 }).states["minecraft:cardinal_direction"],
+    "east"
+  );
+  assert(f.manager.placeBlockForPlayerEdit(
+    {}, { typeId: "minecraft:chiseled_bookshelf" }, managed.handle, target,
+    { x: 3, y: 0, z: 0 }, "north", "up"
+  ));
+  assert.equal(
+    managed.handle.getBlockAtLocalLocation({ x: 3, y: 0, z: 0 }).states["minecraft:direction"],
+    0
   );
   assert(f.manager.placeBlockForPlayerEdit(
     {}, { typeId: "minecraft:oak_log" }, managed.handle, target,
@@ -467,6 +500,58 @@ test("placement preserves vanilla facing, pillar axis and the creation foliage a
     { x: 0, y: 0, z: 1 }, "south", "up"
   ));
   assert.equal(f.saved.get(managed.id).foliageTint.mapKind, 1);
+});
+
+test("placement resolves complete orientation states from the hit face and player heading", () => {
+  const f = managedFixture();
+  const target = block("minecraft:oak_log");
+  const managed = f.manager.createSubLevel(f.dimension, { x: 0, y: 0, z: 0 }, [target]);
+  const previousResolve = f.server.BlockPermutation.resolve;
+  f.server.BlockPermutation.resolve = typeId => previousResolve(
+    typeId,
+    typeId === "minecraft:compound_creator" ? { orientation: "south_up" } : { distance: 7 }
+  );
+  const place = (location, heading, face) => {
+    assert(f.manager.placeBlockForPlayerEdit(
+      {}, { typeId: "minecraft:compound_creator" }, managed.handle, target,
+      location, heading, face
+    ));
+    return managed.handle.getBlockAtLocalLocation(location).states.orientation;
+  };
+  assert.equal(place({ x: 1, y: 0, z: 0 }, "north", "up"), "up_south");
+  assert.equal(place({ x: 2, y: 0, z: 0 }, "east", "down"), "down_west");
+  assert.equal(place({ x: 3, y: 0, z: 0 }, "south", "east"), "east_up");
+});
+
+test("placement keeps shared direction rules independent of block names and state-key aliases", () => {
+  const f = managedFixture();
+  const target = block("minecraft:oak_log");
+  const managed = f.manager.createSubLevel(f.dimension, { x: 0, y: 0, z: 0 }, [target]);
+  const previousResolve = f.server.BlockPermutation.resolve;
+  const groups = [
+    { ids: ["minecraft:chest", "minecraft:trapped_chest", "custom:opaque_fixture", "custom:fixture_anvil"], keys: ["minecraft:cardinal_direction", "cardinal_direction"], initial: "south" },
+    { ids: ["minecraft:chiseled_bookshelf", "custom:fixture_bookshelf", "custom:apiary_hive"], keys: ["direction", "minecraft:direction"], initial: 0 }
+  ];
+  let index = 0;
+  // This asserts name independence of the shared convention, not a claim
+  // about every block's native placement rule. Native parity needs native
+  // placement states; a default permutation does not contain that rule.
+  for (const group of groups) for (const key of group.keys) {
+    f.server.BlockPermutation.resolve = typeId => previousResolve(typeId, { [key]: group.initial });
+    for (const direction of ["north", "east", "south", "west"]) {
+      let reference;
+      for (const typeId of group.ids) {
+        const placement = { x: ++index % 16, y: Math.floor(index / 16), z: 0 };
+        assert(f.manager.placeBlockForPlayerEdit(
+          {}, { typeId }, managed.handle, target, placement, direction, "up"
+        ));
+        const placed = managed.handle.getBlockAtLocalLocation(placement);
+        const actual = placed.states;
+        if (!reference) reference = actual;
+        assert.deepEqual(actual, reference, `${key} ${direction} ${typeId}`);
+      }
+    }
+  }
 });
 
 test("placement writes vanilla numeric direction states from their own placement rules", () => {
@@ -892,7 +977,36 @@ test("vanilla capture resolves canonical named horizontal facing states", () => 
     permutation: f.permutation("custom:ambiguous_directional_block", { direction: 2 }),
     getComponent: () => undefined
   };
-  assert.equal(capture(numericDirection, { x: 0, y: 0, z: 0 }).rotation, undefined);
+  assert.deepEqual(capture(numericDirection, { x: 0, y: 0, z: 0 }).rotation, { x: 0, y: 180, z: 0 });
+
+  const customHead = capture({
+    location: { x: 0, y: 0, z: 0 },
+    permutation: f.permutation("custom:ornament_head", { facing_direction: 0 }),
+    getComponent: () => undefined
+  }, { x: 0, y: 0, z: 0 });
+  assert.deepEqual(customHead.rotation, { x: 0, y: 180, z: 0 });
+  assert.deepEqual(customHead.visualOffset, { x: -0.25, y: 0, z: 0.25 });
+
+  const customFrontFacingDirectionBlock = capture({
+    location: { x: 0, y: 0, z: 0 },
+    permutation: f.permutation("custom:apiary_hive", { direction: 0, honey_level: 0 }),
+    getComponent: () => undefined
+  }, { x: 0, y: 0, z: 0 });
+  assert.deepEqual(customFrontFacingDirectionBlock.rotation, { x: 0, y: 90, z: 0 });
+
+  const customChemistry = capture({
+    location: { x: 0, y: 0, z: 0 },
+    permutation: f.permutation("custom:compound_creator", { direction: 0 }),
+    getComponent: () => undefined
+  }, { x: 0, y: 0, z: 0 });
+  assert.deepEqual(customChemistry.rotation, { x: 0, y: 90, z: 0 });
+
+  const customOrdinaryDirection = capture({
+    location: { x: 0, y: 0, z: 0 },
+    permutation: f.permutation("custom:bell", { direction: 0 }),
+    getComponent: () => undefined
+  }, { x: 0, y: 0, z: 0 });
+  assert.deepEqual(customOrdinaryDirection.rotation, { x: 0, y: 0, z: 0 });
 });
 
 test("vanilla capture resolves partial-block offsets and directional state families", () => {
@@ -927,10 +1041,10 @@ test("vanilla capture resolves partial-block offsets and directional state famil
   }).visualYOffset, 4 / 16);
   assert.deepEqual(capture("minecraft:player_head", {
     facing_direction: 0
-  }).rotation, { x: 270, y: 0, z: 0 });
+  }).rotation, { x: 0, y: 180, z: 0 });
   assert.deepEqual(capture("minecraft:player_head", {
     facing_direction: 5
-  }).rotation, { x: 90, y: 0, z: 0 });
+  }).rotation, { x: 0, y: 180, z: 0 });
   assert.deepEqual(capture("minecraft:player_head", {
     facing_direction: 0
   }).visualOffset, { x: -0.25, y: 0, z: 0.25 });

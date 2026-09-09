@@ -8,6 +8,7 @@ export const DEFAULT_RENDER_ENTITY_TYPE_ID = "sable:block";
 export const BLOCK_OFFHAND_ITEM_OFFSET_PROPERTY = "sable:left_item_offset";
 export const ADDON_BLOCK_OFFHAND_ITEM_OFFSET = 0.00;
 export const MINECRAFT_BLOCK_OFFHAND_ITEM_OFFSET = 2.00;
+const DEFAULT_BLOCK_ITEM_YAW = 90;
 
 /** Create one render entity carrying up to two independently transformed block items. */
 export function createBlockRenderPair(
@@ -81,7 +82,7 @@ function setBlockRenderTransform(
     block.localLocation.z - renderAnchor.z + (block.visualOffset?.z ?? 0)
   );
   entity.setProperty(`sable:${prefix}local_pitch`, block.rotation?.x ?? 0);
-  entity.setProperty(`sable:${prefix}local_yaw`, block.rotation?.y ?? 0);
+  entity.setProperty(`sable:${prefix}local_yaw`, block.rotation?.y ?? DEFAULT_BLOCK_ITEM_YAW);
   entity.setProperty(`sable:${prefix}local_roll`, block.rotation?.z ?? 0);
   if (prefix === "left_") {
     entity.setProperty(

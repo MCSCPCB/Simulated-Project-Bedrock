@@ -30,6 +30,28 @@ const HORIZONTAL_FACING_ROTATIONS = {
     north: { x: 0, y: 90, z: 0 },
     east: { x: 0, y: 180, z: 0 }
 };
+// Orientation states describe a complete front/up pair. Keep this as an
+// explicit table because these states are not a four-way yaw and each pair
+// must preserve the vanilla hand-item basis used by Sable.
+const ORIENTATION_ROTATIONS = {
+    down_east: { x: 90, y: 90, z: 90 },
+    down_north: { x: 0, y: 270, z: 90 },
+    down_south: { x: 0, y: 90, z: 90 },
+    down_west: { x: 0, y: 0, z: 90 },
+
+    up_east: { x: 180, y: 0, z: 270 },
+    up_north: { x: 0, y: 270, z: 270 },
+    up_south: { x: 0, y: 90, z: 270 },
+    up_west: { x: 180, y: 180, z: 270 },
+
+    west_up: { x: 0, y: 0, z: 0 },
+    east_up: { x: 0, y: 180, z: 0 },
+    north_up: { x: 180, y: 90, z: 180 },
+    south_up: { x: 180, y: 270, z: 180 },
+};
+// Numeric direction states whose value identifies the model's front use this
+// calibrated Sable basis: state 0/1 and 2/3 are the two opposite front pairs.
+const FRONT_FACING_DIRECTION_TURNS = [1, 0, 3, 2];
 /**
  * Captures one world block into the sub-level block form the render routes
  * consume: full permutation states, the hand-held item mapping, the
@@ -103,6 +125,12 @@ export function resolveSubLevelBlockRotation(typeIdOrStates, suppliedStates) {
     // state-only call while capture/placement pass the type id for family rules.
     const typeId = typeof typeIdOrStates === "string" ? typeIdOrStates : "";
     const states = suppliedStates ?? (typeof typeIdOrStates === "string" ? {} : typeIdOrStates);
+    const orientation = firstState(states, ["minecraft:orientation", "orientation"]);
+    if (orientation && typeof orientation.value === "string") {
+        const rotation = ORIENTATION_ROTATIONS[orientation.value];
+        if (rotation)
+            return { ...rotation };
+    }
     const axis = firstState(states, ["minecraft:pillar_axis", "pillar_axis", "minecraft:axis", "axis"]);
     if (axis)
         return axisRotation(axis.value);
@@ -156,11 +184,11 @@ export function resolveSubLevelBlockRotation(typeIdOrStates, suppliedStates) {
         return FACING_DIRECTION_ROTATIONS[direction];
     }
     const direction = firstState(states, ["direction", "minecraft:direction"]);
-    if (direction && supportsNumericDirection(typeId)) {
+    if (direction && isNumericDirectionState(direction.value)) {
         const value = requireIntegerState(direction.value, 0, 3);
         const name = typeName(typeId);
-        const turns = isTrapdoor(name) ? [1, 3, 2, 0][value] : name === "bee_nest" || name === "beehive"
-            ? [1, 0, 3, 2][value]
+        const turns = isTrapdoor(name) ? [1, 3, 2, 0][value] : usesFrontFacingDirectionStateMapping(name, states)
+            ? FRONT_FACING_DIRECTION_TURNS[value]
             : value;
         return { x: 0, y: turns * 90, z: 0 };
     }
@@ -179,7 +207,7 @@ export function resolveSubLevelBlockVisualYOffset(typeId, states) {
     return 0;
 }
 export function resolveSubLevelBlockVisualOffset(typeId, states) {
-    if (typeName(typeId) !== "player_head")
+    if (!isHeadOrSkull(typeName(typeId)))
         return undefined;
     const facing = firstState(states, ["facing_direction", "minecraft:facing_direction"]);
     if (!facing || typeof facing.value !== "number" || !Number.isInteger(facing.value)
@@ -286,13 +314,18 @@ function isSlab(name) { return name === "slab" || name.endsWith("_slab") || name
 function isDoubleSlab(name) { return name.startsWith("double_") || name.includes("double_slab") || name.includes("_double_") || name.endsWith("_double_slab"); }
 function isTrapdoor(name) { return name === "trapdoor" || name.endsWith("_trapdoor"); }
 function isHeadOrSkull(name) { return name === "skull" || name.endsWith("_skull") || name.endsWith("_head"); }
-function supportsNumericDirection(typeId) {
-    const name = typeName(typeId);
-    return name === "bee_nest" || name === "beehive" || name === "bed" || name.endsWith("_bed")
-        || name === "wooden_door" || name.endsWith("_door") || name === "fence_gate" || name.endsWith("_fence_gate")
-        || isTrapdoor(name) || name === "grindstone" || name === "cocoa" || name === "campfire" || name === "soul_campfire"
-        || name === "end_portal_frame" || name === "unpowered_repeater" || name === "powered_repeater"
-        || name === "unpowered_comparator" || name === "powered_comparator";
+function isNumericDirectionState(value) {
+    return typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 3;
+}
+export function usesFrontFacingDirectionStateMapping(name, states) {
+    // These state keys identify blocks whose numeric direction names their
+    // model front, without binding the transform to a namespace or block id.
+    if (firstState(states, ["honey_level", "minecraft:honey_level", "books_stored", "minecraft:books_stored", "chemistry_table_type", "minecraft:chemistry_table_type"])) {
+        return true;
+    }
+    // Some vanilla-compatible chemistry blocks expose only `direction`; use
+    // their semantic name suffixes so custom namespaces follow the same rule.
+    return /(?:hive|nest|bookshelf|chemistry|creator|constructor|lab_table|reducer)$/.test(name);
 }
 function captureMapColor(block, typeId) {
     const component = block.getComponent("minecraft:map_color");

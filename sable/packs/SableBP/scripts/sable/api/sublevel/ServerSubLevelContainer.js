@@ -5,7 +5,7 @@
 // and tree-gameplay stages removed. The pipeline is block-agnostic: everything
 // block-specific reaches it through the behavior registry.
 import { BlockPermutation, system, world } from "@minecraft/server";
-import { captureSubLevelBlocks, resolveSubLevelBlockRotation, resolveSubLevelBlockVisualOffset, resolveSubLevelBlockVisualYOffset } from "../SubLevelAssemblyHelper.js";
+import { captureSubLevelBlocks, resolveSubLevelBlockRotation, resolveSubLevelBlockVisualOffset, resolveSubLevelBlockVisualYOffset, usesFrontFacingDirectionStateMapping } from "../SubLevelAssemblyHelper.js";
 import { captureSubLevelFoliageTint } from "../../render/dynamic_biome/DynamicBiomeTintSampler.js";
 import { SubLevelRenderer } from "../../sublevel/render/SubLevelRenderer.js";
 import { resolveSubLevelBlockSupport } from "../../content/block_properties/SubLevelBlockSupport.js";
@@ -565,17 +565,25 @@ function buildPlacedBlock(_player, typeId, placement, cardinalDirection, placeme
     catch {
         return undefined;
     }
+    // This is a shared placement convention, not an item-model correction.
+    // Keep identical state contracts independent of block ids and name suffixes.
+    const orientationState = states["minecraft:orientation"] !== undefined
+        ? "minecraft:orientation"
+        : states.orientation !== undefined ? "orientation" : undefined;
+    if (orientationState) {
+        states[orientationState] = resolvePlacedOrientation(cardinalDirection, placementFace);
+    }
     if (states["minecraft:cardinal_direction"] !== undefined) {
-        states["minecraft:cardinal_direction"] = oppositeCardinalDirection(cardinalDirection);
+        states["minecraft:cardinal_direction"] = resolvePlacedCardinalDirection(typeId, cardinalDirection);
     }
     else if (states.cardinal_direction !== undefined) {
-        states.cardinal_direction = oppositeCardinalDirection(cardinalDirection);
+        states.cardinal_direction = resolvePlacedCardinalDirection(typeId, cardinalDirection);
     }
     const directionState = states["minecraft:direction"] !== undefined
         ? "minecraft:direction"
         : states.direction !== undefined ? "direction" : undefined;
     if (directionState) {
-        const direction = resolvePlacedDirection(typeId, cardinalDirection, placementFace);
+        const direction = resolvePlacedDirection(typeId, states, cardinalDirection, placementFace);
         if (direction !== undefined)
             states[directionState] = direction;
     }
@@ -634,8 +642,51 @@ function oppositeCardinalDirection(direction) {
         return "west";
     return "east";
 }
-/** Resolve the two vanilla numeric direction contracts used by registered models. */
-function resolvePlacedDirection(typeId, cardinalDirection, placementFace) {
+function resolvePlacedOrientation(cardinalDirection, placementFace) {
+    if (placementFace === "up" || placementFace === "down") {
+        // Orientation serializes the surface normal first for top/bottom placement:
+        // `up_north` / `down_east`, followed by the horizontal front direction.
+        return `${placementFace}_${oppositeCardinalDirection(cardinalDirection)}`;
+    }
+    if (placementFace === "north" || placementFace === "east"
+        || placementFace === "south" || placementFace === "west") {
+        return `${placementFace}_up`;
+    }
+    return `${oppositeCardinalDirection(cardinalDirection)}_up`;
+}
+// Some vanilla cardinal states use a model-placement basis that is quarter
+// turned from the ordinary front-facing contract. Keep this as data so the
+// resolver remains a shared state-key implementation rather than a block-name
+// decision tree.
+const CARDINAL_DIRECTION_PLACEMENT_OFFSETS = {
+    "minecraft:anvil": -1,
+    "minecraft:chipped_anvil": -1,
+    "minecraft:damaged_anvil": -1
+};
+function resolvePlacedCardinalDirection(typeId, direction) {
+    let resolved = direction;
+    const quarterTurns = CARDINAL_DIRECTION_PLACEMENT_OFFSETS[typeId] ?? 2;
+    if (quarterTurns > 0) {
+        for (let index = 0; index < quarterTurns; index++)
+            resolved = rotateCardinalDirection(resolved, 1);
+    }
+    else {
+        for (let index = 0; index > quarterTurns; index--)
+            resolved = rotateCardinalDirection(resolved, -1);
+    }
+    return resolved;
+}
+function rotateCardinalDirection(direction, quarterTurns) {
+    const directions = ["north", "east", "south", "west"];
+    const index = directions.indexOf(direction);
+    return directions[(index + quarterTurns + directions.length * 4) % directions.length];
+}
+/** Resolve numeric direction placement before the shared state-to-render mapping. */
+function resolvePlacedDirection(typeId, states, cardinalDirection, placementFace) {
+    const currentState = states["minecraft:direction"] ?? states.direction;
+    if (typeof currentState !== "number" || !Number.isInteger(currentState)
+        || currentState < 0 || currentState > 3)
+        return undefined;
     if (typeId === "minecraft:cocoa" && placementFace) {
         // Cocoa's direction points from the cocoa block toward its supporting log.
         if (placementFace === "north")
@@ -647,7 +698,8 @@ function resolvePlacedDirection(typeId, cardinalDirection, placementFace) {
         if (placementFace === "west")
             return 3;
     }
-    if (typeId === "minecraft:bee_nest") {
+    const name = typeId.slice(typeId.indexOf(":") + 1);
+    if (name === "bee_nest" || name.endsWith("_bee_nest")) {
         // Bee-nest direction follows the same south, west, north, east state order
         // as Bedrock's other four-way attachment states. Its front faces the player.
         const facing = oppositeCardinalDirection(cardinalDirection);
@@ -655,13 +707,13 @@ function resolvePlacedDirection(typeId, cardinalDirection, placementFace) {
             : facing === "west" ? 1
                 : facing === "north" ? 2 : 3;
     }
-    const name = typeId.slice(typeId.indexOf(":") + 1);
-    if (name === "beehive" || name.endsWith("_trapdoor") || name === "trapdoor"
-        || name === "bed" || name.endsWith("_bed") || name.endsWith("_door")
-        || name.endsWith("_fence_gate") || name === "fence_gate") {
-        return directionForCardinal(cardinalDirection);
-    }
-    return undefined;
+    // Default four-way placement rule, including unregistered direction blocks.
+    // A state value's render mapping does not describe a block's placement rule;
+    // don't add name-based compensations here to correct a visual discrepancy.
+    const resolved = directionForCardinal(cardinalDirection);
+    if (usesFrontFacingDirectionStateMapping(name, states))
+        return (resolved + 2) % 4;
+    return resolved;
 }
 function directionForCardinal(direction) {
     return direction === "south" ? 0 : direction === "west" ? 1 : direction === "north" ? 2 : 3;
