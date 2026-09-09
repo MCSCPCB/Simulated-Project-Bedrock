@@ -39,3 +39,8 @@
 只有必须由生成器批量产出的代码才允许由程序生成；其余所有文件（包括 JSON 等配置文件）一律通过手写维护，禁止用脚本或程序生成或改写。
 
 对用户手动修改过的文件，必须先询问并获得确认，才能再次修改。
+
+## 5.如何获得fancy适配所需要的原版方块相关数据
+
+访问以下目录，这里包含基岩版所有方块的所有信息和数据，如果你在工作过程中发现有某种方块在这里面也找不到的信息或数据，则那个方块的适配可以暂时搁置，工作后及时汇报给我。
+D:\Software\Games\MINECRAFT\MCBE Addon Dev Project\Vibe_Coding_Project\Simulated-Project-Bedrock\.sample\VanillaBlock
