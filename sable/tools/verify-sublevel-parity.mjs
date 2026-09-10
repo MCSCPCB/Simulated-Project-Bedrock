@@ -17,6 +17,13 @@ const json = path => {
   return result.config;
 };
 
+function pngHeight(path) {
+  const bytes = readFileSync(path);
+  assert.equal(bytes.readUInt32BE(0), 0x89504e47, `${path}: PNG signature`);
+  assert.equal(bytes.toString("ascii", 12, 16), "IHDR", `${path}: PNG IHDR`);
+  return bytes.readUInt32BE(20);
+}
+
 // Execute the actual source modules against a small native API fixture. The
 // baseline is loaded independently, so parity assertions do not reuse Sable logic.
 function moduleLoader(sourceRoot, server, overrides = {}) {
@@ -727,6 +734,7 @@ test("terrain flipbooks animate only the intended textures and retain cutout emi
     ...[false, true].map(can_summon => block("minecraft:sculk_shrieker", 0, 0, 0, { can_summon, active: false }))];
   for (const target of targets) {
     const resolved = resolveFancySubLevelBlock(target);
+    if (target.typeId === "minecraft:sculk_vein") assert.equal(resolved.model.material, "alpha_test");
     for (const format of ["dense", "sparse", ...(resolved.model.pool ? ["pool"] : [])]) {
       const resource = resolved.model[format];
       const coordinateBits = (resource.xBits ?? 0) + (resource.yBits ?? 0) + (resource.zBits ?? 0);
@@ -748,17 +756,26 @@ test("terrain flipbooks animate only the intended textures and retain cutout emi
           assert.equal(evaluate(controller.uv_anim.scale[1]), 1 / resolved.model.flipbook.frameCount, texture);
         }
         const material = evaluate(controller.materials[0]["*"], arrays);
+        if (target.typeId === "minecraft:sculk_vein") assert.equal(material, "alpha_block_flipbook");
         if (target.typeId === "minecraft:sculk_shrieker") assert.equal(material, "alpha_test_block_emissive");
       }
     }
   }
   const materials = json(join(sable, "packs/SableRP/materials/entity.material")).materials;
+  assert.deepEqual(materials["alpha_block_flipbook:alpha_block"]["+defines"], ["ALPHA_TEST", "USE_UV_ANIM"]);
   assert.deepEqual(materials["alpha_test_block_emissive:alpha_block"]["+defines"], ["ALPHA_TEST", "USE_EMISSIVE", "USE_UV_ANIM"]);
   for (const [name, frames] of [["sculk", 4], ["sculk_vein", 4], ["magma", 3]]) {
     const particle = json(join(sable, `packs/SableRP/particles/sable/sublevel/block_destruct/block_destruct_${name}.particle.json`)).particle_effect;
     const uv = particle.components["minecraft:particle_appearance_billboard"].uv;
     assert.deepEqual([uv.texture_width, uv.texture_height, uv.uv_size], [16, 16 * frames, [4, 4]]);
     assert.deepEqual(uv.uv, ["variable.particle_random_1*12", "variable.particle_random_2*12"]);
+  }
+  const javaTextures = join(vanilla, "minecraft-assets-26.2/assets/minecraft/textures/block");
+  for (const [name, frameCount, ticksPerFrame] of [["sculk", 4, 20], ["sculk_vein", 4, 20]]) {
+    assert.equal(pngHeight(join(javaTextures, `${name}.png`)) / 16, frameCount);
+    assert.equal(json(join(javaTextures, `${name}.png.mcmeta`)).animation.frametime, ticksPerFrame);
+    const source = flipbooks.find(entry => entry.flipbook_texture === `textures/blocks/${name}`);
+    assert.equal(source?.ticks_per_frame, ticksPerFrame);
   }
 });
 
@@ -1036,7 +1053,7 @@ test("terrain attachment placement and removal settle neighbors in both vertical
   assert(support.resolveSubLevelBlockPlacement([block("minecraft:grass_path", 0, 1, 0)], { ...standing, states: { hanging: true, dripstone_thickness: "tip" } }));
 });
 
-test("multi-face placement merges supported faces and neighbor edits persist through reconstruction", () => {
+test("multi-face placement keeps one face per sub-level cell and persists through reconstruction", () => {
   const f = managedFixture();
   const { resolveSubLevelBlockPlacement } = f.load("content/block_properties/SubLevelBlockSupport.ts");
   const defaults = { multi_face_direction_bits: 0 };
@@ -1046,11 +1063,11 @@ test("multi-face placement merges supported faces and neighbor edits persist thr
   const east = block("minecraft:stone", 1, 0, 0);
   const managed = f.manager.createSubLevel(f.dimension, { x: 0, y: 0, z: 0 }, [floor, east]);
   const item = { typeId: "minecraft:sculk_vein" };
-  assert(f.manager.placeBlockForPlayerEdit({}, item, managed.handle, floor, { x: 0, y: 0, z: 0 }, "north", "up"));
   assert(f.manager.placeBlockForPlayerEdit({}, item, managed.handle, east, { x: 0, y: 0, z: 0 }, "north", "west"));
+  assert.equal(f.manager.placeBlockForPlayerEdit({}, item, managed.handle, floor, { x: 0, y: 0, z: 0 }, "north", "up"), false);
   assert.equal(managed.blockCount, 3);
   const at = () => managed.handle.getBlockAtLocalLocation({ x: 0, y: 0, z: 0 });
-  assert.equal(at().states.multi_face_direction_bits, 33);
+  assert.equal(at().states.multi_face_direction_bits, 32);
   assert.equal(f.manager.placeBlockForPlayerEdit({}, item, managed.handle, east, { x: 0, y: 0, z: 0 }, "north", "west"), false);
   const unsupported = block("minecraft:sculk_vein", 0, 0, 0, { multi_face_direction_bits: 2 });
   assert.equal(resolveSubLevelBlockPlacement(managed.handle.blocks, unsupported), undefined);
@@ -1069,7 +1086,7 @@ test("multi-face placement merges supported faces and neighbor edits persist thr
   assert.equal(restored.saved.size, 0);
 });
 
-test("vine placement encodes four host faces, merges, persists and removes unsupported faces", () => {
+test("vine placement keeps one host face per sub-level cell and preserves native multi-face states", () => {
   for (const stateName of ["vine_direction_bits", "minecraft:vine_direction_bits"]) {
     const f = managedFixture();
     const support = f.load("content/block_properties/SubLevelBlockSupport.ts");
@@ -1080,40 +1097,51 @@ test("vine placement encodes four host faces, merges, persists and removes unsup
     const faces = ["north", "east", "south", "west"];
     const managed = f.manager.createSubLevel(f.dimension, { x: 0, y: 0, z: 0 }, hosts);
     const at = () => managed.handle.getBlockAtLocalLocation(target);
-    for (let index = 0; index < 4; index++) {
-      assert(f.manager.placeBlockForPlayerEdit({}, { typeId: "minecraft:vine" }, managed.handle, hosts[index], target, "north", faces[index]));
-      assert.equal(at().states[stateName], 2 ** (index + 1) - 1);
-      assert.equal(at().collisionResponse, false);
-      assert.equal(managed.blockCount, 5);
+    assert(f.manager.placeBlockForPlayerEdit({}, { typeId: "minecraft:vine" }, managed.handle, hosts[0], target, "north", faces[0]));
+    assert.equal(at().states[stateName], 1);
+    assert.equal(at().collisionResponse, false);
+    assert.equal(managed.blockCount, 5);
+    for (let index = 1; index < 4; index++) {
       assert.equal(f.manager.placeBlockForPlayerEdit({}, { typeId: "minecraft:vine" }, managed.handle, hosts[index], target, "north", faces[index]), false);
+      assert.equal(at().states[stateName], 1);
     }
+    assert.equal(f.manager.placeBlockForPlayerEdit({}, { typeId: "minecraft:vine" }, managed.handle, hosts[0], target, "north", faces[0]), false);
+
+    const native = block("minecraft:vine", 5, 7, 11, { [stateName]: 15 });
     const lower = block("minecraft:vine", 5, 6, 11, { [stateName]: 15 });
-    const entries = [...managed.handle.blocks, lower].map(snapshot => ({ key: Object.values(snapshot.localLocation).join(","), localLocation: snapshot.localLocation, snapshot }));
+    const entries = [...hosts, native, lower].map(snapshot => ({ key: Object.values(snapshot.localLocation).join(","), localLocation: snapshot.localLocation, snapshot }));
     const cascade = support.resolveSubLevelBlockSupport(entries, new Set(["5,7,12"]));
     assert.equal(cascade.unsupportedKeys.size, 0);
     assert.equal(cascade.stateUpdates.get("5,7,11").snapshot.states[stateName], 14);
     assert.equal(cascade.stateUpdates.get("5,6,11").snapshot.states[stateName], 14);
     const detached = support.resolveSubLevelBlockSupport(entries, new Set(hosts.map(host => Object.values(host.localLocation).join(","))));
     assert(detached.unsupportedKeys.has("5,7,11") && detached.unsupportedKeys.has("5,6,11"));
-    assert(f.manager.breakBlockForPlayerEdit({}, undefined, managed.handle, hosts[0]));
-    assert.equal(at().states[stateName], 14);
-    assert.equal(support.resolveSubLevelBlockPlacement(managed.handle.blocks, { ...at(), states: { [stateName]: 1 } }), undefined);
-    const saved = structuredClone(f.saved.get(managed.id));
+    const fullHosts = hosts.map(host => ({ ...host, localLocation: { ...host.localLocation, x: host.localLocation.x + 16 } }));
+    const fullTarget = { x: 21, y: 7, z: 11 };
+    const fullNative = { ...native, localLocation: fullTarget };
+    const fullManaged = f.manager.createSubLevel(f.dimension, { x: 16, y: 0, z: 0 }, [...fullHosts, fullNative]);
+    const fullAt = () => fullManaged.handle.getBlockAtLocalLocation(fullTarget);
+    assert(fullAt());
+    assert(fullAt().states[stateName] === 15);
+    assert(f.manager.breakBlockForPlayerEdit({}, undefined, fullManaged.handle, fullHosts[0]));
+    assert.equal(fullAt().states[stateName], 14);
+    assert.equal(support.resolveSubLevelBlockPlacement(fullManaged.handle.blocks, { ...fullAt(), states: { [stateName]: 1 } }), undefined);
+    const saved = structuredClone(f.saved.get(fullManaged.id));
     const restored = managedFixture();
-    restored.saved.set(saved.id, saved);
+    restored.saved.set(fullManaged.id, saved);
     restored.manager.initialize();
     restored.manager.tick(20);
     const handle = [...restored.runtime.getRaycastCandidates(restored.dimension.id)][0];
-    assert.equal(handle.getBlockAtLocalLocation(target).states[stateName], 14);
-    for (const host of hosts.slice(1)) assert(restored.manager.breakBlockForPlayerEdit({}, undefined, handle, host));
-    assert.equal(handle.getBlockAtLocalLocation(target), undefined);
+    assert.equal(handle.getBlockAtLocalLocation(fullTarget).states[stateName], 14);
+    for (const host of fullHosts.slice(1)) assert(restored.manager.breakBlockForPlayerEdit({}, undefined, handle, host));
+    assert.equal(handle.getBlockAtLocalLocation(fullTarget), undefined);
     for (const typeId of ["minecraft:grass_path", "minecraft:moss_carpet", "minecraft:sculk_shrieker"]) {
       assert.equal(support.resolveSubLevelBlockPlacement([block(typeId, 5, 7, 12)], block("minecraft:vine", 5, 7, 11, { [stateName]: 1 })), undefined, typeId);
     }
   }
 });
 
-test("vine undersides place, combine with side faces and rebuild derived state after capture and storage", () => {
+test("vine undersides and side faces place independently and rebuild derived state after capture and storage", () => {
   const f = managedFixture();
   const previousResolve = f.server.BlockPermutation.resolve;
   f.server.BlockPermutation.resolve = (id, states) => {
@@ -1133,15 +1161,7 @@ test("vine undersides place, combine with side faces and rebuild derived state a
   assert.equal(at().states.vine_direction_bits, 0);
   assert.equal(at().renderState, 1);
   assert.equal(f.manager.placeBlockForPlayerEdit({}, item, managed.handle, ceiling, target, "north", "down"), false);
-  assert(f.manager.placeBlockForPlayerEdit({}, item, managed.handle, side, target, "north", "west"));
-  assert.equal(at().states.vine_direction_bits, 8);
-  assert.equal(at().renderState, 1);
-  assert(f.manager.breakBlockForPlayerEdit({}, undefined, managed.handle, ceiling));
-  assert.equal(at().states.vine_direction_bits, 8);
-  assert.equal(at().renderState, 0);
-  assert(f.manager.placeBlockForPlayerEdit({}, { typeId: ceiling.typeId }, managed.handle, at(), ceiling.localLocation, "north", "up"));
-  assert.equal(at().renderState, 1);
-  assert(f.manager.breakBlockForPlayerEdit({}, undefined, managed.handle, side));
+  assert.equal(f.manager.placeBlockForPlayerEdit({}, item, managed.handle, side, target, "north", "west"), false);
   assert.equal(at().states.vine_direction_bits, 0);
   assert.equal(at().renderState, 1);
   const serializer = f.load("sublevel/storage/serialization/SubLevelSerializer.ts");
@@ -1155,7 +1175,23 @@ test("vine undersides place, combine with side faces and rebuild derived state a
   assert.equal(handle.getBlockAtLocalLocation(target).states.vine_direction_bits, 0);
   assert(restored.manager.breakBlockForPlayerEdit({}, undefined, handle, ceiling));
   assert.equal(handle.getBlockAtLocalLocation(target), undefined);
+  assert.equal(restored.saved.size, 1);
+  assert(restored.manager.breakBlockForPlayerEdit({}, undefined, handle, side));
   assert.equal(restored.saved.size, 0);
+
+  const sideManaged = f.manager.createSubLevel(f.dimension, { x: 16, y: 0, z: 0 }, [
+    { ...side, localLocation: { ...side.localLocation, x: 17 } }
+  ]);
+  const sideTarget = { x: 16, y: 0, z: 0 };
+  const sideAt = () => sideManaged.handle.getBlockAtLocalLocation(sideTarget);
+  const sideHost = { ...side, localLocation: { ...side.localLocation, x: 17 } };
+  assert(f.manager.placeBlockForPlayerEdit({}, item, sideManaged.handle, sideHost, sideTarget, "north", "west"));
+  assert.equal(sideAt().states.vine_direction_bits, 8);
+  assert.equal(sideAt().renderState, 0);
+  assert.equal(f.manager.placeBlockForPlayerEdit({}, item, sideManaged.handle, sideHost, sideTarget, "north", "west"), false);
+  assert.equal(f.manager.placeBlockForPlayerEdit({}, item, sideManaged.handle, { ...ceiling, localLocation: { ...ceiling.localLocation, x: 16 } }, sideTarget, "north", "down"), false);
+  assert(f.manager.breakBlockForPlayerEdit({}, undefined, sideManaged.handle, sideHost));
+  assert.equal(sideAt(), undefined);
   assert(f.manager.breakBlockForPlayerEdit({}, undefined, managed.handle, at()));
   assert(f.loot.some(([id]) => id === "minecraft:vine"), "native loot accepts unmodified vine states");
 
@@ -1306,10 +1342,10 @@ test("vine ceiling placement uses the player ray and emits one placement sound",
   assert.equal(f.sounds.length, 1);
 });
 
-test("player placement rays reach support faces through existing multi-face attachments", () => {
-  for (const [typeId, stateName, initial, expectedBits] of [
-    ["minecraft:sculk_vein", "multi_face_direction_bits", 1, 33],
-    ["minecraft:vine", "vine_direction_bits", 1, 9]
+test("player placement rays reach support faces through existing attachments before rejecting occupied cells", () => {
+  for (const [typeId, stateName, initial] of [
+    ["minecraft:sculk_vein", "multi_face_direction_bits", 1],
+    ["minecraft:vine", "vine_direction_bits", 1]
   ]) {
     const f = managedFixture();
     const Controller = f.load("content/block_outline_render/SubLevelOutlineController.ts").SubLevelOutlineController;
@@ -1332,10 +1368,11 @@ test("player placement rays reach support faces through existing multi-face atta
     f.server.BlockPermutation.resolve = (id, states) => previousResolve(id, states ?? { [stateName]: 0 });
     const expected = controller.captureActionTarget(player);
     assert(expected);
+    assert.equal(expected.blockKey, "0,0,0");
     controller.handlePlace(player, { typeId, getCanPlaceOn: () => [] }, expected);
-    assert.equal(managed.handle.getBlockAtLocalLocation({ x: 0, y: 0, z: 0 }).states[stateName], expectedBits);
+    assert.equal(managed.handle.getBlockAtLocalLocation({ x: 0, y: 0, z: 0 }).states[stateName], initial);
     assert.equal(managed.blockCount, 3);
-    assert.equal(f.sounds.length, 1);
+    assert.equal(f.sounds.length, 0);
   }
 });
 
@@ -2392,6 +2429,11 @@ test("all vine ceiling combinations share geometry and tint in sparse and pool p
       assert.deepEqual(vertices(base), vertices(tint), `${label}: tint must redraw exactly the base triangles`);
       const ceilings = base.filter(surface => surface.vertices.every(point => Math.abs(point[1] + 8.8) < 1e-6));
       assert.equal(ceilings.length, top * 2, `${label}: vanilla vine plane is 0.8px below the cell ceiling`);
+      if (top) {
+        assert.deepEqual(ceilings.map(surface => [surface.uv.uv, surface.uv.uv_size].flat().join(",")).sort(), [
+          "0,0,16,16", "0,16,16,-16"
+        ], `${label}: top UV stays on the horizontal face`);
+      }
       assert(base.every(surface => surface.texture === "textures/blocks/vine" && surface.material === "alpha_block_color"));
       assert(tint.every(surface => surface.texture === "textures/colormap/foliage"));
       entity.molang.s0 = 0;

@@ -219,24 +219,20 @@ export function resolveSubLevelBlockPlacement(
   const entries = new Map(blocks.map(snapshot => [blockLocationKey(snapshot.localLocation), {
     key: blockLocationKey(snapshot.localLocation), localLocation: snapshot.localLocation, snapshot
   }] as const));
-  const existing = entries.get(key)?.snapshot;
+  // Player placement never merges another attachment into an occupied cell;
+  // native snapshots may still carry several saved faces for rendering.
+  if (entries.has(key)) return undefined;
   const rule = supportRuleOf(placed);
   const faceState = rule === "multi_face" ? "multi_face_direction_bits" : rule === "vine_faces" ? "vine_direction_bits" : undefined;
   const faceMask = rule === "multi_face" ? 63 : 15;
   const requestedFaces = faceState ? integerState(placed, faceState, 0, faceMask) : 0;
   const requestedTop = rule === "vine_faces" && placed.renderState === 1;
   if (rule === "vine_faces" && requestedFaces === 0 && !requestedTop) return undefined;
-  if (existing) {
-    if (existing.typeId !== placed.typeId || !faceState) return undefined;
-    const previousFaces = integerState(existing, faceState, 0, faceMask);
-    if ((previousFaces & requestedFaces) === requestedFaces && (!requestedTop || existing.renderState === 1)) return undefined;
-    placed = { ...existing, states: replaceState(existing, faceState, previousFaces | requestedFaces) };
-  }
   if (rule === "pointed_dripstone" && !resolveAttachment(placed.localLocation, placed, entries, new Set(), new Set(), new Map()).supported) {
     placed = { ...placed, states: replaceState(placed, "hanging", stateValue(placed, "hanging") !== true) };
   }
   entries.set(key, { key, localLocation: placed.localLocation, snapshot: placed });
-  const addedKeys = new Set(existing ? [] : [key]);
+  const addedKeys = new Set([key]);
   if (rule === "moss_carpet") {
     const location = add(placed.localLocation, ABOVE_OFFSET);
     const aboveKey = blockLocationKey(location);
@@ -262,7 +258,6 @@ export function resolveSubLevelBlockPlacement(
   if (requestedTop && resolved.renderState !== 1) return undefined;
   if (faceState && (integerState(resolved, faceState, 0, faceMask) & requestedFaces) !== requestedFaces) return undefined;
   const stateUpdates = new Map([...support.stateUpdates].filter(([key]) => !addedKeys.has(key)));
-  if (existing) stateUpdates.set(key, { key, snapshot: resolved });
   return {
     additions: [...addedKeys].filter(key => !support.unsupportedKeys.has(key))
       .map(key => support.stateUpdates.get(key)?.snapshot ?? entries.get(key)!.snapshot),

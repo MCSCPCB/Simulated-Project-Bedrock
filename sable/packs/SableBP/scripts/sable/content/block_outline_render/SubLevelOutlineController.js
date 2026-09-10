@@ -598,9 +598,7 @@ class SubLevelOutlineController {
     if (!Number.isInteger(target.x) || !Number.isInteger(target.y) || !Number.isInteger(target.z)) {
       throw new Error(`Sub-level placement target is not on the local block grid: ${blockKey(target)}.`);
     }
-    const existing = result.handle.getBlockAtLocalLocation(target);
-    const rule = getSubLevelBlockRegistration(itemStack.typeId)?.support;
-    return !existing || existing.typeId === itemStack.typeId && (rule === "multi_face" || rule === "vine_faces") ? target : void 0;
+    return result.handle.getBlockAtLocalLocation(target) ? void 0 : target;
   }
   #validatedActionResult(player, expected) {
     const result = this.#raycastForEvent(player);

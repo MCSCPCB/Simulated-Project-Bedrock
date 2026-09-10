@@ -58,6 +58,7 @@
         },
         "alpha_block_flipbook:alpha_block": {
             "+defines": [
+                "ALPHA_TEST",
                 "USE_UV_ANIM"
             ]
         },

@@ -447,14 +447,16 @@ function modelChannels(model: CompiledModel): ModelChannel[] {
   if (type === "vine") {
     const channel = libraryChannels(type, "default").default!;
     const faces = new Set((description.faces as string[]).map(face => `vine_${face}_{s}`));
-    const north = channel.bones.find(bone => bone.name === "vine_north_{s}")!;
     return [{
       name: "default",
       texture,
       textureSize: channel.textureSize,
       bones: [
         ...channel.bones.filter(bone => bone.name === "slot_{s}" || faces.has(bone.name)),
-        ...(faces.has("vine_up_{s}") ? [{ ...north, name: "vine_up_{s}", rotation: [-90, 0, 0] }] : [])
+        ...(faces.has("vine_up_{s}") ? [{
+          name: "vine_up_{s}", parent: "slot_{s}", pivot: [0, -16, 0],
+          cubes: [attachmentFaceCube("up", 0.8)]
+        }] : [])
       ]
     }];
   }
@@ -470,14 +472,14 @@ function modelChannels(model: CompiledModel): ModelChannel[] {
 // inside its supporting face, with the outside UV mirrored on the back.
 // Sable mirrors world Z; Bedrock names its minimum-X face east. Horizontal
 // faces reverse V between front/back, while vertical faces reverse U.
-function attachmentFaceCube(face: FullFace): JsonObject {
+function attachmentFaceCube(face: FullFace, inset = 0.1): JsonObject {
   const planes = {
-    north: { origin: [-8, -24, 7.9], size: [16, 16, 0], back: "south", front: "north" },
-    south: { origin: [-8, -24, -7.9], size: [16, 16, 0], back: "north", front: "south" },
-    east: { origin: [7.9, -24, -8], size: [0, 16, 16], back: "west", front: "east" },
-    west: { origin: [-7.9, -24, -8], size: [0, 16, 16], back: "east", front: "west" },
-    up: { origin: [-8, -8.1, -8], size: [16, 0, 16], back: "up", front: "down" },
-    down: { origin: [-8, -23.9, -8], size: [16, 0, 16], back: "down", front: "up" }
+    north: { origin: [-8, -24, 8 - inset], size: [16, 16, 0], back: "south", front: "north" },
+    south: { origin: [-8, -24, -8 + inset], size: [16, 16, 0], back: "north", front: "south" },
+    east: { origin: [8 - inset, -24, -8], size: [0, 16, 16], back: "west", front: "east" },
+    west: { origin: [-8 + inset, -24, -8], size: [0, 16, 16], back: "east", front: "west" },
+    up: { origin: [-8, -8 - inset, -8], size: [16, 0, 16], back: "up", front: "down" },
+    down: { origin: [-8, -24 + inset, -8], size: [16, 0, 16], back: "down", front: "up" }
   };
   const { origin, size, back, front } = planes[face];
   return { origin, size, uv: {

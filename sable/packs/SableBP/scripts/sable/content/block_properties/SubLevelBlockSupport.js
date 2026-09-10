@@ -148,24 +148,18 @@ function resolveSubLevelBlockPlacement(blocks, placed, random = Math.random) {
     localLocation: snapshot.localLocation,
     snapshot
   }]));
-  const existing = entries.get(key)?.snapshot;
+  if (entries.has(key)) return void 0;
   const rule = supportRuleOf(placed);
   const faceState = rule === "multi_face" ? "multi_face_direction_bits" : rule === "vine_faces" ? "vine_direction_bits" : void 0;
   const faceMask = rule === "multi_face" ? 63 : 15;
   const requestedFaces = faceState ? integerState(placed, faceState, 0, faceMask) : 0;
   const requestedTop = rule === "vine_faces" && placed.renderState === 1;
   if (rule === "vine_faces" && requestedFaces === 0 && !requestedTop) return void 0;
-  if (existing) {
-    if (existing.typeId !== placed.typeId || !faceState) return void 0;
-    const previousFaces = integerState(existing, faceState, 0, faceMask);
-    if ((previousFaces & requestedFaces) === requestedFaces && (!requestedTop || existing.renderState === 1)) return void 0;
-    placed = { ...existing, states: replaceState(existing, faceState, previousFaces | requestedFaces) };
-  }
   if (rule === "pointed_dripstone" && !resolveAttachment(placed.localLocation, placed, entries, /* @__PURE__ */ new Set(), /* @__PURE__ */ new Set(), /* @__PURE__ */ new Map()).supported) {
     placed = { ...placed, states: replaceState(placed, "hanging", stateValue(placed, "hanging") !== true) };
   }
   entries.set(key, { key, localLocation: placed.localLocation, snapshot: placed });
-  const addedKeys = new Set(existing ? [] : [key]);
+  const addedKeys = /* @__PURE__ */ new Set([key]);
   if (rule === "moss_carpet") {
     const location = add(placed.localLocation, ABOVE_OFFSET);
     const aboveKey = blockLocationKey(location);
@@ -191,7 +185,6 @@ function resolveSubLevelBlockPlacement(blocks, placed, random = Math.random) {
   if (requestedTop && resolved.renderState !== 1) return void 0;
   if (faceState && (integerState(resolved, faceState, 0, faceMask) & requestedFaces) !== requestedFaces) return void 0;
   const stateUpdates = new Map([...support.stateUpdates].filter(([key2]) => !addedKeys.has(key2)));
-  if (existing) stateUpdates.set(key, { key, snapshot: resolved });
   return {
     additions: [...addedKeys].filter((key2) => !support.unsupportedKeys.has(key2)).map((key2) => support.stateUpdates.get(key2)?.snapshot ?? entries.get(key2).snapshot),
     stateUpdates
