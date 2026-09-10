@@ -83,6 +83,17 @@ export interface RootModelDescription {
   readonly textures: Readonly<{ top: string; side: string }>;
 }
 
+export interface WallModelDescription {
+  readonly type: "wall";
+  readonly texture: string;
+}
+
+export interface MossCarpetModelDescription {
+  readonly type: "moss_carpet";
+  readonly texture: string;
+  readonly pale: boolean;
+}
+
 export type FancySubLevelModelDescription =
   | FullBlockModelDescription
   | PillarModelDescription
@@ -93,10 +104,12 @@ export type FancySubLevelModelDescription =
   | SingleTextureModelDescription
   | MangrovePropaguleModelDescription
   | PaleHangingMossModelDescription
-  | RootModelDescription;
+  | RootModelDescription
+  | WallModelDescription
+  | MossCarpetModelDescription;
 
 export type FancySubLevelTint =
-  | { readonly method: "foliage" }
+  | { readonly method: "foliage" | "grass" }
   | { readonly method: "fixed"; readonly color: string; readonly palette: number };
 
 export interface FancySubLevelModelStateDimension {
@@ -159,7 +172,8 @@ export type SubLevelSupportRule =
   | "above_solid"
   | "above_leaf"
   | "moss_column"
-  | "vine_faces";
+  | "vine_faces"
+  | "wall_connections";
 
 export interface CompiledBlockRegistration {
   readonly category: string;

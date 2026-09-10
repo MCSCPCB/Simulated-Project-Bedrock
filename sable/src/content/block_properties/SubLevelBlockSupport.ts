@@ -1,5 +1,5 @@
 import type { Vector3 } from "@minecraft/server";
-import { add, blockLocationKey } from "../../util/SableVector3Utils.js";
+import { add, blockLocationKey, parseBlockLocationKey } from "../../util/SableVector3Utils.js";
 import type { SubLevelBlock } from "../../sublevel/SubLevel.js";
 import { getSubLevelBlockRegistration } from "../../sublevel/render/fancy/model/FancySubLevelModelRegistry.js";
 
@@ -19,6 +19,13 @@ const HORIZONTAL_SUPPORTS: readonly { readonly offset: Vector3; readonly bit: nu
   { offset: { x: 1, y: 0, z: 0 }, bit: 8 }
 ];
 
+const WALL_DIRECTIONS = [
+  { name: "north", offset: { x: 0, y: 0, z: -1 } },
+  { name: "east", offset: { x: 1, y: 0, z: 0 } },
+  { name: "south", offset: { x: 0, y: 0, z: 1 } },
+  { name: "west", offset: { x: -1, y: 0, z: 0 } }
+] as const;
+
 export interface SubLevelBlockSupportEntry {
   readonly key: string;
   readonly localLocation: Vector3;
@@ -34,6 +41,50 @@ export interface SubLevelBlockSupportResolution {
   readonly stateUpdates: ReadonlyMap<string, SubLevelBlockSupportStateUpdate>;
   readonly supportKeysByAttachment: ReadonlyMap<string, readonly string[]>;
   readonly unsupportedKeys: ReadonlySet<string>;
+}
+
+/** Recomputes vanilla wall connection states after a local neighbor change. */
+export function resolveSubLevelBlockNeighborStateUpdates(
+  entries: readonly SubLevelBlockSupportEntry[],
+  changedKeys: ReadonlySet<string>
+): ReadonlyMap<string, SubLevelBlockSupportStateUpdate> {
+  const entriesByKey = new Map(entries.map(entry => [entry.key, entry] as const));
+  const affected = new Set<string>();
+  for (const key of changedKeys) {
+    const location = parseBlockLocationKey(key);
+    for (const direction of [...WALL_DIRECTIONS, { name: "self", offset: { x: 0, y: 0, z: 0 } }]) {
+      affected.add(blockLocationKey(add(location, direction.offset)));
+    }
+  }
+  const updates = new Map<string, SubLevelBlockSupportStateUpdate>();
+  for (const key of affected) {
+    const entry = entriesByKey.get(key);
+    if (!entry) continue;
+    const registration = getSubLevelBlockRegistration(entry.snapshot.typeId);
+    const states = registration?.support === "wall_connections"
+      ? wallStates(entry.localLocation, entry.snapshot, entriesByKey)
+      : entry.snapshot.typeId === "minecraft:pale_moss_carpet"
+        ? paleMossCarpetStates(entry.localLocation, entry.snapshot, entriesByKey)
+        : undefined;
+    if (!states) continue;
+    if (statesEqual(entry.snapshot.states ?? {}, states)) continue;
+    updates.set(key, { key, snapshot: { ...entry.snapshot, states } });
+  }
+  return updates;
+}
+
+function paleMossCarpetStates(
+  location: Vector3,
+  snapshot: SubLevelBlock,
+  entries: ReadonlyMap<string, SubLevelBlockSupportEntry>
+): NonNullable<SubLevelBlock["states"]> {
+  const values: Record<string, boolean | number | string> = {};
+  for (const direction of WALL_DIRECTIONS) {
+    const neighbor = entries.get(blockLocationKey(add(location, direction.offset)))?.snapshot;
+    values[`minecraft:pale_moss_carpet_side_${direction.name}`] = wallConnectionType(neighbor);
+  }
+  const current = snapshot.states ?? {};
+  return Object.fromEntries(Object.keys(current).map(key => [key, values[key] ?? current[key]!])) as NonNullable<SubLevelBlock["states"]>;
 }
 
 /**
@@ -85,6 +136,12 @@ export function resolveSubLevelBlockSupport(
     }
     supportKeysByAttachment.set(entry.key, result.supportKeys);
   }
+  const remainingEntries = entries.filter(entry => !removedKeys.has(entry.key));
+  const neighborUpdates = resolveSubLevelBlockNeighborStateUpdates(
+    remainingEntries,
+    removedKeys
+  );
+  for (const [key, update] of neighborUpdates) stateUpdates.set(key, update);
   return { stateUpdates, supportKeysByAttachment, unsupportedKeys };
 }
 
@@ -182,9 +239,50 @@ function resolveAttachment(
         supportKeys
       };
     }
+    case "wall_connections":
+      return { supported: true, supportKeys: [] };
     default:
       throw new Error(`Unsupported sub-level attachment rule ${String(rule)} for ${snapshot.typeId}.`);
   }
+}
+
+function wallStates(
+  location: Vector3,
+  snapshot: SubLevelBlock,
+  entries: ReadonlyMap<string, SubLevelBlockSupportEntry>
+): NonNullable<SubLevelBlock["states"]> {
+  const values: Record<string, boolean | number | string> = {};
+  for (const direction of WALL_DIRECTIONS) {
+    const neighbor = entries.get(blockLocationKey(add(location, direction.offset)))?.snapshot;
+    const connection = wallConnectionType(neighbor);
+    values[`minecraft:wall_connection_type_${direction.name}`] = connection;
+  }
+  const straight = (
+    values["minecraft:wall_connection_type_north"] !== "none"
+    && values["minecraft:wall_connection_type_south"] !== "none"
+    && values["minecraft:wall_connection_type_east"] === "none"
+    && values["minecraft:wall_connection_type_west"] === "none"
+  ) || (
+    values["minecraft:wall_connection_type_east"] !== "none"
+    && values["minecraft:wall_connection_type_west"] !== "none"
+    && values["minecraft:wall_connection_type_north"] === "none"
+    && values["minecraft:wall_connection_type_south"] === "none"
+  );
+  values["minecraft:wall_post_bit"] = !straight;
+  const current = snapshot.states ?? {};
+  return Object.fromEntries(Object.keys(current).map(key => {
+    const short = key.startsWith("minecraft:") ? key.slice(9) : key;
+    return [key, values[`minecraft:${short}`] ?? current[key]!];
+  }));
+}
+
+function wallConnectionType(snapshot: SubLevelBlock | undefined): "none" | "short" | "tall" {
+  if (!snapshot || snapshot.collisionResponse === false) return "none";
+  if (snapshot.typeId === "minecraft:moss_carpet" || snapshot.typeId === "minecraft:pale_moss_carpet") return "short";
+  const registration = getSubLevelBlockRegistration(snapshot.typeId);
+  if (registration?.support === "wall_connections") return "short";
+  if (registration?.passable === true) return "short";
+  return "tall";
 }
 
 /** A block is an attachment exactly when its registry entry declares a support rule. */

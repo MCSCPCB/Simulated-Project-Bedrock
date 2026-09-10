@@ -1,7 +1,8 @@
 import { mkdir, readdir, readFile, rmdir, unlink, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { dirname, join, posix, relative, sep } from "node:path";
 import { transform } from "esbuild";
-import { CATEGORY_TREE, type CompiledModel, type CompiledPool } from "./registry.ts";
+import { CATEGORY_TREE, sortValue, type CompiledModel, type CompiledPool } from "./registry.ts";
 import {
   collectDestructParticleTargets,
   collectFunctionalResourceTargets
@@ -145,6 +146,57 @@ function jsonText(value: JsonObject): string {
   return JSON.stringify(value).replace(rawNumberPattern, "$1");
 }
 
+/** Intern individual definitions across models, formats and pools. Client
+ * aliases keep texture/material bindings and conditional controller order. */
+function collectSharedModelResources(
+  clientEntity: JsonObject,
+  geometry: JsonObject,
+  animation: JsonObject,
+  controller: JsonObject,
+  targets: Map<string, string | Buffer>
+): void {
+  const identifiers = new Map<string, string>();
+  const share = (
+    kind: "geometry" | "animation" | "render_controller",
+    version: unknown,
+    definition: JsonObject
+  ): string => {
+    const digest = createHash("sha1").update(JSON.stringify(sortValue([version, definition]))).digest("hex").slice(0, 16);
+    const prefix = kind === "render_controller" ? "controller.render" : kind;
+    const identifier = `${prefix}.sable_shared_${digest}`;
+    const directory = kind === "geometry" ? "models/entity" : `${kind}s`;
+    const extension = kind === "geometry" ? "geo" : kind === "animation" ? "animation" : "render_controllers";
+    const path = `SableRP/${directory}/sable/sublevel/fancy/_shared/${digest}.${extension}.json`;
+    if (!targets.has(path)) {
+      const content = kind === "geometry"
+        ? { "minecraft:geometry": [{ ...definition, description: { identifier, ...definition.description as JsonObject } }] }
+        : { [`${kind}s`]: { [identifier]: definition } };
+      targets.set(path, jsonText({ format_version: version, ...content }));
+    }
+    return identifier;
+  };
+  for (const definition of geometry["minecraft:geometry"] as JsonObject[]) {
+    const { identifier, ...description } = definition.description as JsonObject;
+    identifiers.set(identifier as string, share("geometry", geometry.format_version, { ...definition, description }));
+  }
+  for (const [resource, kind] of [[animation, "animation"], [controller, "render_controller"]] as const) {
+    for (const [identifier, definition] of Object.entries(resource[`${kind}s`] as Record<string, JsonObject>)) {
+      identifiers.set(identifier, share(kind, resource.format_version, definition));
+    }
+  }
+  const description = (clientEntity["minecraft:client_entity"] as JsonObject).description as JsonObject;
+  for (const field of ["geometry", "animations"]) {
+    description[field] = Object.fromEntries(Object.entries(description[field] as Record<string, string>).map(
+      ([alias, identifier]) => [alias, identifiers.get(identifier)!]
+    ));
+  }
+  description.render_controllers = (description.render_controllers as (string | Record<string, string>)[]).map(
+    entry => typeof entry === "string" ? identifiers.get(entry)! : Object.fromEntries(
+      Object.entries(entry).map(([identifier, condition]) => [identifiers.get(identifier)!, condition])
+    )
+  );
+}
+
 async function collectScriptTargets(
   srcRoot: string,
   runtimeRegistry: Record<string, unknown>,
@@ -228,22 +280,15 @@ export async function writeSablePacks(
         `SableBP/entities/sable/sublevel/${directory}/${base}.json`,
         jsonText(createFancyEntity(format === "dense" ? model.denseEntityTypeId : model.sparseEntityTypeId))
       );
-      targets.set(
-        `SableRP/entity/sable/sublevel/${directory}/${base}.json`,
-        jsonText(createFancyClientEntity(model, format))
+      const client = createFancyClientEntity(model, format);
+      collectSharedModelResources(
+        client,
+        createFancyGeometry(model, format),
+        createFancyAnimation(model, format),
+        createFancyRenderController(model, format),
+        targets
       );
-      targets.set(
-        `SableRP/models/entity/sable/sublevel/${directory}/${base}.geo.json`,
-        jsonText(createFancyGeometry(model, format))
-      );
-      targets.set(
-        `SableRP/animations/sable/sublevel/${directory}/${base}.animation.json`,
-        jsonText(createFancyAnimation(model, format))
-      );
-      targets.set(
-        `SableRP/render_controllers/sable/sublevel/${directory}/${base}.render_controllers.json`,
-        jsonText(createFancyRenderController(model, format))
-      );
+      targets.set(`SableRP/entity/sable/sublevel/${directory}/${base}.json`, jsonText(client));
     }
   }
 
@@ -254,22 +299,15 @@ export async function writeSablePacks(
       `SableBP/entities/sable/sublevel/${directory}/${base}.json`,
       jsonText(createFancyEntity(pool.entityTypeId))
     );
-    targets.set(
-      `SableRP/entity/sable/sublevel/${directory}/${base}.json`,
-      jsonText(createPoolClientEntity(pool))
+    const client = createPoolClientEntity(pool);
+    collectSharedModelResources(
+      client,
+      createPoolGeometry(pool),
+      createPoolAnimation(pool),
+      createPoolRenderController(pool),
+      targets
     );
-    targets.set(
-      `SableRP/models/entity/sable/sublevel/${directory}/${base}.geo.json`,
-      jsonText(createPoolGeometry(pool))
-    );
-    targets.set(
-      `SableRP/animations/sable/sublevel/${directory}/${base}.animation.json`,
-      jsonText(createPoolAnimation(pool))
-    );
-    targets.set(
-      `SableRP/render_controllers/sable/sublevel/${directory}/${base}.render_controllers.json`,
-      jsonText(createPoolRenderController(pool))
-    );
+    targets.set(`SableRP/entity/sable/sublevel/${directory}/${base}.json`, jsonText(client));
   }
 
   targets.set("SableRP/textures/colormap/foliage_fixed.tga", fixedColormapTga(fixedTintPalette));

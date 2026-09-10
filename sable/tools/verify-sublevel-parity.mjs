@@ -219,10 +219,16 @@ test("functional resource definitions retain baseline properties, geometry and a
 });
 
 test("all generated geometries have unique bones and consistent shared rest transforms", () => {
-  const folder = join(sable, "packs/SableRP/models/entity/sable/sublevel/fancy");
+  const pack = join(sable, "packs/SableRP");
+  const folder = join(pack, "entity/sable/sublevel/fancy");
+  const reader = modelResourceReader(pack, "sable/sublevel/fancy");
   for (const file of readdirSync(folder, { recursive: true }).filter(file => file.endsWith(".json"))) {
+    const client = json(join(folder, file))["minecraft:client_entity"].description;
+    const resources = reader({ typeId: client.identifier });
     const rest = new Map();
-    for (const geometry of json(join(folder, file))["minecraft:geometry"]) {
+    for (const identifier of new Set(Object.values(client.geometry))) {
+      const geometry = resources.geometries.get(identifier);
+      assert(geometry, `${file}: missing ${identifier}`);
       const names = new Set();
       for (const bone of geometry.bones) {
         assert(!names.has(bone.name), `${file}: duplicate ${bone.name}`);
@@ -233,6 +239,137 @@ test("all generated geometries have unique bones and consistent shared rest tran
       }
     }
   }
+});
+
+test("shared resources resolve every client alias without duplicate or unused definitions", () => {
+  const pack = join(sable, "packs/SableRP");
+  const folder = join(pack, "entity/sable/sublevel/fancy");
+  const resources = modelResourceIndex(pack);
+  const referenced = new Set();
+  for (const file of readdirSync(folder, { recursive: true }).filter(file => file.endsWith(".json"))) {
+    const client = json(join(folder, file))["minecraft:client_entity"].description;
+    for (const identifier of Object.values(client.geometry)) {
+      assert(resources.geometries.has(identifier), `${file}: missing ${identifier}`);
+      referenced.add(identifier);
+    }
+    for (const identifier of Object.values(client.animations)) {
+      assert(resources.animations[identifier], `${file}: missing ${identifier}`);
+      referenced.add(identifier);
+    }
+    for (const entry of client.render_controllers) {
+      const identifier = typeof entry === "string" ? entry : Object.keys(entry)[0];
+      const controller = resources.controllers[identifier];
+      assert(controller, `${file}: missing ${identifier}`);
+      referenced.add(identifier);
+      for (const [, kind, alias] of JSON.stringify(controller).matchAll(/\b(Geometry|Texture|Material)\.(\w+)/g)) {
+        const field = { Geometry: "geometry", Texture: "textures", Material: "materials" }[kind];
+        assert(client[field][alias], `${file}: unbound ${kind}.${alias}`);
+      }
+    }
+  }
+  const canonical = value => Array.isArray(value) ? value.map(canonical)
+    : value && typeof value === "object" ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])])) : value;
+  for (const definitions of [resources.geometries, new Map(Object.entries(resources.animations)), new Map(Object.entries(resources.controllers))]) {
+    const unique = new Map();
+    for (const [identifier, definition] of definitions) {
+      if (!identifier.includes(".sable_shared_")) continue;
+      assert(referenced.has(identifier), `unused ${identifier}`);
+      const content = structuredClone(definition);
+      if (content.description) delete content.description.identifier;
+      const signature = JSON.stringify(canonical(content));
+      assert(!unique.has(signature), `duplicate content: ${unique.get(signature)} and ${identifier}`);
+      unique.set(signature, identifier);
+    }
+  }
+});
+
+test("grass uses ordinary cube faces and an exact, unshifted grass-only multiply shell", () => {
+  const pack = join(sable, "packs/SableRP");
+  const reader = modelResourceReader(pack, "sable/sublevel/fancy");
+  const texture = readFileSync(join(root, ".sample/VanillaBlock/VanillaBlockResource/bedrock-sample-1.26.40.5/resource_pack/textures/blocks/grass_side.tga"));
+  assert.equal(texture[2], 2);
+  assert.equal(texture.readUInt16LE(12), 16);
+  assert.equal(texture.readUInt16LE(14), 16);
+  assert.equal(texture[16], 32);
+  const alpha = Array.from({ length: 256 }, (_, i) => {
+    const row = texture[17] & 32 ? Math.floor(i / 16) : 15 - Math.floor(i / 16);
+    return Number(texture[18 + texture[0] + (row * 16 + i % 16) * 4 + 3] > 0);
+  });
+  const material = json(join(pack, "materials/entity.material")).materials["tint_multiply:alpha_block_color"];
+  assert.equal(material.depthFunc, "Equal");
+  assert.deepEqual([material.blendSrc, material.blendDst], ["DestColor", "Zero"]);
+  for (const format of ["dense", "sparse"]) {
+    const { client, geometries, controllers } = reader({ typeId: `sable:fancy_model_grass_block_${format}` });
+    const baseFaces = [];
+    for (const alias of ["up", "down", "north"]) {
+      const bone = geometries.get(client.geometry[alias]).bones.find(bone => bone.name === "slot_0");
+      assert.equal(bone.cubes.length, 1);
+      assert.deepEqual(bone.cubes[0].origin, [-8, -24, -8]);
+      assert.deepEqual(bone.cubes[0].size, [16, 16, 16]);
+      baseFaces.push(...Object.keys(bone.cubes[0].uv));
+    }
+    assert.deepEqual(baseFaces.sort(), ["down", "east", "north", "south", "up", "west"]);
+    assert.equal(client.textures.colormap_grass, "textures/colormap/grass");
+    const aliases = format === "dense" ? ["colormap_x", "colormap_z", "colormap_compact_x", "colormap_compact_z"] : ["tint"];
+    for (const alias of aliases) {
+      const shell = geometries.get(client.geometry[alias]);
+      const slotBones = shell.bones.filter(bone => bone.cubes);
+      assert.equal(slotBones.length, format === "sparse" ? 26 : alias.includes("compact") ? 180 : 245);
+      for (const bone of [slotBones[0], slotBones.at(-1)]) {
+        assert.match(bone.name, /^slot_\d+$/);
+        assert.equal(bone.parent, "model_offset");
+        assert.deepEqual(bone.pivot, [0, -16, 0]);
+        const coverage = Object.fromEntries(baseFaces.map(face => [face, Array(256).fill(0)]));
+        for (const cube of bone.cubes) {
+          assert.equal(cube.inflate, undefined);
+          const [face, uv] = Object.entries(cube.uv)[0];
+          assert.equal(Object.keys(cube.uv).length, 1);
+          const [x, y, z] = cube.origin;
+          const [dx, dy, dz] = cube.size;
+          let u, v, width, height;
+          if (face === "up") {
+            assert.equal(y + dy, -8);
+            [u, v, width, height] = [x + 8, z + 8, dx, dz];
+          } else {
+            assert.notEqual(face, "down");
+            const plane = { north: z, south: z + dz, west: x, east: x + dx }[face];
+            assert.equal(plane, face === "north" || face === "west" ? -8 : 8);
+            u = { north: x + 8, south: 8 - x - dx, west: 8 - z - dz, east: z + 8 }[face];
+            [v, width, height] = [-8 - y - dy, face === "north" || face === "south" ? dx : dz, dy];
+          }
+          if (format === "sparse") assert.deepEqual(uv, { uv: [u, v], uv_size: [width, height] });
+          for (let row = v; row < v + height; row++) for (let column = u; column < u + width; column++) {
+            assert(row >= 0 && row < 16 && column >= 0 && column < 16);
+            coverage[face][row * 16 + column]++;
+          }
+        }
+        for (const face of baseFaces) {
+          const expected = face === "up" ? Array(256).fill(1) : face === "down" ? Array(256).fill(0) : alpha;
+          assert.deepEqual(coverage[face], expected, `${format}/${alias}/${bone.name}/${face}`);
+        }
+      }
+    }
+    const tintControllers = client.render_controllers.map(entry => controllers[typeof entry === "string" ? entry : Object.keys(entry)[0]])
+      .filter(controller => controller.materials[0]["*"] === "Material.tint_multiply");
+    assert.equal(tintControllers.length, format === "dense" ? 1 : 26);
+    for (const controller of tintControllers) assert.deepEqual(controller.textures, ["Texture.colormap_grass"]);
+    for (const occupied of [0, 1]) {
+      const evaluate = resourceEvaluator({ getProperty: name => ({ "sable:s0": occupied, "sable:tint": 7 * 1048576, "sable:origin_y": 2048 })[name] ?? 0 }, client);
+      const visibility = Object.assign({}, ...tintControllers[0].part_visibility);
+      assert.equal(Boolean(evaluate(visibility.slot_0)), occupied === 1);
+    }
+  }
+  const f = fixture();
+  const registry = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts");
+  const resolved = registry.resolveFancySubLevelBlock(block("minecraft:grass_block"));
+  assert.equal(resolved.model.description.type, "full_block");
+  const particles = f.load("content/particle/SubLevelBlockParticleEffects.ts");
+  assert.equal(particles.destructParticleTexture(resolved.model.description), "textures/blocks/dirt");
+  const layout = f.load("sublevel/render/fancy/model/FancySubLevelModelLayout.ts");
+  assert(layout.packFancySubLevelModels([resolved]).models.every(model => model.format === "dense"));
+  const leaves = reader({ typeId: "sable:fancy_model_oak_leaves_dense" }).client;
+  assert(leaves.geometry.colormap_x);
+  assert.equal(leaves.materials.tint_multiply, "tint_multiply");
 });
 
 test("grid hit distance, face and starting-cell semantics match the baseline", () => {
@@ -791,22 +928,40 @@ function modelResourceReader(pack, folder) {
   const base = join(pack, "entity", folder);
   for (const path of readdirSync(base, { recursive: true }).filter(file => file.endsWith(".json"))) {
     const client = json(join(base, path))["minecraft:client_entity"].description;
-    clients.set(client.identifier, { client, path: join(folder, path).replace(/\.json$/, "") });
+    clients.set(client.identifier, client);
   }
-  const cache = new Map();
+  const resources = modelResourceIndex(pack);
   return entity => {
-    const record = clients.get(entity.typeId);
-    assert(record, `missing client entity ${entity.typeId}`);
-    if (cache.has(entity.typeId)) return cache.get(entity.typeId);
-    const resources = {
-      client: record.client,
-      geometries: new Map(json(join(pack, "models/entity", `${record.path}.geo.json`))["minecraft:geometry"].map(g => [g.description.identifier, g])),
-      animations: json(join(pack, "animations", `${record.path}.animation.json`)).animations,
-      controllers: json(join(pack, "render_controllers", `${record.path}.render_controllers.json`)).render_controllers
-    };
-    cache.set(entity.typeId, resources);
-    return resources;
+    const client = clients.get(entity.typeId);
+    assert(client, `missing client entity ${entity.typeId}`);
+    return { client, ...resources };
   };
+}
+
+// Bedrock resolves resource identifiers globally, independent of filenames.
+const modelResourceIndexes = new Map();
+function modelResourceIndex(pack) {
+  if (modelResourceIndexes.has(pack)) return modelResourceIndexes.get(pack);
+  const resources = { geometries: new Map(), animations: {}, controllers: {} };
+  for (const directory of ["models/entity", "animations", "render_controllers"]) {
+    const base = join(pack, directory);
+    for (const file of readdirSync(base, { recursive: true }).filter(file => file.endsWith(".json"))) {
+      const document = json(join(base, file));
+      for (const geometry of document["minecraft:geometry"] ?? []) {
+        const id = geometry.description.identifier;
+        assert(!resources.geometries.has(id), `duplicate geometry ${id}`);
+        resources.geometries.set(id, geometry);
+      }
+      for (const [key, target] of [["animations", resources.animations], ["render_controllers", resources.controllers]]) {
+        for (const [id, definition] of Object.entries(document[key] ?? {})) {
+          assert(!target[id], `duplicate ${id}`);
+          target[id] = definition;
+        }
+      }
+    }
+  }
+  modelResourceIndexes.set(pack, resources);
+  return resources;
 }
 
 function activeModelSurfaces(entity, resources, transformed = false) {

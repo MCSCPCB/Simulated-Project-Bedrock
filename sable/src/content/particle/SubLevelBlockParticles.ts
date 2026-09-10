@@ -184,7 +184,7 @@ function resolveSubLevelBlockParticleColor(
 function addonBlockKind(model: FancySubLevelModel): "log" | "leaf" | undefined {
   const type = model.description.type;
   if (type === "pillar" || type === "creaking_heart") return "log";
-  if (model.tint?.method === "foliage") return "leaf";
+  if (model.tint?.method === "foliage" || model.tint?.method === "grass") return "leaf";
   return undefined;
 }
 

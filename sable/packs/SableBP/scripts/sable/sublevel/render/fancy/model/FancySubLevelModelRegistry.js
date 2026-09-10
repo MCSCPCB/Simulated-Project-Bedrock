@@ -1,5 +1,5 @@
 import { blockRegistry } from "../../../../generated/sublevel-block-registry.js";
-import { createFancySubLevelModelState } from "./FancySubLevelModelTypes.js";
+import { createFancySubLevelModelState, encodeFancySubLevelModelState } from "./FancySubLevelModelTypes.js";
 const modelCache = /* @__PURE__ */ new Map();
 const MISSING_MODEL = {
   denseEntityTypeId: "sable:fancy_model_missing_dense",
@@ -25,7 +25,7 @@ function resolveFancySubLevelBlock(block) {
   const selected = variant ? variant.model : registration.default;
   if (!selected) return void 0;
   const model = materializeModel(selected);
-  return { block, category: registration.category, model, state: model.state?.dimensions[0]?.value ?? 0 };
+  return { block, category: registration.category, model, state: encodeFancySubLevelModelState(model.description, block.states) };
 }
 function hasFancySubLevelRegistration(typeId) {
   return blockRegistry[typeId] !== void 0;

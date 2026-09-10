@@ -4529,7 +4529,6 @@ const VANILLA_BLOCK_HIT_SOUND_EVENTS = [
     0.3
   ]
 ];
-
 const VANILLA_BLOCK_HIT_SOUND_EVENT_INDICES = {
   "minecraft:acacia_button": 0,
   "minecraft:acacia_door": 0,

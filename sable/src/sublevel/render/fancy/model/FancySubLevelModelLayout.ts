@@ -128,7 +128,7 @@ function packModelGroup(
   surfaceBlocks: readonly FancySubLevelBlock[]
 ): PackedFancySubLevelModel[] | undefined {
   const model = group[0]!.model;
-  const foliage = model.tint?.method === "foliage";
+  const foliage = model.tint?.method === "foliage" || model.tint?.method === "grass";
   if (foliage && model.description.type !== "full_block") {
     const context = surfaceBlocks.length > 0 ? surfaceBlocks : group;
     return packSparseBlocks(model, {
@@ -150,7 +150,8 @@ function packModelGroup(
     FANCY_MODEL_SPARSE_SIZE,
     FANCY_MODEL_SPARSE_SIZE
   );
-  const sparseValid = sparseBoxes.every(([anchor]) => isFancySubLevelOriginEncodable(anchor));
+  const sparseValid = sparseBoxes.every(([anchor]) => isFancySubLevelOriginEncodable(anchor))
+    && group.every(isPackableBlock);
   const sparseBoxKey = new Map<FancySubLevelBlock, string>();
   for (const [anchor, bucket] of sparseBoxes) {
     const key = fancySubLevelBlockKey(anchor);
@@ -332,7 +333,7 @@ function applyPoolPacking(
     const pool = model.pool;
     // Cube foliage retains the dense climate geometry; surface foliage shares
     // descriptor entities within the same climate buckets as its sparse route.
-    if (!pool || (model.tint?.method === "foliage" && model.description.type === "full_block")) continue;
+    if (!pool || ((model.tint?.method === "foliage" || model.tint?.method === "grass") && model.description.type === "full_block")) continue;
     const members = byPool.get(pool.entityTypeId);
     if (members) members.push(group);
     else byPool.set(pool.entityTypeId, [group]);
@@ -374,7 +375,7 @@ function packPoolBlocks(
   blocks: readonly FancySubLevelBlock[],
   surfaceBlocks: readonly FancySubLevelBlock[]
 ): PackedFancySubLevelModel[] | undefined {
-  const hasFoliage = blocks.some(entry => entry.model.tint?.method === "foliage");
+  const hasFoliage = blocks.some(entry => entry.model.tint?.method === "foliage" || entry.model.tint?.method === "grass");
   const width = hasFoliage ? SURFACE_FOLIAGE_LAYOUT.width : 2 ** pool.xBits;
   const height = hasFoliage ? SURFACE_FOLIAGE_LAYOUT.height : 2 ** pool.yBits;
   const depth = hasFoliage ? SURFACE_FOLIAGE_LAYOUT.depth : 2 ** pool.zBits;
@@ -420,7 +421,7 @@ function packPoolBlocks(
           state: entry.model.state,
           word: slot
         });
-        if (entry.model.tint?.method === "foliage") foliage = true;
+        if (entry.model.tint?.method === "foliage" || entry.model.tint?.method === "grass") foliage = true;
       }
       result.push({
         anchorLocalLocation,

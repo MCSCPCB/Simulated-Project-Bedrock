@@ -198,11 +198,57 @@ function libraryChannels(type: string, variant: string): Readonly<Record<string,
   return channels;
 }
 
+interface GrassRectangle {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+// The vanilla grass-side texture has a four-pixel grass fringe. Its alpha
+// mask is stable across the supplied Bedrock resource pack; the greedy
+// decomposition keeps large uninterrupted areas together while preserving
+// every transparent cut-out at the dirt boundary.
+function grassSideRectangles(): GrassRectangle[] {
+  const mask = [
+    "1111111111111111",
+    "1111101111111111",
+    "1011101011110110",
+    "0000100010100000"
+  ].map(row => [...row].map(value => value === "1"));
+  const rectangles: GrassRectangle[] = [];
+  while (mask.some(row => row.includes(true))) {
+    let best: { x: number; y: number; width: number; height: number; area: number } | undefined;
+    for (let y = 0; y < mask.length; y++) {
+      for (let x = 0; x < mask[y]!.length; x++) {
+        if (!mask[y]![x]) continue;
+        let width = mask[y]!.length - x;
+        for (let height = 1; y + height <= mask.length; height++) {
+          let rowWidth = 0;
+          while (rowWidth < width && mask[y + height - 1]![x + rowWidth]) rowWidth++;
+          width = rowWidth;
+          if (width === 0) break;
+          const area = width * height;
+          if (!best || area > best.area) best = { x, y, width, height, area };
+        }
+      }
+    }
+    if (!best) throw new Error("Grass side mask contains an unresolvable pixel.");
+    rectangles.push({ x: best.x, y: best.y, width: best.width, height: best.height });
+    for (let y = best.y; y < best.y + best.height; y++) {
+      for (let x = best.x; x < best.x + best.width; x++) mask[y]![x] = false;
+    }
+  }
+  return rectangles;
+}
+
 function modelChannels(model: CompiledModel): ModelChannel[] {
   const description = model.model as JsonObject;
   const type = String(description.type);
   if (type === "full_block") {
     const textures = description.textures as Record<FullFace, string>;
+    const size = (description.size as readonly [number, number, number] | undefined) ?? [16, 16, 16];
+    const origin: readonly [number, number, number] = [-8, -24, -8];
     const byTexture = new Map<string, FullFace[]>();
     for (const face of FULL_FACES) {
       const faces = byTexture.get(textures[face]);
@@ -216,9 +262,78 @@ function modelChannels(model: CompiledModel): ModelChannel[] {
       bones: [{
         name: "slot_{s}",
         pivot: [0, -16, 0],
-        cubes: [{ origin: [-8, -24, -8], size: [16, 16, 16], uv: faceUvMap(faces) }]
+        cubes: [{ origin, size, uv: faceUvMap(faces) }]
       }]
     }));
+  }
+  if (type === "wall") {
+    const texture = String(description.texture);
+    const bones: LibraryBone[] = [];
+    bones.push({ name: "post_{s}", pivot: [0, -16, 0], cubes: [{ origin: [-4, -24, -4], size: [8, 16, 8], uv: faceUvMap(FULL_FACES) }] });
+    for (const [direction, origin, size] of [
+      ["north", [-3, -24, -8], [6, 14, 11]], ["north", [-3, -24, -8], [6, 16, 11]],
+      ["south", [-3, -24, -3], [6, 14, 11]], ["south", [-3, -24, -3], [6, 16, 11]],
+      ["west", [-8, -24, -3], [11, 14, 6]], ["west", [-8, -24, -3], [11, 16, 6]],
+      ["east", [-3, -24, -3], [11, 14, 6]], ["east", [-3, -24, -3], [11, 16, 6]]
+    ] as const) {
+      const height = size[1] === 16 ? "tall" : "short";
+      bones.push({
+        name: `${direction}_${height}_{s}`,
+        pivot: [0, -16, 0],
+        cubes: [{ origin, size, uv: faceUvMap(FULL_FACES) }]
+      });
+    }
+    return [{ name: "default", texture, textureSize: [16, 16], bones }];
+  }
+  if (type === "moss_carpet") {
+    const texture = String(description.texture);
+    const pale = Boolean(description.pale);
+    const bones: LibraryBone[] = [
+      { name: "base_top_{s}", pivot: [0, -16, 0], cubes: [{ origin: [-8, -9, -8], size: [16, 1, 16], uv: { up: { uv: [0, 0], uv_size: [16, 16] }, down: { uv: [0, 0], uv_size: [16, 16] } } }] },
+      { name: "base_bottom_{s}", pivot: [0, -16, 0], cubes: [{ origin: [-8, -24, -8], size: [16, 1, 16], uv: { up: { uv: [0, 0], uv_size: [16, 16] }, down: { uv: [0, 0], uv_size: [16, 16] } } }] }
+    ];
+    for (const [direction, origin, size] of [
+      ["north", [-8, -10, -8], [16, 1, 1]], ["north", [-8, -11, -8], [16, 2, 1]], ["north", [-8, -13, -8], [16, 4, 1]],
+      ["south", [-8, -10, 7], [16, 1, 1]], ["south", [-8, -11, 7], [16, 2, 1]], ["south", [-8, -13, 7], [16, 4, 1]],
+      ["west", [-8, -10, -8], [1, 1, 16]], ["west", [-8, -11, -8], [1, 2, 16]], ["west", [-8, -13, -8], [1, 4, 16]],
+      ["east", [7, -10, -8], [1, 1, 16]], ["east", [7, -11, -8], [1, 2, 16]], ["east", [7, -13, -8], [1, 4, 16]]
+    ] as const) {
+      const height = size[1] === 1 ? "none" : size[1] === 2 ? "short" : "tall";
+      const bottomOrigin = [origin[0], -24, origin[2]] as const;
+      bones.push(
+        { name: `${direction}_${height}_top_{s}`, pivot: [0, -16, 0], cubes: [{ origin, size, uv: faceUvMap([direction]) }] },
+        { name: `${direction}_${height}_bottom_{s}`, pivot: [0, -16, 0], cubes: [{ origin: bottomOrigin, size, uv: faceUvMap([direction]) }] }
+      );
+    }
+    return [{ name: "default", texture, textureSize: [16, 16], bones }];
+  }
+  if (type === "pointed_dripstone") {
+    const texture = String(description.texture);
+    const thickness = String(description.thickness) as "tip" | "frustum" | "middle" | "base" | "merge";
+    const hanging = Boolean(description.hanging);
+    const profile: Readonly<Record<string, readonly [number, number]>> = {
+      tip: [2, 10], frustum: [6, 8], middle: [8, 6], base: [12, 4], merge: [10, 6]
+    };
+    const [width, height] = profile[thickness];
+    const y = hanging ? -8 - height : -24;
+    const cubes: JsonObject[] = [];
+    for (let index = 0; index < height; index++) {
+      const span = Math.max(1, Math.round(hanging
+        ? 2 + (width - 2) * index / Math.max(1, height - 1)
+        : width - (width - 2) * index / Math.max(1, height - 1)));
+      const originY = y + index;
+      cubes.push({
+        origin: [-span / 2, originY, -span / 2],
+        size: [span, 1, span],
+        uv: faceUvMap(FULL_FACES)
+      });
+    }
+    return [{
+      name: "default",
+      texture,
+      textureSize: [16, 16],
+      bones: [{ name: "slot_{s}", pivot: [0, -16, 0], cubes }]
+    }];
   }
   if (type === "pillar" || type === "creaking_heart") {
     const textures = description.textures as { side: string; top: string };
@@ -350,8 +465,34 @@ function isTintMaterial(model: CompiledModel): boolean {
   return model.material === "alpha_test_tint" || model.material === "opaque_tint";
 }
 
+function tintChannels(model: CompiledModel): ModelChannel[] {
+  if (model.tint?.method !== "grass") return modelChannels(model);
+  // The base keeps all six ordinary block faces. Only the multiply shell
+  // follows the grass mask; Equal-depth blending uses these exact planes.
+  const cubes: JsonObject[] = [
+    { origin: [-8, -9, -8], size: [16, 1, 16], uv: faceUvMap(["up"]) }
+  ];
+  for (const { x, y, width, height } of grassSideRectangles()) {
+    const bottom = -8 - y - height;
+    for (const [face, origin, size] of [
+      ["north", [-8 + x, bottom, -8], [width, height, 1]],
+      ["south", [8 - x - width, bottom, 7], [width, height, 1]],
+      ["west", [-8, bottom, 8 - x - width], [1, height, width]],
+      ["east", [7, bottom, -8 + x], [1, height, width]]
+    ] as const) {
+      cubes.push({ origin, size, uv: { [face]: { uv: [x, y], uv_size: [width, height] } } });
+    }
+  }
+  return [{
+    name: "tint",
+    texture: "textures/colormap/grass",
+    textureSize: [16, 16],
+    bones: [{ name: "slot_{s}", pivot: [0, -16, 0], cubes }]
+  }];
+}
+
 function hasFoliageTint(model: CompiledModel): boolean {
-  return isTintMaterial(model) && model.tint?.method === "foliage";
+  return isTintMaterial(model) && (model.tint?.method === "foliage" || model.tint?.method === "grass");
 }
 
 function hasFixedTint(model: CompiledModel): boolean {
@@ -370,6 +511,7 @@ function baseMaterial(model: CompiledModel): string {
     if (model.model.type === "chest") return model.flipbook ? "alpha_block_flipbook" : "alpha_block";
     return model.flipbook ? "alpha_block_flipbook" : "alpha_block_color";
   }
+  if (model.material === "opaque_tint") return "opaque_block";
   return model.flipbook ? "alpha_block_color_flipbook" : "alpha_block_color";
 }
 
@@ -415,7 +557,7 @@ function flipbookAnimation(model: CompiledModel): JsonObject | undefined {
 // Mirrors TreePhysics: leaf-style cutout blocks render without the shared
 // 0.88 light multiplier, every other fragment controller keeps it.
 function lightColorMultiplier(model: CompiledModel): JsonObject {
-  return model.model.type === "full_block" && model.material !== "opaque" && model.material !== "opaque_emissive"
+  return model.model.type === "full_block" && model.material !== "opaque" && model.material !== "opaque_emissive" && model.material !== "opaque_tint"
     ? {}
     : { light_color_multiplier: 0.88 };
 }
@@ -425,7 +567,7 @@ function isChestModel(model: CompiledModel): boolean {
 }
 
 function stateBits(model: CompiledModel): number {
-  return isChestModel(model) ? 1 : 0;
+  return isChestModel(model) ? 1 : model.model.type === "wall" || (model.model.type === "moss_carpet" && model.model.pale) ? 9 : 0;
 }
 
 function modelKeyName(model: CompiledModel, format: "dense" | "sparse"): string {
@@ -539,6 +681,7 @@ export function createFancyClientEntity(model: CompiledModel, format: "dense" | 
   if (isTintMaterial(model)) materials.tint_multiply = "tint_multiply";
   const textures: JsonObject = {};
   for (const channel of channels) textures[channel.name] = channel.texture;
+  if (model.tint?.method === "grass") textures.colormap_grass = "textures/colormap/grass";
   const geometry: JsonObject = {};
   for (const channel of channels) geometry[channel.name] = `geometry.${key}.${channel.name}`;
   const renderControllers: unknown[] = channels.map(channel => `controller.render.${key}.${channel.name}`);
@@ -551,6 +694,7 @@ export function createFancyClientEntity(model: CompiledModel, format: "dense" | 
       geometry.colormap_compact_z = `geometry.${key}.colormap_compact_z`;
       renderControllers.push({ [`controller.render.${key}.tint_multiply`]: "v.tint_kind >= 1" });
     } else {
+      if (model.tint?.method === "grass") geometry.tint = `geometry.${key}.tint`;
       for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
         renderControllers.push({
           [`controller.render.${key}.tint_multiply_${slot}`]: `v.tint_kind >= 1 && v.c${slot} > 0`
@@ -647,7 +791,7 @@ function colormapGeometry(
   axis: "x" | "z",
   width = DENSE_WIDTH
 ): JsonObject {
-  const channels = modelChannels(model);
+  const channels = tintChannels(model);
   const bones: JsonObject[] = [...rootBoneChain()];
   for (let slot = 0; slot < width * width * 5; slot++) {
     const coordinate = axis === "x"
@@ -671,6 +815,8 @@ export function createFancyGeometry(model: CompiledModel, format: "dense" | "spa
       colormapGeometry(model, key, "x"), colormapGeometry(model, key, "z"),
       colormapGeometry(model, key, "x", 6), colormapGeometry(model, key, "z", 6)
     );
+  } else if (model.tint?.method === "grass") {
+    geometries.push(channelGeometry(format, key, tintChannels(model)[0]!));
   }
   return { format_version: "1.16.0", "minecraft:geometry": geometries };
 }
@@ -715,15 +861,39 @@ export function createFancyAnimation(model: CompiledModel, format: "dense" | "sp
 
 function slotVisibility(
   format: "dense" | "sparse",
-  channel: ModelChannel
+  channel: ModelChannel,
+  model?: CompiledModel
 ): JsonObject[] {
   const visibility: JsonObject[] = [{ "*": false }];
   for (let slot = 0; slot < slotCountOf(format); slot++) {
     for (const name of channelBoneNames(channel, slot)) {
-      visibility.push({ [name]: `(v.c${slot} > 0)` });
+      const condition = model?.model.type === "wall"
+        ? wallBoneVisibility(name, slot, format)
+        : `(v.c${slot} > 0)`;
+      visibility.push({ [name]: condition });
     }
   }
   return visibility;
+}
+
+function wallBoneVisibility(name: string, slot: number, format: "dense" | "sparse"): string {
+  const value = format === "dense" ? `v.c${slot}` : `v.c${slot}`;
+  const match = /^(?:m\d+_)?(post|north_short|north_tall|east_short|east_tall|south_short|south_tall|west_short|west_tall)_/.exec(name);
+  const moss = /^(?:m\d+_)?(base_top|base_bottom|north_none|north_short|north_tall|east_none|east_short|east_tall|south_none|south_short|south_tall|west_none|west_short|west_tall)_(top|bottom)?_/.exec(name);
+  if (moss) {
+    const upper = `math.floor(${value} / 256)`;
+    if (moss[1] === "base_top" || moss[1] === "base_bottom") return moss[1] === "base_top" ? `(${upper} == 0)` : `(${upper} > 0)`;
+    const [direction, height] = moss[1]!.split("_");
+    const shifts: Record<string, number> = { north: 0, east: 2, south: 4, west: 6 };
+    const expected = height === "none" ? 0 : height === "short" ? 1 : 2;
+    const position = `math.mod(math.floor(${value} / ${2 ** shifts[direction!]!}), 4)`;
+    return `(${position} == ${expected} && ${moss[2] === "bottom" ? `${upper} > 0` : `${upper} == 0`})`;
+  }
+  if (!match) return `(v.c${slot} > 0)`;
+  if (match[1] === "post") return `math.floor(${value} / 256) > 0`;
+  const [direction, height] = match[1].split("_");
+  const shifts: Record<string, number> = { north: 0, east: 2, south: 4, west: 6 };
+  return `math.mod(math.floor(${value} / ${2 ** shifts[direction!]!}), 4) == ${height === "short" ? 1 : 2}`;
 }
 
 function denseColormapController(
@@ -748,7 +918,7 @@ function denseColormapController(
     },
     geometry: "Array.colormap[(v.layout_width == 6 ? 2 : 0) + v.tint_axis_z]",
     materials: [{ "*": "Material.tint_multiply" }],
-    textures: ["Array.colormaps[math.max(0, (v.tint_kind) - 1)]"],
+    textures: [model.tint?.method === "grass" ? "Texture.colormap_grass" : "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"],
     uv_anim: {
       offset: [
         "v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256)",
@@ -763,7 +933,7 @@ function denseColormapController(
   };
 }
 
-function sparseColormapController(channel: ModelChannel, slot: number): JsonObject {
+function sparseColormapController(model: CompiledModel, channel: ModelChannel, slot: number): JsonObject {
   const coordinate = `(v.tint_axis_z ? math.mod(math.floor(v.s${slot} / 262144), 64) : math.mod(math.floor(v.s${slot} / 64), 64))`;
   const span = `(v.layout_width > 1 ? v.layout_width : ${SPARSE_SIZE})`;
   return {
@@ -772,7 +942,7 @@ function sparseColormapController(channel: ModelChannel, slot: number): JsonObje
     },
     geometry: `Geometry.${channel.name}`,
     materials: [{ "*": "Material.tint_multiply" }],
-    textures: ["Array.colormaps[math.max(0, (v.tint_kind) - 1)]"],
+    textures: [model.tint?.method === "grass" ? "Texture.colormap_grass" : "Array.colormaps[math.max(0, (v.tint_kind) - 1)]"],
     uv_anim: {
       offset: [
         `v.tint_uniform ? ((v.tint_pixel_u + 0.5) / 256) : ((0.5 + (v.tint_0) * 255 / 31) / 256 + (((v.tint_2) - (v.tint_0)) * 255 / 7936) * ${coordinate} / ${span})`,
@@ -805,19 +975,18 @@ export function createFancyRenderController(model: CompiledModel, format: "dense
       ),
       textures: [`Texture.${channel.name}`],
       ...(flipbookAnimation(model) ? { uv_anim: flipbookAnimation(model) } : {}),
-      part_visibility: slotVisibility(format, channel)
+      part_visibility: slotVisibility(format, channel, model)
     };
   });
   if (isTintMaterial(model)) {
-    if (channels.length !== 1) {
-      throw new Error(`Model ${model.key} uses a tint material with multiple texture channels.`);
-    }
+    const tinted = tintChannels(model);
     if (format === "dense") {
-      controllers[`controller.render.${key}.tint_multiply`] = denseColormapController(model, channels);
+      controllers[`controller.render.${key}.tint_multiply`] = denseColormapController(model, tinted);
     } else {
       for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
         controllers[`controller.render.${key}.tint_multiply_${slot}`] = sparseColormapController(
-          channels[0]!,
+          model,
+          tinted[0]!,
           slot
         );
       }

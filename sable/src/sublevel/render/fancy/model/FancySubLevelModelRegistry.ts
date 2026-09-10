@@ -6,7 +6,7 @@ import {
   type FancySubLevelBlock,
   type FancySubLevelModel
 } from "./FancySubLevelModel.js";
-import { createFancySubLevelModelState } from "./FancySubLevelModelTypes.js";
+import { createFancySubLevelModelState, encodeFancySubLevelModelState } from "./FancySubLevelModelTypes.js";
 
 const modelCache = new Map<string, FancySubLevelModel>();
 
@@ -40,7 +40,7 @@ export function resolveFancySubLevelBlock(
   // A null model routes this state combination to the hand-held route.
   if (!selected) return undefined;
   const model = materializeModel(selected);
-  return { block, category: registration.category, model, state: model.state?.dimensions[0]?.value ?? 0 };
+  return { block, category: registration.category, model, state: encodeFancySubLevelModelState(model.description, block.states) };
 }
 
 export function hasFancySubLevelRegistration(typeId: string): boolean {

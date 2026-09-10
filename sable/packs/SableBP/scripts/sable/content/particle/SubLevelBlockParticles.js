@@ -116,7 +116,7 @@ function resolveSubLevelBlockParticleColor(block, model, foliageTint) {
 function addonBlockKind(model) {
   const type = model.description.type;
   if (type === "pillar" || type === "creaking_heart") return "log";
-  if (model.tint?.method === "foliage") return "leaf";
+  if (model.tint?.method === "foliage" || model.tint?.method === "grass") return "leaf";
   return void 0;
 }
 function resolveFoliageParticleColor(block, model, foliageTint) {

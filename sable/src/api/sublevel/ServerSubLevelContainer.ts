@@ -33,6 +33,7 @@ import {
 } from "../../sublevel/system/SubLevelInteractionSystem.js";
 import {
   resolveSubLevelBlockSupport,
+  resolveSubLevelBlockNeighborStateUpdates,
   type SubLevelBlockSupportEntry
 } from "../../content/block_properties/SubLevelBlockSupport.js";
 import {
@@ -449,6 +450,17 @@ export class ServerSubLevelContainer {
         this.#recreateRender(record, blocks);
         handle.resetBlocks(blocks);
       }
+      const entries: SubLevelBlockSupportEntry[] = handle.blocks.map(entry => ({
+        key: blockLocationKey(entry.localLocation),
+        localLocation: entry.localLocation,
+        snapshot: entry
+      }));
+      const neighborUpdates = resolveSubLevelBlockNeighborStateUpdates(
+        entries,
+        new Set([blockLocationKey(placed.localLocation)])
+      );
+      if (neighborUpdates.size > 0) this.#applyStateUpdates(record, neighborUpdates);
+      record.subLevel = { ...record.subLevel, blocks: [...handle.blocks] };
       this.#blockBehaviors.get(placed.typeId)?.onBlockAdded?.({
         block: placed,
         dimension: handle.dimension,

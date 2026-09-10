@@ -28,12 +28,14 @@ export function destructParticleTexture(
   description: FancySubLevelModelDescription
 ): string {
   switch (description.type) {
-    case "full_block": return description.textures.north;
+    case "full_block": return description.textures.north === "textures/blocks/grass_side"
+      ? description.textures.down : description.textures.north;
     case "pillar":
     case "creaking_heart": return description.textures.side;
     case "chest": return description.texture;
     case "bee_nest": return description.textures.side;
     case "mangrove_roots": return description.textures.side;
+    case "wall": return description.texture;
     default: return description.texture;
   }
 }

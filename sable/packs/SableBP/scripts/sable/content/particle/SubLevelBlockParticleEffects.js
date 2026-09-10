@@ -10,7 +10,7 @@ const ADDON_SUBSTITUTE_PARTICLE_TEXTURES = [
 function destructParticleTexture(description) {
   switch (description.type) {
     case "full_block":
-      return description.textures.north;
+      return description.textures.north === "textures/blocks/grass_side" ? description.textures.down : description.textures.north;
     case "pillar":
     case "creaking_heart":
       return description.textures.side;
@@ -20,6 +20,8 @@ function destructParticleTexture(description) {
       return description.textures.side;
     case "mangrove_roots":
       return description.textures.side;
+    case "wall":
+      return description.texture;
     default:
       return description.texture;
   }
