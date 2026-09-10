@@ -67,7 +67,7 @@ class ServerSubLevelContainer {
     }
   }
   handleVisualEntityLoad(entity) {
-    if (entity.typeId !== "sable:block" && entity.typeId !== "sable:block_carrier" && !entity.typeId.startsWith("sable:fancy_model_") && !entity.typeId.startsWith("sable:fancy_pool_")) return;
+    if (entity.typeId !== "sable:block" && entity.typeId !== "sable:block_carrier" && !entity.typeId.startsWith("sable:fancy_")) return;
     system.run(() => {
       if (!entity.isValid || this.#interactionSystem.isVisualEntity(entity.dimension.id, entity.id)) return;
       entity.remove();
@@ -88,6 +88,7 @@ class ServerSubLevelContainer {
     for (const record of [...this.#recordsByHandleId.values()]) {
       if (record.removed || !record.handle.isValid) continue;
       if (!isRecordRegionLoaded(record)) continue;
+      record.renderData.sync();
       if (!record.renderData.hasKnownIntegrityFailure() && record.renderData.hasIntactEntities()) continue;
       this.#saveRecord(record);
       this.#recreateRender(record, record.handle.blocks);

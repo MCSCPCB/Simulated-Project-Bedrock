@@ -155,12 +155,14 @@ function packDenseBucket(model, candidate, anchorLocalLocation, bucket) {
     assignments,
     blockCount: bucket.length,
     depth: candidate.depth,
-    entityTypeId: model.denseEntityTypeId,
+    entityTypeId: model.dense.entityTypeId,
+    modelVariant: model.dense.variant,
     format: "dense",
     height: candidate.height,
     ...model.tint ? { tint: model.tint } : {},
     width: candidate.width,
-    words
+    words,
+    modelRotation: model.dense.rotation
   };
 }
 function packSparseBlocks(model, origin, blocks, layout = {
@@ -201,12 +203,14 @@ function packSparseBlocks(model, origin, blocks, layout = {
         assignments,
         blockCount: chunk.length,
         depth: layout.depth,
-        entityTypeId: model.sparseEntityTypeId,
+        entityTypeId: model.sparse.entityTypeId,
+        modelVariant: model.sparse.variant,
         format: "sparse",
         height: layout.height,
         ...model.tint ? { tint: model.tint } : {},
         width: layout.width,
-        words
+        words,
+        modelRotation: model.sparse.rotation
       });
     }
   }
@@ -218,9 +222,10 @@ function applyPoolPacking(packedGroups, surfaceBlocks) {
     const model = group.blocks[0].model;
     const pool = model.pool;
     if (!pool || (model.tint?.method === "foliage" || model.tint?.method === "grass") && model.description.type === "full_block") continue;
-    const members = byPool.get(pool.entityTypeId);
+    const key = `${pool.entityTypeId}:${pool.variant}`;
+    const members = byPool.get(key);
     if (members) members.push(group);
-    else byPool.set(pool.entityTypeId, [group]);
+    else byPool.set(key, [group]);
   }
   for (const members of byPool.values()) {
     if (members.length < 2 && members[0].packs.length < 2) continue;
@@ -299,6 +304,7 @@ function packPoolBlocks(pool, blocks, surfaceBlocks) {
         blockCount: chunk.length,
         depth,
         entityTypeId: pool.entityTypeId,
+        modelVariant: pool.variant,
         format: "pool",
         height,
         ...foliage ? { tint: { method: "foliage" } } : {},
@@ -382,7 +388,7 @@ function compareAnchors(left, right) {
   return left.y - right.y || left.z - right.z || left.x - right.x;
 }
 function comparePackedModels(left, right) {
-  return left.entityTypeId.localeCompare(right.entityTypeId) || left.anchorLocalLocation.y - right.anchorLocalLocation.y || left.anchorLocalLocation.z - right.anchorLocalLocation.z || left.anchorLocalLocation.x - right.anchorLocalLocation.x;
+  return left.entityTypeId.localeCompare(right.entityTypeId) || left.modelVariant - right.modelVariant || left.anchorLocalLocation.y - right.anchorLocalLocation.y || left.anchorLocalLocation.z - right.anchorLocalLocation.z || left.anchorLocalLocation.x - right.anchorLocalLocation.x;
 }
 function fancySubLevelBlockKey(location) {
   return `${location.x},${location.y},${location.z}`;

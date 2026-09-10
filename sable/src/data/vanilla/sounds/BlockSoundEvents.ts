@@ -3792,7 +3792,7 @@ export const VANILLA_BLOCK_PLACE_SOUND_EVENT_INDICES: Readonly<Record<string, nu
   "minecraft:zombie_head": 5
 };
 
-export const VANILLA_BLOCK_HIT_SOUND_EVENTS = [
+export const VANILLA_BLOCK_HIT_SOUND_EVENTS: readonly GeneratedBlockSoundEvent[] = [
   [
     "hit.wood",
     0.5,

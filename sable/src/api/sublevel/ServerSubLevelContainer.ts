@@ -127,8 +127,7 @@ export class ServerSubLevelContainer {
 
   handleVisualEntityLoad(entity: Entity): void {
     if (entity.typeId !== "sable:block" && entity.typeId !== "sable:block_carrier"
-      && !entity.typeId.startsWith("sable:fancy_model_")
-      && !entity.typeId.startsWith("sable:fancy_pool_")) return;
+      && !entity.typeId.startsWith("sable:fancy_")) return;
     system.run(() => {
       if (!entity.isValid || this.#interactionSystem.isVisualEntity(entity.dimension.id, entity.id)) return;
       entity.remove();
@@ -152,6 +151,9 @@ export class ServerSubLevelContainer {
       // Unloaded chunks invalidate entity handles without losing the entities;
       // integrity only means anything while the projection region is loaded.
       if (!isRecordRegionLoaded(record)) continue;
+      // Re-send the current animation input for clients that started tracking
+      // a sleeping projection after its initial playAnimation packet.
+      record.renderData.sync();
       if (!record.renderData.hasKnownIntegrityFailure() && record.renderData.hasIntactEntities()) continue;
       // Externally removed projection entities are terminal for the current
       // render; the block record stays authoritative, so rebuild the

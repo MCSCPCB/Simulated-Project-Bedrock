@@ -1,7 +1,6 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readAndCompileRegistry, toRuntimeRegistry, type CompiledModel } from "./sublevel-block/registry.ts";
+import { readAndCompileRegistry, type CompiledModel } from "./sublevel-block/registry.ts";
 import { writeSablePacks } from "./sublevel-block/resources.ts";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -34,10 +33,5 @@ function missingModel(): CompiledModel {
 
 const compiled = await readAndCompileRegistry(registryPath);
 const models = [missingModel(), ...compiled.models];
-await writeSablePacks(packsPath, srcPath, models, compiled.pools, compiled.fixedTintPalette, toRuntimeRegistry(compiled.compiled));
-const declarationPath = join(root, "src", "generated", "sublevel-block-registry.d.ts");
-await mkdir(dirname(declarationPath), { recursive: true });
-if (!(await readFile(declarationPath, "utf8").catch(() => ""))) {
-  await writeFile(declarationPath, `declare module "sable:sublevel-block-registry" {\n  export const blockRegistry: import("../sublevel/render/fancy/model/FancySubLevelModel.js").CompiledBlockRegistry;\n}\n`, "utf8");
-}
+await writeSablePacks(packsPath, srcPath, models, compiled.pools, compiled.fixedTintPalette, compiled.compiled);
 console.log(`Sable sub-level block build complete: ${compiled.raw.blocks ? Object.keys(compiled.raw.blocks).length : 0} registrations, ${models.length} model resources.`);

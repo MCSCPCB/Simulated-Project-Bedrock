@@ -1,23 +1,6 @@
-import { blockRegistry } from "../../../../generated/sublevel-block-registry.js";
+import { blockRegistry, missingModel } from "../../../../generated/sublevel-block-registry.js";
 import { createFancySubLevelModelState, encodeFancySubLevelModelState } from "./FancySubLevelModelTypes.js";
 const modelCache = /* @__PURE__ */ new Map();
-const MISSING_MODEL = {
-  denseEntityTypeId: "sable:fancy_model_missing_dense",
-  key: "missing",
-  material: "opaque",
-  model: {
-    textures: {
-      down: "textures/blocks/missing_tile",
-      east: "textures/blocks/missing_tile",
-      north: "textures/blocks/missing_tile",
-      south: "textures/blocks/missing_tile",
-      up: "textures/blocks/missing_tile",
-      west: "textures/blocks/missing_tile"
-    },
-    type: "full_block"
-  },
-  sparseEntityTypeId: "sable:fancy_model_missing_sparse"
-};
 function resolveFancySubLevelBlock(block) {
   const registration = blockRegistry[block.typeId];
   if (!registration) return void 0;
@@ -42,7 +25,7 @@ function getSubLevelBlockRegistration(typeId) {
   };
 }
 function resolveMissingFancySubLevelBlock(block) {
-  const model = materializeModel(MISSING_MODEL);
+  const model = materializeModel(missingModel);
   return { block, model, state: 0 };
 }
 function materializeModel(compiled) {
@@ -50,8 +33,8 @@ function materializeModel(compiled) {
   if (cached) return cached;
   const model = {
     key: compiled.key,
-    denseEntityTypeId: compiled.denseEntityTypeId,
-    sparseEntityTypeId: compiled.sparseEntityTypeId,
+    dense: compiled.dense,
+    sparse: compiled.sparse,
     material: compiled.material,
     description: compiled.model,
     tint: compiled.tint,

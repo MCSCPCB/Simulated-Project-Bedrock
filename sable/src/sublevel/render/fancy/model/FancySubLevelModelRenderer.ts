@@ -34,6 +34,10 @@ import { packFancySubLevelTint } from "./FancySubLevelTintCodec.js";
 
 export const FANCY_MODEL_CARRIER_ENTITY_TYPE_ID = "sable:fancy_model_carrier";
 export const FANCY_MODEL_CARRIER_CAPACITY = CARRIER_SEAT_COUNT - 1;
+export const FANCY_MODEL_INPUT_ANIMATION = "animation.sable.fancy.input";
+const INPUT_REFRESH_TICKS = 40;
+
+export type FancyModelAnimationInput = Readonly<Record<string, number>>;
 
 interface LiveModel {
   readonly anchorLocalLocation: Vector3;
@@ -41,6 +45,7 @@ interface LiveModel {
   readonly entity: Entity;
   readonly format: "dense" | "sparse" | "pool";
   readonly originY: number;
+  readonly inputValues: Record<string, number>;
   readonly words: number[];
 }
 
@@ -71,6 +76,7 @@ export class FancySubLevelModelRenderer implements SubLevelRenderData {
   readonly #onEntityRemoved?: (entityId: string) => void;
   readonly #spawnEntity: (typeId: string, location: Vector3) => Entity;
   #initialPoseDeferred = true;
+  #lastInputRefreshTick = system.currentTick;
   #knownIntegrityFailure = false;
   #lastAnchorX = Number.NaN;
   #lastAnchorY = Number.NaN;
@@ -179,10 +185,9 @@ export class FancySubLevelModelRenderer implements SubLevelRenderData {
     if (next === undefined) return false;
     if (next === current) return true;
     writeStoredState(live.model, live.assignment, next + 1);
-    live.model.entity.setProperty(
-      `sable:s${live.assignment.word}`,
-      live.model.words[live.assignment.word] ?? 0
-    );
+    const storedValue = live.model.words[live.assignment.word] ?? 0;
+    live.model.inputValues[`s${live.assignment.word}`] = storedValue;
+    playFancyModelInput(live.model.entity, live.model.inputValues);
     return true;
   }
 
@@ -303,8 +308,10 @@ export class FancySubLevelModelRenderer implements SubLevelRenderData {
     for (const [model, words] of changed) {
       if (empty.has(model) || !model.entity.isValid) continue;
       for (const word of words) {
-        model.entity.setProperty(`sable:s${word}`, model.words[word] ?? 0);
+        const value = model.words[word] ?? 0;
+        model.inputValues[`s${word}`] = value;
       }
+      playFancyModelInput(model.entity, model.inputValues);
     }
     for (const model of empty) this.#removeModel(model);
   }
@@ -383,8 +390,9 @@ export class FancySubLevelModelRenderer implements SubLevelRenderData {
 
   sync(force = false): number {
     if (!this.#body.isValid) return 0;
+    const refreshInput = system.currentTick - this.#lastInputRefreshTick >= INPUT_REFRESH_TICKS;
     const sleeping = this.#body.isSleeping === true;
-    if (!force && sleeping && this.#sleepingAtLastSync) return 0;
+    if (!force && !refreshInput && sleeping && this.#sleepingAtLastSync) return 0;
     this.#sleepingAtLastSync = sleeping;
     const rotation = getContinuousRenderRotation(this.#body, this.#renderRotation);
     this.#renderRotation = rotation;
@@ -408,7 +416,8 @@ export class FancySubLevelModelRenderer implements SubLevelRenderData {
       this.#publishedRenderRotation.z,
       RENDER_ROTATION_WRITE_THRESHOLD_DEGREES
     );
-    if (!positionChanged && !pitchChanged && !yawChanged && !rollChanged) return 0;
+    if (!positionChanged && !pitchChanged && !yawChanged && !rollChanged && !refreshInput) return 0;
+    if (refreshInput) this.#lastInputRefreshTick = system.currentTick;
     if (positionChanged) {
       this.#lastAnchorX = anchor.x;
       this.#lastAnchorY = anchor.y;
@@ -433,10 +442,16 @@ export class FancySubLevelModelRenderer implements SubLevelRenderData {
         this.#knownIntegrityFailure = true;
         continue;
       }
-      if (pitchChanged) model.entity.setProperty("sable:pitch", rotation.x);
-      if (yawChanged) model.entity.setProperty("sable:yaw", rotation.y);
-      if (rollChanged) model.entity.setProperty("sable:roll", rotation.z);
-      if (pitchChanged || yawChanged || rollChanged) writes++;
+      if (pitchChanged || yawChanged || rollChanged || refreshInput) {
+        const values = {
+          pitch_target: rotation.x,
+          yaw_target: rotation.y,
+          roll_target: rotation.z
+        };
+        Object.assign(model.inputValues, values);
+        playFancyModelInput(model.entity, model.inputValues);
+        writes++;
+      }
     }
     if (pitchChanged || yawChanged || rollChanged) {
       for (const carrier of this.#carriers) {
@@ -467,8 +482,9 @@ export class FancySubLevelModelRenderer implements SubLevelRenderData {
           packed.entityTypeId,
           this.#body.localPointToWorld(this.#renderAnchor)
         );
+        let inputValues: Record<string, number>;
         try {
-          initializeModelProperties(entity, packed, this.#foliageTint, origin);
+          inputValues = initializeModelInput(entity, packed, this.#foliageTint, origin);
           if (!rideable.addRider(entity)) {
             throw new Error(`Could not mount fancy model ${entity.id} on carrier ${carrier.entity.id}.`);
           }
@@ -481,6 +497,7 @@ export class FancySubLevelModelRenderer implements SubLevelRenderData {
           blockCount: packed.blockCount,
           entity,
           format: packed.format,
+          inputValues,
           originY: origin.y,
           words: [...packed.words]
         };
@@ -497,6 +514,9 @@ export class FancySubLevelModelRenderer implements SubLevelRenderData {
           "render"
         );
         this.#onEntityAdded?.(entity.id);
+        system.run(() => {
+          if (this.#body.isValid && entity.isValid) playFancyModelInput(entity, inputValues);
+        });
         for (const assignment of packed.assignments) {
           this.#assignments.set(assignment.blockKey, { assignment, model: live });
         }
@@ -551,10 +571,9 @@ export class FancySubLevelModelRenderer implements SubLevelRenderData {
       this.#knownIntegrityFailure = true;
       return;
     }
-    model.entity.setProperty(
-      "sable:origin_y",
-      encodeFancySubLevelOriginY(model.originY, ready)
-    );
+    const originY = encodeFancySubLevelOriginY(model.originY, ready);
+    model.inputValues.origin_y = originY;
+    playFancyModelInput(model.entity, model.inputValues);
   }
 
   #syncAuxiliaryRotation(entity: Entity, rotation = this.#renderRotation): void {
@@ -611,21 +630,39 @@ export class FancySubLevelModelRenderer implements SubLevelRenderData {
   }
 }
 
-function initializeModelProperties(
+function initializeModelInput(
   entity: Entity,
   packed: PackedFancySubLevelModel,
   foliageTint: SubLevelFoliageTint,
   origin: { readonly xz: number; readonly y: number }
-): void {
-  entity.setProperty("sable:origin_xz", origin.xz);
-  entity.setProperty("sable:origin_y", encodeFancySubLevelOriginY(origin.y, false));
-  if (packed.tint) {
-    entity.setProperty("sable:tint", packFancySubLevelTint(packed, foliageTint));
-  }
-  for (let index = 0; index < packed.words.length; index++) {
-    const word = packed.words[index] ?? 0;
-    if (word !== 0) entity.setProperty(`sable:s${index}`, word);
-  }
+): Record<string, number> {
+  const values: Record<string, number> = {
+    model_variant: packed.modelVariant,
+    origin_xz: origin.xz,
+    origin_y: encodeFancySubLevelOriginY(origin.y, false),
+    tint_input: packed.tint ? packFancySubLevelTint(packed, foliageTint) : 0,
+    pitch_target: 0,
+    yaw_target: 0,
+    roll_target: 0,
+    model_rx: packed.modelRotation?.[0] ?? 0,
+    model_ry: packed.modelRotation?.[1] ?? 0,
+    model_rz: packed.modelRotation?.[2] ?? 0
+  };
+  for (let index = 0; index < Math.max(26, packed.words.length); index++) values[`s${index}`] = packed.words[index] ?? 0;
+  playFancyModelInput(entity, values);
+  return values;
+}
+
+export function playFancyModelInput(entity: Entity, values: FancyModelAnimationInput): void {
+  const assignments = Object.entries(values).map(([name, value]) => (
+    `v.${name}=${value};`
+  ));
+  // Replace one persistent input controller with the latest complete snapshot.
+  // Pose targets use this same interface when the body is driven by physics.
+  entity.playAnimation(FANCY_MODEL_INPUT_ANIMATION, {
+    controller: "sable_fancy_input",
+    stopExpression: `${assignments.join("")}return 0;`
+  });
 }
 
 function readStoredState(model: LiveModel, assignment: FancySubLevelModelAssignment): number {

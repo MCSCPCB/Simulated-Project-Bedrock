@@ -2,11 +2,6 @@ import { readFileSync } from "node:fs";
 import type { CompiledModel, CompiledPool } from "./registry.ts";
 import { CARRIER_SEAT_COUNT } from "../../src/sublevel/render/SubLevelRenderData.ts";
 
-export const MODEL_PROPERTY_NAMES = [
-  "pitch", "yaw", "roll", "origin_xz", "origin_y", "tint",
-  ...Array.from({ length: 26 }, (_, index) => `s${index}`)
-] as const;
-
 export const VANILLA_PROPERTY_NAMES = [
   "scale", "pitch", "yaw", "roll", "local_pitch", "local_yaw", "local_roll",
   "left_local_pitch", "left_local_yaw", "left_local_roll", "local_x", "local_y",
@@ -155,14 +150,6 @@ export function createVanillaEntity(): JsonObject {
 }
 
 export function createFancyEntity(identifier: string): JsonObject {
-  const properties: JsonObject = {};
-  for (const name of MODEL_PROPERTY_NAMES) {
-    const isInteger = name === "origin_xz" || name === "origin_y" || name === "tint" || name.startsWith("s");
-    const range: readonly [number, number] = name === "origin_xz"
-      ? [0, 4194303] : name === "origin_y" ? [0, 4194303] : name === "tint"
-        ? [0, 16777215] : name.startsWith("s") ? [0, 16777215] : [-400, 400];
-    properties[`sable:${name}`] = property(isInteger ? "int" : "float", range);
-  }
   return {
     format_version: "1.20.30",
     "minecraft:entity": {
@@ -170,8 +157,7 @@ export function createFancyEntity(identifier: string): JsonObject {
         identifier,
         is_spawnable: false,
         is_summonable: true,
-        runtime_identifier: "minecraft:arrow",
-        properties
+        runtime_identifier: "minecraft:arrow"
       },
       components: commonComponents("fancy_model")
     }
@@ -457,7 +443,7 @@ function channelBoneNames(
   ));
 }
 
-function modelOrientation(model: CompiledModel): readonly [number, number, number] | undefined {
+export function modelOrientation(model: CompiledModel): readonly [number, number, number] | undefined {
   return modelChannels(model).find(channel => channel.wrapperRotation)?.wrapperRotation;
 }
 
@@ -586,14 +572,27 @@ function decodeExpression(format: "dense" | "sparse", slot: number, bits: number
   return `math.mod(math.floor(v.s${word} / ${2 ** shift}), ${2 ** (bits + 1)})`;
 }
 
+function initializeMolang(): string[] {
+  // A client can render before the first playAnimation packet arrives. Keep
+  // any input already delivered, and hide the model until origin_y releases it.
+  return [
+    ...[
+      "origin_xz", "origin_y", "tint_input", "model_variant",
+      "pitch_target", "yaw_target", "roll_target", "model_rx", "model_ry", "model_rz"
+    ].map(name => `v.${name} = v.${name} ?? 0;`),
+    "v.pose_initialized = 0;",
+    "v.pose_ready = 0;"
+  ];
+}
+
 function poseMolang(): string[] {
   return [
-    "v.pose_ready = math.mod(q.property('sable:origin_y'), 4096) >= 2048;",
-    "v.pitch = v.pose_ready ? (v.pose_initialized ? math.lerprotate(v.pitch, q.property('sable:pitch'), q.delta_time/0.05) : q.property('sable:pitch')) : 0;",
-    "v.yaw = v.pose_ready ? (v.pose_initialized ? math.lerprotate(v.yaw, q.property('sable:yaw'), q.delta_time/0.05) : q.property('sable:yaw')) : 0;",
-    "v.roll = v.pose_ready ? (v.pose_initialized ? math.lerprotate(v.roll, q.property('sable:roll'), q.delta_time/0.05) : q.property('sable:roll')) : 0;",
+    "v.pose_ready = math.mod(v.origin_y, 4096) >= 2048;",
+    "v.pitch = v.pose_ready ? (v.pose_initialized ? math.lerprotate(v.pitch, v.pitch_target, q.delta_time/0.05) : v.pitch_target) : 0;",
+    "v.yaw = v.pose_ready ? (v.pose_initialized ? math.lerprotate(v.yaw, v.yaw_target, q.delta_time/0.05) : v.yaw_target) : 0;",
+    "v.roll = v.pose_ready ? (v.pose_initialized ? math.lerprotate(v.roll, v.roll_target, q.delta_time/0.05) : v.roll_target) : 0;",
     "v.pose_initialized = v.pose_ready;",
-    "v.tint = q.property('sable:tint');"
+    "v.tint = v.tint_input;"
   ];
 }
 
@@ -612,8 +611,10 @@ function tintDecodeMolang(): string[] {
   ];
 }
 
-function wordReadMolang(): string[] {
-  return Array.from({ length: 26 }, (_, index) => `v.s${index} = q.property('sable:s${index}');`);
+function wordReadMolang(count = SPARSE_SLOT_COUNT): string[] {
+  return Array.from({ length: count }, (_, index) => (
+    `v.s${index} = v.s${index} ?? 0;`
+  ));
 }
 
 /** The chest lid eases open and closed with the TreePhysics timing curve. */
@@ -632,12 +633,12 @@ function preAnimation(model: CompiledModel, format: "dense" | "sparse"): string[
   const bits = stateBits(model);
   const result = [
     ...poseMolang(),
-    "v.layout_width = 1 + math.mod(math.floor(q.property('sable:origin_y') / 4096), 32);",
-    "v.layout_depth = 1 + math.floor(q.property('sable:origin_y') / 131072);",
+    "v.layout_width = 1 + math.mod(math.floor(v.origin_y / 4096), 32);",
+    "v.layout_depth = 1 + math.floor(v.origin_y / 131072);",
     "v.layout_plane = v.layout_width * v.layout_depth;"
   ];
   if (isTintMaterial(model)) result.push(...tintDecodeMolang());
-  result.push(...wordReadMolang());
+  result.push(...wordReadMolang(format === "dense" ? Math.ceil(DENSE_SLOT_COUNT / Math.floor(24 / (bits + 1))) : SPARSE_SLOT_COUNT));
   for (let slot = 0; slot < slotCountOf(format); slot++) {
     result.push(`v.c${slot} = ${decodeExpression(format, slot, bits)};`);
   }
@@ -666,9 +667,12 @@ export function createFancyClientEntity(model: CompiledModel, format: "dense" | 
   const id = format === "dense" ? model.denseEntityTypeId : model.sparseEntityTypeId;
   const key = modelKeyName(model, format);
   const channels = modelChannels(model);
-  const animations: JsonObject = { transform: `animation.${key}.transform` };
+  const animations: JsonObject = {
+    input: "animation.sable.fancy.input",
+    transform: `animation.${key}.transform`
+  };
   const animate: unknown[] = ["transform"];
-  const initialize = ["v.pose_initialized = 0;", "v.pose_ready = 0;"];
+  const initialize = initializeMolang();
   if (isChestModel(model)) {
     animations.lid_pose = `animation.${key}.lid_pose`;
     animate.push("lid_pose");
@@ -830,17 +834,16 @@ export function createFancyAnimation(model: CompiledModel, format: "dense" | "sp
     yaw: { rotation: [0, "-v.yaw", 0] },
     model_offset: {
       position: [
-        "(math.mod(q.property('sable:origin_xz'), 2048) - 1024) * 16",
-        "(math.mod(q.property('sable:origin_y'), 2048) - 1024) * 16",
-        "-(math.floor(q.property('sable:origin_xz') / 2048) - 1024) * 16"
+        "(math.mod(v.origin_xz, 2048) - 1024) * 16",
+        "(math.mod(v.origin_y, 2048) - 1024) * 16",
+        "-(math.floor(v.origin_xz / 2048) - 1024) * 16"
       ]
     }
   };
-  const orientation = modelOrientation(model);
   for (let slot = 0; slot < slotCountOf(format); slot++) {
     bones[`slot_${slot}`] = {
       position: slotPosition(format, slot),
-      ...(orientation ? { rotation: orientation } : {}),
+      rotation: ["v.model_rx", "v.model_ry", "v.model_rz"],
       scale: `v.c${slot} > 0`
     };
   }
@@ -864,6 +867,8 @@ function slotVisibility(
   channel: ModelChannel,
   model?: CompiledModel
 ): JsonObject[] {
+  // Occupancy is already applied to the slot parent by the transform animation.
+  if (model?.model.type !== "wall" && channel.bones.some(bone => bone.name === "slot_{s}")) return [{ "*": true }];
   const visibility: JsonObject[] = [{ "*": false }];
   for (let slot = 0; slot < slotCountOf(format); slot++) {
     for (const name of channelBoneNames(channel, slot)) {
@@ -933,7 +938,12 @@ function denseColormapController(
   };
 }
 
-function sparseColormapController(model: CompiledModel, channel: ModelChannel, slot: number): JsonObject {
+function sparseColormapController(
+  model: CompiledModel,
+  channel: ModelChannel,
+  slot: number,
+  tintedModels: readonly CompiledModel[]
+): JsonObject {
   const coordinate = `(v.tint_axis_z ? math.mod(math.floor(v.s${slot} / 262144), 64) : math.mod(math.floor(v.s${slot} / 64), 64))`;
   const span = `(v.layout_width > 1 ? v.layout_width : ${SPARSE_SIZE})`;
   return {
@@ -955,12 +965,17 @@ function sparseColormapController(model: CompiledModel, channel: ModelChannel, s
     },
     part_visibility: [
       { "*": false },
-      ...channelBoneNames(channel, slot).map(name => ({ [name]: `(v.c${slot} > 0)` }))
+      ...[...new Set(tintedModels.flatMap(model => tintChannels(model).flatMap(channel => channelBoneNames(channel, slot))))]
+        .map(name => ({ [name]: `(v.c${slot} > 0)` }))
     ]
   };
 }
 
-export function createFancyRenderController(model: CompiledModel, format: "dense" | "sparse"): JsonObject {
+export function createFancyRenderController(
+  model: CompiledModel,
+  format: "dense" | "sparse",
+  tintedModels: readonly CompiledModel[]
+): JsonObject {
   const key = modelKeyName(model, format);
   const channels = modelChannels(model);
   const controllers: JsonObject = {};
@@ -987,7 +1002,8 @@ export function createFancyRenderController(model: CompiledModel, format: "dense
         controllers[`controller.render.${key}.tint_multiply_${slot}`] = sparseColormapController(
           model,
           tinted[0]!,
-          slot
+          slot,
+          tintedModels
         );
       }
     }
@@ -1085,8 +1101,11 @@ export function createPoolClientEntity(pool: CompiledPool): JsonObject {
   for (const family of fixed) {
     renderControllers.push(`controller.render.${key}.tint_multiply_m${family}`);
   }
-  const initialize = ["v.pose_initialized = 0;", "v.pose_ready = 0;"];
-  const animations: JsonObject = { transform: `animation.${key}.transform` };
+  const initialize = initializeMolang();
+  const animations: JsonObject = {
+    input: "animation.sable.fancy.input",
+    transform: `animation.${key}.transform`
+  };
   const animate: unknown[] = ["transform"];
   if (chestMembers.length > 0) {
     animations.lid_pose = `animation.${key}.lid_pose`;
@@ -1096,8 +1115,8 @@ export function createPoolClientEntity(pool: CompiledPool): JsonObject {
   const preAnimationLines = [...poseMolang()];
   if (foliage.length > 0) preAnimationLines.push(
     ...tintDecodeMolang(),
-    "v.layout_width = 1 + math.mod(math.floor(q.property('sable:origin_y') / 4096), 32);",
-    "v.layout_depth = 1 + math.floor(q.property('sable:origin_y') / 131072);"
+    "v.layout_width = 1 + math.mod(math.floor(v.origin_y / 4096), 32);",
+    "v.layout_depth = 1 + math.floor(v.origin_y / 131072);"
   );
   preAnimationLines.push(...wordReadMolang());
   for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
@@ -1197,9 +1216,9 @@ export function createPoolAnimation(pool: CompiledPool): JsonObject {
     yaw: { rotation: [0, "-v.yaw", 0] },
     model_offset: {
       position: [
-        "(math.mod(q.property('sable:origin_xz'), 2048) - 1024) * 16",
-        "(math.mod(q.property('sable:origin_y'), 2048) - 1024) * 16",
-        "-(math.floor(q.property('sable:origin_xz') / 2048) - 1024) * 16"
+        "(math.mod(v.origin_xz, 2048) - 1024) * 16",
+        "(math.mod(v.origin_y, 2048) - 1024) * 16",
+        "-(math.floor(v.origin_xz / 2048) - 1024) * 16"
       ]
     }
   };
@@ -1230,7 +1249,6 @@ export function createPoolAnimation(pool: CompiledPool): JsonObject {
   return { format_version: "1.8.0", animations };
 }
 
-/** Select one angle per axis, as the source log and attachment animations do. */
 function poolSlotOrientation(
   orientations: readonly (readonly [number, number, number] | undefined)[],
   slot: number

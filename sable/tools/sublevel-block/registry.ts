@@ -124,6 +124,12 @@ export interface CompiledModel {
   pool?: CompiledModelPool;
 }
 
+export interface CompiledModelResource {
+  readonly entityTypeId: string;
+  readonly variant: number;
+  readonly rotation?: readonly [number, number, number];
+}
+
 // The fixed tint colormap holds one row of 32 palette cells; every distinct
 // fixed color occupies one cell addressed by the quantized tint coordinates.
 export const FIXED_TINT_PALETTE_CAPACITY = 32;
@@ -297,11 +303,10 @@ function terrainBlockRegistration(
     };
   }
   const material = terrainMaterial(name);
+  const flipbook = flipbooks.get(texture);
   const definition: RawRenderDefinition = { model: { type: "full_block", textures: {
     up: texture, down: texture, north: texture, south: texture, east: texture, west: texture
-  } } };
-  const flipbook = flipbooks.get(texture);
-  if (flipbook) definition.flipbook = flipbook;
+  } }, ...(flipbook ? { flipbook } : {}) };
   return {
     materials: material,
     category,
@@ -554,22 +559,32 @@ function partitionPools(models: readonly CompiledModel[]): CompiledPool[] {
 }
 
 /** The runtime registry omits the packaging fields the script bundle never reads. */
-export function toRuntimeRegistry(compiled: CompiledRegistry): Record<string, unknown> {
+export function toRuntimeModel(
+  model: CompiledModel,
+  resources: ReadonlyMap<string, CompiledModelResource>
+): Record<string, unknown> {
+  return {
+    key: model.key,
+    dense: resources.get(model.denseEntityTypeId),
+    sparse: resources.get(model.sparseEntityTypeId),
+    material: model.material,
+    model: model.model,
+    ...(model.tint ? { tint: model.tint } : {}),
+    ...(model.flipbook ? { flipbook: model.flipbook } : {}),
+    ...(model.pool ? { pool: { ...model.pool, ...resources.get(model.pool.entityTypeId) } } : {})
+  };
+}
+
+export function toRuntimeRegistry(
+  compiled: CompiledRegistry,
+  resources: ReadonlyMap<string, CompiledModelResource>
+): Record<string, unknown> {
   const strippedByKey = new Map<string, unknown>();
   const strip = (model: CompiledModel | null): unknown => {
     if (!model) return null;
     const cached = strippedByKey.get(model.key);
     if (cached) return cached;
-    const stripped = {
-      key: model.key,
-      denseEntityTypeId: model.denseEntityTypeId,
-      sparseEntityTypeId: model.sparseEntityTypeId,
-      material: model.material,
-      model: model.model,
-      ...(model.tint ? { tint: model.tint } : {}),
-      ...(model.flipbook ? { flipbook: model.flipbook } : {}),
-      ...(model.pool ? { pool: model.pool } : {})
-    };
+    const stripped = toRuntimeModel(model, resources);
     strippedByKey.set(model.key, stripped);
     return stripped;
   };

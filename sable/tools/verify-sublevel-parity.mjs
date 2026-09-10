@@ -97,9 +97,18 @@ function fixture() {
       };
       const entity = {
         id: String(++nextId), typeId, dimension, location: { ...location }, isValid: true,
-        properties: {}, dynamic: {}, riders: [], vehicle: undefined, commands: [], events: [],
+        properties: {}, molang: {}, dynamic: {}, riders: [], vehicle: undefined, commands: [], events: [],
         setProperty(key, value) { this.properties[key] = value; },
         getProperty(key) { return this.properties[key] ?? 0; },
+        playAnimation(animation, options = {}) {
+          this.lastAnimation = animation;
+          this.animationOptions = options;
+          this.animationWrites = (this.animationWrites ?? 0) + 1;
+          const expression = options.stopExpression ?? "";
+          for (const match of expression.matchAll(/v\.([A-Za-z0-9_]+)\s*=\s*(-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?);/g)) {
+            this.molang[match[1]] = Number(match[2]);
+          }
+        },
         setDynamicProperty(key, value) { this.dynamic[key] = value; },
         getDynamicProperty(key) { return this.dynamic[key]; },
         teleport(value) { this.location = { ...value }; }, triggerEvent(name) { this.events.push(name); },
@@ -286,6 +295,9 @@ test("shared resources resolve every client alias without duplicate or unused de
 test("grass uses ordinary cube faces and an exact, unshifted grass-only multiply shell", () => {
   const pack = join(sable, "packs/SableRP");
   const reader = modelResourceReader(pack, "sable/sublevel/fancy");
+  const f = fixture();
+  const registry = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts");
+  const resolved = registry.resolveFancySubLevelBlock(block("minecraft:grass_block"));
   const texture = readFileSync(join(root, ".sample/VanillaBlock/VanillaBlockResource/bedrock-sample-1.26.40.5/resource_pack/textures/blocks/grass_side.tga"));
   assert.equal(texture[2], 2);
   assert.equal(texture.readUInt16LE(12), 16);
@@ -299,20 +311,35 @@ test("grass uses ordinary cube faces and an exact, unshifted grass-only multiply
   assert.equal(material.depthFunc, "Equal");
   assert.deepEqual([material.blendSrc, material.blendDst], ["DestColor", "Zero"]);
   for (const format of ["dense", "sparse"]) {
-    const { client, geometries, controllers } = reader({ typeId: `sable:fancy_model_grass_block_${format}` });
+    const resource = resolved.model[format];
+    const entity = {
+      typeId: resource.entityTypeId,
+      molang: { model_variant: resource.variant, s0: 1, tint_input: 7 * 1048576, origin_y: 2048 },
+      getProperty: () => 0
+    };
+    const resources = reader(entity);
+    const { client, geometries } = resources;
+    const passes = activeRenderPasses(entity, resources);
+    const bases = passes.filter(({ controller, evaluate, arrays }) => evaluate(controller.materials[0]["*"], arrays) !== "tint_multiply");
     const baseFaces = [];
-    for (const alias of ["up", "down", "north"]) {
-      const bone = geometries.get(client.geometry[alias]).bones.find(bone => bone.name === "slot_0");
+    for (const { controller, evaluate, arrays } of bases) {
+      const bone = geometries.get(evaluate(controller.geometry, arrays)).bones.find(bone => bone.name === "slot_0");
       assert.equal(bone.cubes.length, 1);
       assert.deepEqual(bone.cubes[0].origin, [-8, -24, -8]);
       assert.deepEqual(bone.cubes[0].size, [16, 16, 16]);
       baseFaces.push(...Object.keys(bone.cubes[0].uv));
     }
     assert.deepEqual(baseFaces.sort(), ["down", "east", "north", "south", "up", "west"]);
-    assert.equal(client.textures.colormap_grass, "textures/colormap/grass");
     const aliases = format === "dense" ? ["colormap_x", "colormap_z", "colormap_compact_x", "colormap_compact_z"] : ["tint"];
     for (const alias of aliases) {
-      const shell = geometries.get(client.geometry[alias]);
+      const width = alias.includes("compact") ? 6 : 7;
+      entity.molang.origin_y = 2048 + (width - 1) * 4096 + (width - 1) * 131072;
+      entity.molang.tint_input = (alias.endsWith("_z") ? 9 : 1) * 1048576;
+      const pass = activeRenderPasses(entity, resources).find(({ controller, evaluate, arrays }) => (
+        evaluate(controller.materials[0]["*"], arrays) === "tint_multiply"
+      ));
+      assert.equal(pass.evaluate(pass.controller.textures[0], pass.arrays), "textures/colormap/grass");
+      const shell = geometries.get(pass.evaluate(pass.controller.geometry, pass.arrays));
       const slotBones = shell.bones.filter(bone => bone.cubes);
       assert.equal(slotBones.length, format === "sparse" ? 26 : alias.includes("compact") ? 180 : 245);
       for (const bone of [slotBones[0], slotBones.at(-1)]) {
@@ -349,27 +376,28 @@ test("grass uses ordinary cube faces and an exact, unshifted grass-only multiply
         }
       }
     }
-    const tintControllers = client.render_controllers.map(entry => controllers[typeof entry === "string" ? entry : Object.keys(entry)[0]])
-      .filter(controller => controller.materials[0]["*"] === "Material.tint_multiply");
+    for (let slot = 0; slot < 26; slot++) entity.molang[`s${slot}`] = 1;
+    const tintControllers = activeRenderPasses(entity, resources)
+      .filter(({ controller, evaluate, arrays }) => evaluate(controller.materials[0]["*"], arrays) === "tint_multiply");
     assert.equal(tintControllers.length, format === "dense" ? 1 : 26);
-    for (const controller of tintControllers) assert.deepEqual(controller.textures, ["Texture.colormap_grass"]);
+    for (const { controller, evaluate, arrays } of tintControllers) assert.equal(evaluate(controller.textures[0], arrays), "textures/colormap/grass");
     for (const occupied of [0, 1]) {
-      const evaluate = resourceEvaluator({ getProperty: name => ({ "sable:s0": occupied, "sable:tint": 7 * 1048576, "sable:origin_y": 2048 })[name] ?? 0 }, client);
-      const visibility = Object.assign({}, ...tintControllers[0].part_visibility);
+      const evaluate = resourceEvaluator({
+        molang: { model_variant: resource.variant, s0: occupied, tint_input: 7 * 1048576, origin_y: 2048 },
+        getProperty: () => 0
+      }, client);
+      const visibility = Object.assign({}, ...tintControllers[0].controller.part_visibility);
       assert.equal(Boolean(evaluate(visibility.slot_0)), occupied === 1);
     }
   }
-  const f = fixture();
-  const registry = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts");
-  const resolved = registry.resolveFancySubLevelBlock(block("minecraft:grass_block"));
   assert.equal(resolved.model.description.type, "full_block");
   const particles = f.load("content/particle/SubLevelBlockParticleEffects.ts");
   assert.equal(particles.destructParticleTexture(resolved.model.description), "textures/blocks/dirt");
   const layout = f.load("sublevel/render/fancy/model/FancySubLevelModelLayout.ts");
   assert(layout.packFancySubLevelModels([resolved]).models.every(model => model.format === "dense"));
-  const leaves = reader({ typeId: "sable:fancy_model_oak_leaves_dense" }).client;
-  assert(leaves.geometry.colormap_x);
-  assert.equal(leaves.materials.tint_multiply, "tint_multiply");
+  const leafModel = registry.resolveFancySubLevelBlock(block("minecraft:oak_leaves")).model.dense;
+  const leaves = reader({ typeId: leafModel.entityTypeId }).client;
+  assert(Object.values(leaves.materials).includes("tint_multiply"));
 });
 
 test("grid hit distance, face and starting-cell semantics match the baseline", () => {
@@ -784,19 +812,19 @@ test("chest capture, multiple viewers, reconstruction and settlement preserve na
   emit("entityContainerOpened", { entity: chest, openSource: { entity: second } });
   assert.deepEqual(f.sounds.map(entry => entry[0]), ["random.chestopen"]);
   const oldRender = managed.handle.renderData;
-  assert(f.manager.placeBlockForPlayerEdit({}, { typeId: "minecraft:stone" }, managed.handle, target, { x: 1, y: 0, z: 0 }, "south"));
+  assert(f.manager.placeBlockForPlayerEdit({}, { typeId: "minecraft:beacon" }, managed.handle, target, { x: 1, y: 0, z: 0 }, "south"));
   assert.notEqual(managed.handle.renderData, oldRender);
   f.flush();
   const openProperties = [...f.entities.values()]
     .filter(entity => entity.isValid && entity.typeId.includes("fancy"))
-    .map(entity => ({ entity, properties: { ...entity.properties } }));
+    .map(entity => ({ entity, molang: { ...entity.molang } }));
   emit("entityContainerClosed", { entity: chest, closeSource: { entity: first } });
   f.flush();
   assert.equal(f.sounds.length, 1);
   emit("entityContainerClosed", { entity: chest, closeSource: { entity: second } });
   f.flush();
   assert.deepEqual(f.sounds.map(entry => entry[0]), ["random.chestopen", "random.chestclosed"]);
-  assert(openProperties.some(({ entity, properties }) => JSON.stringify(entity.properties) !== JSON.stringify(properties)), "reconstructed chest must have an open lid before the last viewer closes it");
+  assert(openProperties.some(({ entity, molang }) => JSON.stringify(entity.molang) !== JSON.stringify(molang)), "reconstructed chest must have an open lid before the last viewer closes it");
   f.containers.releasePlayer(first.id);
   f.containers.releasePlayer(second.id);
   assert(chest.vehicle);
@@ -838,7 +866,7 @@ test("persistent inventories survive a renderer change while mounted", () => {
   f.flush();
   const chest = [...f.entities.values()].find(entity => entity.typeId === "sable:chest");
   const oldCarrier = chest.vehicle;
-  assert(f.manager.placeBlockForPlayerEdit({}, { typeId: "minecraft:stone" }, managed.handle, target, { x: 1, y: 0, z: 0 }, "south"));
+  assert(f.manager.placeBlockForPlayerEdit({}, { typeId: "minecraft:beacon" }, managed.handle, target, { x: 1, y: 0, z: 0 }, "south"));
   f.flush();
   assert(chest.isValid && chest.vehicle && chest.vehicle !== oldCarrier);
   assert(managed.handle.renderData.hasIntactEntities());
@@ -847,7 +875,7 @@ test("persistent inventories survive a renderer change while mounted", () => {
 test("ordinary carrier leaves its 512th native seat available for the outline", () => {
   const f = fixture();
   const renderer = f.load("sublevel/render/SubLevelRenderer.ts").SubLevelRenderer;
-  const blocks = Array.from({ length: 1022 }, (_, index) => block("minecraft:stone", index % 32, Math.floor(index / 32)));
+  const blocks = Array.from({ length: 1022 }, (_, index) => block("minecraft:beacon", index % 32, Math.floor(index / 32)));
   const data = renderer.createRenderData({ body, dimension: f.dimension, blocks });
   f.flush();
   assert.equal(data.entityCount, 512);
@@ -901,8 +929,17 @@ test("vanilla mining hit sounds cover non-tree blocks such as beacons", () => {
 // These resources use the arithmetic/query subset shared by JavaScript and
 // Molang. Evaluate their emitted expressions, not a second model selector.
 function resourceEvaluator(entity, client) {
-  const v = new Proxy({}, { get: (target, key) => target[key] ?? 0 });
-  const q = { property: name => entity.getProperty(name), delta_time: 0.05, body_x_rotation: 0, body_y_rotation: 0 };
+  const v = new Proxy({ ...(entity.molang ?? {}) }, { get: (target, key) => {
+    if (!(key in target) && client.animations.input === "animation.sable.fancy.input") {
+      throw new Error(`Uninitialized Molang variable v.${String(key)}`);
+    }
+    return target[key] ?? 0;
+  } });
+  const q = {
+    property: name => entity.getProperty(name),
+    life_time: entity.lifeTime ?? 0,
+    delta_time: 0.05, body_x_rotation: 0, body_y_rotation: 0
+  };
   const math = {
     ...Object.fromEntries(Object.getOwnPropertyNames(Math).map(name => [name, Math[name]])),
     mod: (a, b) => a % b, clamp: (x, a, b) => Math.max(a, Math.min(b, x)),
@@ -911,6 +948,10 @@ function resourceEvaluator(entity, client) {
   const cache = new Map();
   const run = (source, arrays = {}, statement = false) => {
     if (typeof source !== "string") return source;
+    source = source.replace(/\bquery\./g, "q.").replace(/\bMath\./g, "math.");
+    // Molang's null coalescing operator can read an undeclared variable without
+    // logging an error; an ordinary variable read must still fail this check.
+    source = source.replace(/\bv\.(\w+)\s*\?\?\s*0\b/g, "('$1' in v ? v.$1 : 0)");
     const key = `${statement}|${source}`;
     let fn = cache.get(key);
     if (!fn) {
@@ -936,6 +977,20 @@ function modelResourceReader(pack, folder) {
     assert(client, `missing client entity ${entity.typeId}`);
     return { client, ...resources };
   };
+}
+
+function activeRenderPasses(entity, resources) {
+  const evaluate = resourceEvaluator(entity, resources.client);
+  return resources.client.render_controllers.flatMap(entry => {
+    const [id, condition] = typeof entry === "string" ? [entry, true] : Object.entries(entry)[0];
+    if (!evaluate(condition)) return [];
+    const controller = resources.controllers[id];
+    const arrays = {};
+    for (const lists of Object.values(controller.arrays ?? {})) {
+      for (const [name, values] of Object.entries(lists)) arrays[name.slice(6)] = values.map(value => evaluate(value));
+    }
+    return [{ controller, arrays, evaluate }];
+  });
 }
 
 // Bedrock resolves resource identifiers globally, independent of filenames.
@@ -1083,14 +1138,14 @@ test("reported log and chest captures preserve the saved states and client rotat
         block("minecraft:oak_log", 0, 0, 0, { old_log_type: "oak", pillar_axis: "z" }),
         block("minecraft:oak_log", 0, 0, 1, { old_log_type: "oak", pillar_axis: "y" })
       ],
-      entityTypeId: "sable:fancy_pool_logs_and_wood_0",
+      format: "pool",
       words: [9041887, 8521695],
       rotations: [[90, 0, 0], [0, 0, 0]]
     },
     {
       origin: { x: 6, y: 70, z: 34 },
       blocks: [block("minecraft:chest", 0, 0, 0, { facing_direction: 2, "minecraft:cardinal_direction": "north" })],
-      entityTypeId: "sable:fancy_model_chest_sparse",
+      format: "sparse",
       words: [8255425],
       rotations: [[0, 180, 0]]
     }
@@ -1105,8 +1160,10 @@ test("reported log and chest captures preserve the saved states and client rotat
     const renders = managed.handle.renderData.entityIds.map(id => f.entities.get(id)).filter(entity => !entity.typeId.includes("carrier"));
     assert.equal(renders.length, 1);
     const entity = renders[0];
-    assert.equal(entity.typeId, sample.entityTypeId);
-    assert.deepEqual(sample.words.map((_, index) => entity.getProperty(`sable:s${index}`)), sample.words);
+    const model = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts").resolveFancySubLevelBlock(sample.blocks[0]).model;
+    assert.equal(entity.typeId, model[sample.format].entityTypeId);
+    assert.equal(entity.molang.model_variant, model[sample.format].variant);
+    assert.deepEqual(sample.words.map((_, index) => entity.molang[`s${index}`]), sample.words);
     const resources = reader(entity);
     const evaluate = resourceEvaluator(entity, resources.client);
     const animation = resources.animations[resources.client.animations.transform];
@@ -1332,7 +1389,7 @@ test("rotation census probe pairs Fancy and ordinary Vanilla cardinal models", (
   const nativeRows = probe.createNativeStateCensusProbe(player);
   f.flush();
   assert.deepEqual(nativeRows.map(row => row.label), [
-    "BARREL", "DISPENSER", "PLAYER HEAD 0"
+    "PLAYER HEAD"
   ]);
   assert(nativeRows.every(row => row.blocks.length > 0 && row.nativeBlocks.length > row.blocks.length));
   probe.clearRotationProbe(player.id);
@@ -1737,12 +1794,93 @@ test("reloaded stale render entities are reclaimed without touching live rendere
   const managed = f.manager.createSubLevel(f.dimension, target.localLocation, [target]);
   f.flush();
   const owned = [...f.entities.values()];
-  const stale = f.dimension.spawnEntity("sable:fancy_model_oak_log_dense", target.localLocation);
+  const model = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts").resolveFancySubLevelBlock(target).model;
+  const stale = f.dimension.spawnEntity(model.dense.entityTypeId, target.localLocation);
   for (const entity of [...owned, stale]) f.manager.handleVisualEntityLoad(entity);
   f.flush();
   assert.equal(stale.isValid, false);
   assert(owned.every(entity => entity.isValid));
   assert(managed.handle.renderData.hasIntactEntities());
+});
+
+test("Fancy inputs initialize before the first animation packet without overwriting delivered values", () => {
+  const pack = join(sable, "packs/SableRP");
+  const folder = join(pack, "entity/sable/sublevel/fancy");
+  const reader = modelResourceReader(pack, "sable/sublevel/fancy");
+  for (const file of readdirSync(folder, { recursive: true }).filter(file => file.endsWith(".json"))) {
+    const client = json(join(folder, file))["minecraft:client_entity"].description;
+    const entity = { typeId: client.identifier, molang: {}, getProperty: () => 0 };
+    const resources = reader(entity);
+    assert.deepEqual(activeModelSurfaces(entity, resources), [], `${file}: awaiting input must render no faces`);
+    const inputs = {
+      origin_xz: 2098176, origin_y: 2048 + 6 * 4096 + 6 * 131072,
+      pitch_target: 17, yaw_target: 85, roll_target: -9,
+      model_variant: 0, model_rx: 90, model_ry: 180, model_rz: 270,
+      tint_input: 7 * 1048576 + 48, s0: 1
+    };
+    const evaluate = resourceEvaluator({ ...entity, molang: inputs }, client);
+    for (const [name, value] of Object.entries(inputs)) {
+      assert.equal(evaluate(`v.${name}`), value, `${file}: initialize must retain delivered ${name}`);
+    }
+  }
+});
+
+test("generic model selection shares entities while preserving independent texture bindings", () => {
+  const f = fixture();
+  const registry = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts");
+  const stone = registry.resolveFancySubLevelBlock(block("minecraft:stone")).model;
+  const dirt = registry.resolveFancySubLevelBlock(block("minecraft:dirt")).model;
+  const reader = modelResourceReader(join(sable, "packs/SableRP"), "sable/sublevel/fancy");
+  for (const format of ["dense", "sparse"]) {
+    assert.equal(stone[format].entityTypeId, dirt[format].entityTypeId);
+    assert.notEqual(stone[format].variant, dirt[format].variant);
+    for (const [model, texture] of [[stone, "textures/blocks/stone"], [dirt, "textures/blocks/dirt"]]) {
+      const resource = model[format];
+      const entity = { typeId: resource.entityTypeId, molang: { model_variant: resource.variant, s0: 1, origin_y: 2048 }, getProperty: () => 0 };
+      const passes = activeRenderPasses(entity, reader(entity));
+      assert.equal(passes.length, 1);
+      const { controller, arrays, evaluate } = passes[0];
+      assert.equal(evaluate(controller.textures[0], arrays), texture);
+      assert.equal(evaluate(controller.materials[0]["*"], arrays), "opaque_block");
+    }
+  }
+});
+
+test("animation snapshots retain selection, state and tint through pose changes and client re-tracking", () => {
+  const f = fixture();
+  const registry = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts");
+  const layout = f.load("sublevel/render/fancy/model/FancySubLevelModelLayout.ts");
+  const { FancySubLevelModelRenderer } = f.load("sublevel/render/fancy/model/FancySubLevelModelRenderer.ts");
+  const rotation = { x: 0, y: 0, z: 0 };
+  const movingBody = { ...body, isSleeping: false, getRotation: () => ({ ...rotation }) };
+  const packed = layout.packFancySubLevelModels([registry.resolveFancySubLevelBlock(block("minecraft:grass_block"))]).models;
+  const tint = f.load("sublevel/render/fancy/model/FancySubLevelTintCodec.ts").DEFAULT_SUBLEVEL_FOLIAGE_TINT;
+  const anchor = f.load("util/SublevelRenderOffsetHelper.ts").DEFAULT_SUBLEVEL_RENDER_ANCHOR_LOCAL;
+  const renderer = new FancySubLevelModelRenderer(movingBody, packed, f.dimension.spawnEntity, tint, undefined, anchor, undefined);
+  renderer.sync(true);
+  renderer.releaseInitialPose();
+  f.flush();
+  const entity = renderer.entityIds.map(id => f.entities.get(id)).find(entity => !entity.typeId.includes("carrier"));
+  const initial = { ...entity.molang };
+  Object.assign(rotation, { x: 17, y: 85, z: -9 });
+  renderer.sync();
+  assert.deepEqual([entity.molang.pitch_target, entity.molang.yaw_target, entity.molang.roll_target], [17, 85, -9]);
+  for (const name of ["model_variant", "s0", "origin_y", "tint_input"]) assert.equal(entity.molang[name], initial[name]);
+  assert.deepEqual(entity.properties, {});
+  assert.equal(entity.animationOptions.controller, "sable_fancy_input");
+  assert.match(entity.animationOptions.stopExpression, /return 0;$/);
+  const latest = { ...entity.molang };
+  const writes = entity.animationWrites;
+  movingBody.isSleeping = true;
+  renderer.sync();
+  for (let tick = 2; tick < 40; tick++) { f.system.currentTick = tick; renderer.sync(); }
+  assert.equal(entity.animationWrites, writes, "stationary frames must not send animation commands");
+  entity.molang = {};
+  f.system.currentTick = 40;
+  renderer.sync();
+  assert.deepEqual(entity.molang, latest);
+  assert.equal(entity.animationWrites, writes + 1);
+  renderer.remove();
 });
 
 test("one unreadable saved record cannot prevent other structures from restoring or reuse its id", () => {
@@ -1781,7 +1919,7 @@ test("failed storage mounting during reconstruction rolls back with the original
     };
     return entity;
   };
-  assert.throws(() => f.manager.placeBlockForPlayerEdit({}, { typeId: "minecraft:stone" }, managed.handle, target, { x: 1, y: 0, z: 0 }, "south"), /mount failure/);
+  assert.throws(() => f.manager.placeBlockForPlayerEdit({}, { typeId: "minecraft:beacon" }, managed.handle, target, { x: 1, y: 0, z: 0 }, "south"), /mount failure/);
   f.flush();
   assert.equal(managed.blockCount, 1);
   assert(chest.isValid && chest.vehicle, "the original inventory must remain attached after rollback");

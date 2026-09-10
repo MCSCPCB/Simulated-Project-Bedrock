@@ -12,8 +12,13 @@ export interface FancySubLevelFlipbook {
 }
 
 /** Descriptor pool an individual model can share with its neighbours. */
-export interface FancySubLevelModelPool {
+export interface FancySubLevelModelResource {
   readonly entityTypeId: string;
+  readonly variant: number;
+  readonly rotation?: readonly [number, number, number];
+}
+
+export interface FancySubLevelModelPool extends FancySubLevelModelResource {
   readonly family: number;
   readonly xBits: number;
   readonly yBits: number;
@@ -127,8 +132,8 @@ export interface FancySubLevelModelState {
 
 export interface FancySubLevelModel {
   readonly key: string;
-  readonly denseEntityTypeId: string;
-  readonly sparseEntityTypeId: string;
+  readonly dense?: FancySubLevelModelResource;
+  readonly sparse: FancySubLevelModelResource;
   readonly material: FancySubLevelMaterial;
   readonly description: FancySubLevelModelDescription;
   readonly tint?: FancySubLevelTint;
@@ -157,8 +162,8 @@ export type CompiledCondition =
 
 export interface CompiledFancySubLevelModel {
   readonly key: string;
-  readonly denseEntityTypeId: string;
-  readonly sparseEntityTypeId: string;
+  readonly dense?: FancySubLevelModelResource;
+  readonly sparse: FancySubLevelModelResource;
   readonly material: FancySubLevelMaterial;
   readonly model: FancySubLevelModelDescription;
   readonly tint?: FancySubLevelTint;

@@ -1,4 +1,4 @@
-import { blockRegistry } from "sable:sublevel-block-registry";
+import { blockRegistry, missingModel } from "sable:sublevel-block-registry";
 import type { SubLevelBlock, SubLevelBlockStates } from "../../../SubLevel.js";
 import {
   type CompiledCondition,
@@ -9,24 +9,6 @@ import {
 import { createFancySubLevelModelState, encodeFancySubLevelModelState } from "./FancySubLevelModelTypes.js";
 
 const modelCache = new Map<string, FancySubLevelModel>();
-
-const MISSING_MODEL: CompiledFancySubLevelModel = {
-  denseEntityTypeId: "sable:fancy_model_missing_dense",
-  key: "missing",
-  material: "opaque",
-  model: {
-    textures: {
-      down: "textures/blocks/missing_tile",
-      east: "textures/blocks/missing_tile",
-      north: "textures/blocks/missing_tile",
-      south: "textures/blocks/missing_tile",
-      up: "textures/blocks/missing_tile",
-      west: "textures/blocks/missing_tile"
-    },
-    type: "full_block"
-  },
-  sparseEntityTypeId: "sable:fancy_model_missing_sparse"
-};
 
 export function resolveFancySubLevelBlock(
   block: SubLevelBlock
@@ -68,7 +50,7 @@ export function getSubLevelBlockRegistration(typeId: string): {
 
 /** Represents a block that neither normal route can express. */
 export function resolveMissingFancySubLevelBlock(block: SubLevelBlock): FancySubLevelBlock {
-  const model = materializeModel(MISSING_MODEL);
+  const model = materializeModel(missingModel);
   return { block, model, state: 0 };
 }
 
@@ -77,8 +59,8 @@ function materializeModel(compiled: CompiledFancySubLevelModel): FancySubLevelMo
   if (cached) return cached;
   const model: FancySubLevelModel = {
     key: compiled.key,
-    denseEntityTypeId: compiled.denseEntityTypeId,
-    sparseEntityTypeId: compiled.sparseEntityTypeId,
+    dense: compiled.dense,
+    sparse: compiled.sparse,
     material: compiled.material,
     description: compiled.model,
     tint: compiled.tint,
