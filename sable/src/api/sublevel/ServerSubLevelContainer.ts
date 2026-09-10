@@ -135,6 +135,11 @@ export class ServerSubLevelContainer {
   }
 
   tick(currentTick: number): void {
+    // Renderers suppress unchanged inputs themselves. Keep their animation
+    // refresh cadence independent of storage and native integrity scans.
+    for (const record of this.#recordsByHandleId.values()) {
+      if (!record.removed && record.handle.isValid) record.renderData.sync();
+    }
     if (currentTick % 20 !== 0) return;
     for (const [id, saved] of this.#pendingRestores) {
       try {
@@ -151,9 +156,6 @@ export class ServerSubLevelContainer {
       // Unloaded chunks invalidate entity handles without losing the entities;
       // integrity only means anything while the projection region is loaded.
       if (!isRecordRegionLoaded(record)) continue;
-      // Re-send the current animation input for clients that started tracking
-      // a sleeping projection after its initial playAnimation packet.
-      record.renderData.sync();
       if (!record.renderData.hasKnownIntegrityFailure() && record.renderData.hasIntactEntities()) continue;
       // Externally removed projection entities are terminal for the current
       // render; the block record stays authoritative, so rebuild the

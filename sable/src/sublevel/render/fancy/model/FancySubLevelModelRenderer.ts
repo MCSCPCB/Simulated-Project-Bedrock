@@ -36,6 +36,7 @@ export const FANCY_MODEL_CARRIER_ENTITY_TYPE_ID = "sable:fancy_model_carrier";
 export const FANCY_MODEL_CARRIER_CAPACITY = CARRIER_SEAT_COUNT - 1;
 export const FANCY_MODEL_INPUT_ANIMATION = "animation.sable.fancy.input";
 const INPUT_REFRESH_TICKS = 40;
+const INITIAL_INPUT_REFRESH_TICKS = [2, 4, 8, 12, 20] as const;
 
 export type FancyModelAnimationInput = Readonly<Record<string, number>>;
 
@@ -514,13 +515,23 @@ export class FancySubLevelModelRenderer implements SubLevelRenderData {
           "render"
         );
         this.#onEntityAdded?.(entity.id);
-        system.run(() => {
-          if (this.#body.isValid && entity.isValid) playFancyModelInput(entity, inputValues);
-        });
         for (const assignment of packed.assignments) {
           this.#assignments.set(assignment.blockKey, { assignment, model: live });
         }
         added.push(live);
+      }
+      // A newly tracked client can miss the spawn tick's animation input.
+      // Retry this batch briefly using its live snapshots, then leave it to
+      // the ordinary refresh cadence. Removed/replaced models leave the map.
+      for (const ticks of INITIAL_INPUT_REFRESH_TICKS) {
+        system.runTimeout(() => {
+          if (!this.#body.isValid) return;
+          for (const model of added) {
+            if (this.#modelByEntityId.get(model.entity.id) === model && model.entity.isValid) {
+              playFancyModelInput(model.entity, model.inputValues);
+            }
+          }
+        }, ticks);
       }
       return added;
     } catch (error) {

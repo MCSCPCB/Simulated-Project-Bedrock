@@ -52,6 +52,7 @@ function moduleLoader(sourceRoot, server, overrides = {}) {
 function fixture() {
   const entities = new Map();
   const queued = [];
+  const timeouts = [];
   const signals = new Map();
   const events = new Proxy({}, { get: (_, key) => ({
     subscribe(callback) {
@@ -62,7 +63,8 @@ function fixture() {
   }) });
   const system = {
     currentTick: 0, beforeEvents: events,
-    run: callback => queued.push(callback), runTimeout: callback => queued.push(callback),
+    run: callback => queued.push(callback),
+    runTimeout: (callback, ticks = 1) => timeouts.push({ tick: system.currentTick + ticks, callback }),
     runInterval() {}
   };
   const cells = new Map();
@@ -167,7 +169,15 @@ function fixture() {
   };
   const load = moduleLoader(join(sable, "src"), server);
   const reference = moduleLoader(join(baseline, "src"), server);
-  const flush = () => { system.currentTick++; const current = queued.splice(0); current.forEach(callback => callback()); };
+  const flush = () => {
+    system.currentTick++;
+    const current = queued.splice(0);
+    for (let index = 0; index < timeouts.length;) {
+      if (timeouts[index].tick <= system.currentTick) current.push(timeouts.splice(index, 1)[0].callback);
+      else index++;
+    }
+    current.forEach(callback => callback());
+  };
   return { load, reference, dimension, entities, cells, system, server, changes, loot, sounds, particles, flush, permutation, signals };
 }
 
@@ -2297,6 +2307,122 @@ test("generic model selection shares entities while preserving independent textu
   }
 });
 
+test("new Fancy projections recover early missed input during capture, placement and reconstruction", () => {
+  const reader = modelResourceReader(join(sable, "packs/SableRP"), "sable/sublevel/fancy");
+  for (const scenario of ["capture", "placement", "reconstruction"]) for (const readyAfter of [2, 3, 7, 11, 19]) {
+    const f = managedFixture();
+    const deliveries = new Map();
+    const spawn = f.dimension.spawnEntity;
+    f.dimension.spawnEntity = (...args) => {
+      const entity = spawn(...args);
+      if (!entity.typeId.startsWith("sable:fancy_") || entity.typeId.includes("carrier")) return entity;
+      const born = f.system.currentTick;
+      const delivery = { born, sends: [], received: [] };
+      deliveries.set(entity.id, delivery);
+      const play = entity.playAnimation.bind(entity);
+      entity.playAnimation = (animation, options) => {
+        delivery.sends.push(f.system.currentTick);
+        if (f.system.currentTick - born < readyAfter) return;
+        play(animation, options);
+        delivery.received.push(f.system.currentTick);
+      };
+      return entity;
+    };
+    const advance = end => {
+      while (f.system.currentTick < end) { f.flush(); f.manager.tick(f.system.currentTick); }
+    };
+    const target = block("minecraft:grass_block");
+    let managed;
+    let previous;
+    if (scenario === "capture") {
+      f.system.currentTick = 7;
+      f.dimension.getBlock(target.localLocation).setType(target.typeId);
+      managed = f.manager.createSubLevelFromRegion(f.dimension, target.localLocation, target.localLocation);
+      assert.equal(f.dimension.getBlock(target.localLocation).typeId, "minecraft:air");
+    } else {
+      managed = f.manager.createSubLevel(f.dimension, target.localLocation, [target]);
+      advance(20);
+      previous = [...deliveries.keys()];
+      const typeId = scenario === "placement" ? "minecraft:grass_block" : "minecraft:beacon";
+      assert(f.manager.placeBlockForPlayerEdit({}, { typeId }, managed.handle, target, { x: 1, y: 0, z: 0 }, "south", "up"));
+      if (scenario === "reconstruction") assert(previous.every(id => !f.entities.get(id).isValid));
+    }
+    const entity = [...f.entities.values()].find(entity => entity.isValid && deliveries.has(entity.id)
+      && !previous?.includes(entity.id));
+    const delivery = deliveries.get(entity.id);
+    advance(delivery.born + 1);
+    assert.deepEqual(activeModelSurfaces(entity, reader(entity)), [], "uninitialized clients must remain hidden");
+    advance(delivery.born + readyAfter + 3);
+    assert(delivery.received.length > 0, `${scenario}: client ready at ${readyAfter} must recover within 3 ticks`);
+    assert(delivery.received[0] - delivery.born - readyAfter <= 3);
+    assert(activeModelSurfaces(entity, reader(entity)).length > 0);
+    assert.equal(entity.molang.origin_y % 4096 >= 2048, true);
+    assert(entity.molang.s0 > 0);
+    assert(entity.molang.tint_input > 0, "the retry must carry grass tint as well as geometry selection");
+    assert.equal(entity.animationOptions.controller, "sable_fancy_input");
+    const oldSends = previous?.map(id => deliveries.get(id).sends.length);
+    if (previous) {
+      // A force-sync at placement is expected; startup retries for the new
+      // entity must not keep sending the old entity's snapshots afterward.
+      advance(39);
+      assert.deepEqual(previous.map(id => deliveries.get(id).sends.length), oldSends);
+    }
+    managed.remove();
+    const sends = [...deliveries.values()].map(value => value.sends.length);
+    advance(delivery.born + 70);
+    assert.deepEqual([...deliveries.values()].map(value => value.sends.length), sends, "removed projections must not receive queued retries");
+  }
+});
+
+test("managed render synchronization is independent of the 20-tick integrity scan", () => {
+  const f = managedFixture();
+  f.system.currentTick = 7;
+  const managed = f.manager.createSubLevel(f.dimension, { x: 0, y: 0, z: 0 }, [block("minecraft:stone")]);
+  const render = managed.handle.renderData;
+  const sync = render.sync.bind(render);
+  const synced = [];
+  render.sync = (...args) => { synced.push(f.system.currentTick); return sync(...args); };
+  const getBlock = f.dimension.getBlock;
+  const regionReads = [];
+  f.dimension.getBlock = location => { regionReads.push(f.system.currentTick); return getBlock(location); };
+  const entity = [...f.entities.values()].find(entity => entity.typeId.startsWith("sable:fancy_") && !entity.typeId.includes("carrier"));
+  while (f.system.currentTick < 46) { f.flush(); f.manager.tick(f.system.currentTick); }
+  assert(synced.includes(9) && synced.includes(21), "render sync must run between integrity scans");
+  assert(regionReads.length > 0 && regionReads.every(tick => tick % 20 === 0), "native region checks must remain infrequent");
+  entity.molang = {};
+  f.flush(); f.manager.tick(f.system.currentTick);
+  assert.equal(f.system.currentTick, 47);
+  assert(entity.molang.origin_y % 4096 >= 2048, "40-tick refresh must not wait for the next integrity scan");
+  managed.remove();
+});
+
+test("startup retries retain edits within a shared model and stop when it is removed", () => {
+  const f = fixture();
+  const registry = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts");
+  const layout = f.load("sublevel/render/fancy/model/FancySubLevelModelLayout.ts");
+  const { FancySubLevelModelRenderer } = f.load("sublevel/render/fancy/model/FancySubLevelModelRenderer.ts");
+  const entries = [0, 1].map(x => block("minecraft:chest", x, 0, 0, { "minecraft:cardinal_direction": "south" }));
+  const packed = layout.packFancySubLevelModels(entries.map(registry.resolveFancySubLevelBlock)).models;
+  assert.equal(packed.length, 1);
+  const renderer = new FancySubLevelModelRenderer(body, packed, f.dimension.spawnEntity, undefined, undefined, { x: 0, y: 0, z: 0 });
+  renderer.sync(true);
+  renderer.releaseInitialPose();
+  while (f.system.currentTick < 3) f.flush();
+  const entity = renderer.entityIds.map(id => f.entities.get(id)).find(entity => !entity.typeId.includes("carrier"));
+  assert(renderer.setBlockModelState("0,0,0", "open", 1));
+  renderer.removeBlocks(new Set(["1,0,0"]));
+  const latest = { ...entity.molang };
+  entity.molang = {};
+  f.flush();
+  assert.deepEqual(entity.molang, latest, "retry must preserve the open lid and the cleared neighboring slot");
+  renderer.removeBlocks(new Set(["0,0,0"]));
+  assert.equal(entity.isValid, false);
+  const writes = entity.animationWrites;
+  while (f.system.currentTick < 25) f.flush();
+  assert.equal(entity.animationWrites, writes, "queued retries must not address an emptied model while its body is still valid");
+  renderer.remove();
+});
+
 test("animation snapshots retain selection, state and tint through pose changes and client re-tracking", () => {
   const f = fixture();
   const registry = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts");
@@ -2321,10 +2447,12 @@ test("animation snapshots retain selection, state and tint through pose changes 
   assert.equal(entity.animationOptions.controller, "sable_fancy_input");
   assert.match(entity.animationOptions.stopExpression, /return 0;$/);
   const latest = { ...entity.molang };
-  const writes = entity.animationWrites;
   movingBody.isSleeping = true;
   renderer.sync();
-  for (let tick = 2; tick < 40; tick++) { f.system.currentTick = tick; renderer.sync(); }
+  while (f.system.currentTick < 20) { f.flush(); renderer.sync(); }
+  assert.deepEqual(entity.molang, latest, "startup retries must retain the newest pose instead of the spawn snapshot");
+  const writes = entity.animationWrites;
+  while (f.system.currentTick < 39) { f.flush(); renderer.sync(); }
   assert.equal(entity.animationWrites, writes, "stationary frames must not send animation commands");
   entity.molang = {};
   f.system.currentTick = 40;

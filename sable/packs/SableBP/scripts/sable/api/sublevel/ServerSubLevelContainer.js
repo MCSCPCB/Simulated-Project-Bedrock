@@ -74,6 +74,9 @@ class ServerSubLevelContainer {
     });
   }
   tick(currentTick) {
+    for (const record of this.#recordsByHandleId.values()) {
+      if (!record.removed && record.handle.isValid) record.renderData.sync();
+    }
     if (currentTick % 20 !== 0) return;
     for (const [id, saved] of this.#pendingRestores) {
       try {
@@ -88,7 +91,6 @@ class ServerSubLevelContainer {
     for (const record of [...this.#recordsByHandleId.values()]) {
       if (record.removed || !record.handle.isValid) continue;
       if (!isRecordRegionLoaded(record)) continue;
-      record.renderData.sync();
       if (!record.renderData.hasKnownIntegrityFailure() && record.renderData.hasIntactEntities()) continue;
       this.#saveRecord(record);
       this.#recreateRender(record, record.handle.blocks);

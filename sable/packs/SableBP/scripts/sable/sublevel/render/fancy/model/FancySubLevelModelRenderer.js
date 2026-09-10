@@ -26,6 +26,7 @@ const FANCY_MODEL_CARRIER_ENTITY_TYPE_ID = "sable:fancy_model_carrier";
 const FANCY_MODEL_CARRIER_CAPACITY = CARRIER_SEAT_COUNT - 1;
 const FANCY_MODEL_INPUT_ANIMATION = "animation.sable.fancy.input";
 const INPUT_REFRESH_TICKS = 40;
+const INITIAL_INPUT_REFRESH_TICKS = [2, 4, 8, 12, 20];
 class FancySubLevelModelRenderer {
   #assignments = /* @__PURE__ */ new Map();
   #body;
@@ -438,13 +439,20 @@ class FancySubLevelModelRenderer {
           "render"
         );
         this.#onEntityAdded?.(entity.id);
-        system.run(() => {
-          if (this.#body.isValid && entity.isValid) playFancyModelInput(entity, inputValues);
-        });
         for (const assignment of packed.assignments) {
           this.#assignments.set(assignment.blockKey, { assignment, model: live });
         }
         added.push(live);
+      }
+      for (const ticks of INITIAL_INPUT_REFRESH_TICKS) {
+        system.runTimeout(() => {
+          if (!this.#body.isValid) return;
+          for (const model of added) {
+            if (this.#modelByEntityId.get(model.entity.id) === model && model.entity.isValid) {
+              playFancyModelInput(model.entity, model.inputValues);
+            }
+          }
+        }, ticks);
       }
       return added;
     } catch (error) {
