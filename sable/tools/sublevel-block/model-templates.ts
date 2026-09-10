@@ -196,13 +196,14 @@ interface GrassRectangle {
 // mask is stable across the supplied Bedrock resource pack; the greedy
 // decomposition keeps large uninterrupted areas together while preserving
 // every transparent cut-out at the dirt boundary.
-function grassSideRectangles(): GrassRectangle[] {
+function grassSideRectangles(tinted: boolean): GrassRectangle[] {
   const mask = [
     "1111111111111111",
     "1111101111111111",
     "1011101011110110",
-    "0000100010100000"
-  ].map(row => [...row].map(value => value === "1"));
+    "0000100010100000",
+    ...Array<string>(12).fill("0000000000000000")
+  ].map(row => [...row].map(value => (value === "1") === tinted));
   const rectangles: GrassRectangle[] = [];
   while (mask.some(row => row.includes(true))) {
     let best: { x: number; y: number; width: number; height: number; area: number } | undefined;
@@ -229,6 +230,28 @@ function grassSideRectangles(): GrassRectangle[] {
   return rectangles;
 }
 
+// Base grass pixels and their Equal-depth multiply pass must use the same
+// vertices, not just coplanar faces with different triangulations.
+function grassSideCubes(faces: readonly FullFace[], tinted: boolean): JsonObject[] {
+  const cubes: JsonObject[] = [];
+  for (const { x, y, width, height } of grassSideRectangles(tinted)) {
+    const bottom = -8 - y - height;
+    // Bedrock JSON reflects the model X coordinate: east uses origin.x,
+    // west uses origin.x + size.x. UVs follow each base face's winding.
+    for (const [face, origin, size] of [
+      ["north", [-8 + x, bottom, -8], [width, height, 1]],
+      ["south", [8 - x - width, bottom, 7], [width, height, 1]],
+      ["east", [-8, bottom, 8 - x - width], [1, height, width]],
+      ["west", [7, bottom, -8 + x], [1, height, width]]
+    ] as const) {
+      if (faces.includes(face)) {
+        cubes.push({ origin, size, uv: { [face]: { uv: [x, y], uv_size: [width, height] } } });
+      }
+    }
+  }
+  return cubes;
+}
+
 function modelChannels(model: CompiledModel): ModelChannel[] {
   const description = model.model as JsonObject;
   const type = String(description.type);
@@ -250,7 +273,12 @@ function modelChannels(model: CompiledModel): ModelChannel[] {
       bones: [{
         name: "slot_{s}",
         pivot: [0, -16, 0],
-        cubes: [{ origin, size, uv: Object.fromEntries(faces.map(face => [
+        cubes: model.grassTint ? [
+          ...faces.filter(face => face === "up" || face === "down")
+            .map(face => ({ origin, size, uv: faceUvMap([face]) })),
+          ...grassSideCubes(faces, true),
+          ...grassSideCubes(faces, false)
+        ] : [{ origin, size, uv: Object.fromEntries(faces.map(face => [
           face,
           type === "grass_path" && face !== "up" && face !== "down"
             ? { uv: [0, 1], uv_size: [16, 15] }
@@ -498,22 +526,12 @@ function isTintMaterial(model: CompiledModel): boolean {
 
 function tintChannels(model: CompiledModel): ModelChannel[] {
   if (!model.grassTint) return modelChannels(model);
-  // The base keeps all six ordinary block faces. Only the multiply shell
-  // follows the grass mask; Equal-depth blending uses these exact planes.
+  // Keep the full-block contour and reuse the base grass quads exactly.
+  // Dirt rectangles complete the base only; they never enter the tint pass.
   const cubes: JsonObject[] = [
-    { origin: [-8, -9, -8], size: [16, 1, 16], uv: faceUvMap(["up"]) }
+    { origin: [-8, -24, -8], size: [16, 16, 16], uv: faceUvMap(["up"]) },
+    ...grassSideCubes(FULL_FACES, true)
   ];
-  for (const { x, y, width, height } of grassSideRectangles()) {
-    const bottom = -8 - y - height;
-    for (const [face, origin, size] of [
-      ["north", [-8 + x, bottom, -8], [width, height, 1]],
-      ["south", [8 - x - width, bottom, 7], [width, height, 1]],
-      ["west", [-8, bottom, 8 - x - width], [1, height, width]],
-      ["east", [7, bottom, -8 + x], [1, height, width]]
-    ] as const) {
-      cubes.push({ origin, size, uv: { [face]: { uv: [x, y], uv_size: [width, height] } } });
-    }
-  }
   return [{
     name: "tint",
     texture: "textures/colormap/grass",

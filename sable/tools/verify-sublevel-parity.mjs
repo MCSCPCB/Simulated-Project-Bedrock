@@ -296,7 +296,7 @@ test("shared resources resolve every client alias without duplicate or unused de
   }
 });
 
-test("grass uses ordinary cube faces and an exact, unshifted grass-only multiply shell", () => {
+test("grass covers the cube once and matches the unshifted multiply shell vertex for vertex", () => {
   const pack = join(sable, "packs/SableRP");
   const reader = modelResourceReader(pack, "sable/sublevel/fancy");
   const f = fixture();
@@ -314,6 +314,33 @@ test("grass uses ordinary cube faces and an exact, unshifted grass-only multiply
   const material = json(join(pack, "materials/entity.material")).materials["tint_multiply:alpha_block_color"];
   assert.equal(material.depthFunc, "Equal");
   assert.deepEqual([material.blendSrc, material.blendDst], ["DestColor", "Zero"]);
+  const fullCube = { origin: [-8, -24, -8], size: [16, 16, 16] };
+  const faceNames = ["down", "east", "north", "south", "up", "west"];
+  const rectangle = (cube, face) => {
+    const [origin, right, bottom] = bedrockCubeFaceVertices(fullCube, face);
+    const uAxis = right.map((value, axis) => (value - origin[axis]) / 16);
+    const vAxis = bottom.map((value, axis) => (value - origin[axis]) / 16);
+    const coordinates = bedrockCubeFaceVertices(cube, face).map(point => {
+      const u = point.reduce((sum, value, axis) => sum + (value - origin[axis]) * uAxis[axis], 0);
+      const v = point.reduce((sum, value, axis) => sum + (value - origin[axis]) * vAxis[axis], 0);
+      assert.deepEqual(point, origin.map((value, axis) => value + u * uAxis[axis] + v * vAxis[axis]),
+        `${face}: shell must lie on the native full-block plane`);
+      return [u, v];
+    });
+    const [u, v] = coordinates[0];
+    const width = coordinates[1][0] - u;
+    const height = coordinates[2][1] - v;
+    assert.deepEqual(coordinates, [[u, v], [u + width, v], [u, v + height], [u + width, v + height]]);
+    assert(width > 0 && height > 0);
+    assert([u, v, width, height].every(Number.isInteger));
+    assert(u >= 0 && v >= 0 && u + width <= 16 && v + height <= 16);
+    return [u, v, width, height];
+  };
+  const cover = (coverage, face, [u, v, width, height]) => {
+    for (let row = v; row < v + height; row++) for (let column = u; column < u + width; column++) {
+      coverage[face][row * 16 + column]++;
+    }
+  };
   for (const format of ["dense", "sparse"]) {
     const resource = resolved.model[format];
     const entity = {
@@ -325,15 +352,23 @@ test("grass uses ordinary cube faces and an exact, unshifted grass-only multiply
     const { client, geometries } = resources;
     const passes = activeRenderPasses(entity, resources);
     const bases = passes.filter(({ controller, evaluate, arrays }) => evaluate(controller.materials[0]["*"], arrays) !== "tint_multiply");
-    const baseFaces = [];
+    const baseCoverage = Object.fromEntries(faceNames.map(face => [face, Array(256).fill(0)]));
+    const baseVertices = new Set();
     for (const { controller, evaluate, arrays } of bases) {
       const bone = geometries.get(evaluate(controller.geometry, arrays)).bones.find(bone => bone.name === "slot_0");
-      assert.equal(bone.cubes.length, 1);
-      assert.deepEqual(bone.cubes[0].origin, [-8, -24, -8]);
-      assert.deepEqual(bone.cubes[0].size, [16, 16, 16]);
-      baseFaces.push(...Object.keys(bone.cubes[0].uv));
+      assert.equal(bone.parent, "model_offset");
+      assert.deepEqual(bone.pivot, [0, -16, 0]);
+      for (const cube of bone.cubes) for (const [face, uv] of Object.entries(cube.uv)) {
+        assert.equal(cube.inflate, undefined);
+        const [u, v, width, height] = rectangle(cube, face);
+        assert.deepEqual(uv, { uv: [u, v], uv_size: [width, height] });
+        assert.equal(evaluate(controller.textures[0], arrays), face === "up" ? "textures/blocks/grass_top"
+          : face === "down" ? "textures/blocks/dirt" : "textures/blocks/grass_side");
+        cover(baseCoverage, face, [u, v, width, height]);
+        baseVertices.add(JSON.stringify([face, bedrockCubeFaceVertices(cube, face)]));
+      }
     }
-    assert.deepEqual(baseFaces.sort(), ["down", "east", "north", "south", "up", "west"]);
+    for (const face of faceNames) assert.deepEqual(baseCoverage[face], Array(256).fill(1), `${format}/${face}: complete base without overlaps`);
     const aliases = format === "dense" ? ["colormap_x", "colormap_z", "colormap_compact_x", "colormap_compact_z"] : ["tint"];
     for (const alias of aliases) {
       const width = alias.includes("compact") ? 6 : 7;
@@ -350,38 +385,28 @@ test("grass uses ordinary cube faces and an exact, unshifted grass-only multiply
         assert.match(bone.name, /^slot_\d+$/);
         assert.equal(bone.parent, "model_offset");
         assert.deepEqual(bone.pivot, [0, -16, 0]);
-        const coverage = Object.fromEntries(baseFaces.map(face => [face, Array(256).fill(0)]));
+        const coverage = Object.fromEntries(faceNames.map(face => [face, Array(256).fill(0)]));
+        const shellVertices = [];
         for (const cube of bone.cubes) {
           assert.equal(cube.inflate, undefined);
           const [face, uv] = Object.entries(cube.uv)[0];
           assert.equal(Object.keys(cube.uv).length, 1);
-          const [x, y, z] = cube.origin;
-          const [dx, dy, dz] = cube.size;
-          let u, v, width, height;
-          if (face === "up") {
-            assert.equal(y + dy, -8);
-            [u, v, width, height] = [x + 8, z + 8, dx, dz];
-          } else {
-            assert.notEqual(face, "down");
-            const plane = { north: z, south: z + dz, west: x, east: x + dx }[face];
-            assert.equal(plane, face === "north" || face === "west" ? -8 : 8);
-            u = { north: x + 8, south: 8 - x - dx, west: 8 - z - dz, east: z + 8 }[face];
-            [v, width, height] = [-8 - y - dy, face === "north" || face === "south" ? dx : dz, dy];
-          }
+          assert.notEqual(face, "down");
+          const [u, v, width, height] = rectangle(cube, face);
           const slot = Number(bone.name.slice(5));
           const climateWidth = alias.includes("compact") ? 6 : 7;
           const ramp = format === "sparse" ? 0 : 16 * (alias.endsWith("_x")
             ? slot % climateWidth : Math.floor(slot / climateWidth) % climateWidth);
           assert.deepEqual(uv, { uv: [ramp + u, ramp + v], uv_size: [width, height] });
-          for (let row = v; row < v + height; row++) for (let column = u; column < u + width; column++) {
-            assert(row >= 0 && row < 16 && column >= 0 && column < 16);
-            coverage[face][row * 16 + column]++;
-          }
+          cover(coverage, face, [u, v, width, height]);
+          shellVertices.push(JSON.stringify([face, bedrockCubeFaceVertices(cube, face)]));
         }
-        for (const face of baseFaces) {
+        for (const face of faceNames) {
           const expected = face === "up" ? Array(256).fill(1) : face === "down" ? Array(256).fill(0) : alpha;
           assert.deepEqual(coverage[face], expected, `${format}/${alias}/${bone.name}/${face}`);
         }
+        for (const vertices of shellVertices) assert(baseVertices.has(vertices),
+          `${format}/${alias}/${bone.name}: Equal-depth tint requires the same base vertices and face winding`);
       }
     }
     for (let slot = 0; slot < 26; slot++) entity.molang[`s${slot}`] = 1;
@@ -1434,6 +1459,21 @@ function modelResourceIndex(pack) {
   return resources;
 }
 
+// UV corners in Bedrock JSON coordinates: top-left, top-right, bottom-left,
+// bottom-right. Blockbench's Bedrock codec reflects X on import/export while
+// keeping face names, and reverses both UV axes on up/down faces.
+function bedrockCubeFaceVertices(cube, face) {
+  const corners = {
+    north: [[0, 1, 0], [1, 1, 0], [0, 0, 0], [1, 0, 0]],
+    south: [[1, 1, 1], [0, 1, 1], [1, 0, 1], [0, 0, 1]],
+    east: [[0, 1, 1], [0, 1, 0], [0, 0, 1], [0, 0, 0]],
+    west: [[1, 1, 0], [1, 1, 1], [1, 0, 0], [1, 0, 1]],
+    up: [[0, 1, 1], [1, 1, 1], [0, 1, 0], [1, 1, 0]],
+    down: [[0, 0, 0], [1, 0, 0], [0, 0, 1], [1, 0, 1]]
+  };
+  return corners[face].map(corner => corner.map((value, axis) => cube.origin[axis] + value * cube.size[axis]));
+}
+
 function activeModelSurfaces(entity, resources, transformed = false) {
   const { client, geometries, animations, controllers } = resources;
   const evaluate = resourceEvaluator(entity, client);
@@ -1493,23 +1533,19 @@ function activeModelSurfaces(entity, resources, transformed = false) {
       if (hidden) continue;
       for (const cube of bone.cubes) {
         if (transformed) {
-          const corners = [
-            [0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0],
-            [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1]
-          ].map(corner => {
-            let point = corner.map((value, axis) => cube.origin[axis] + value * cube.size[axis]);
-            if (cube.rotation) point = transformPoint(point, { pivot: cube.pivot ?? [0, 0, 0], rotation: cube.rotation });
-            for (const transform of transforms) point = transformPoint(point, transform);
-            const location = entity.vehicle?.location ?? entity.location;
-            return point.map((value, axis) => Math.round((value + [location.x, location.y, -location.z][axis] * 16) * 1e6) / 1e6 || 0);
-          });
-          const faces = { north: [0, 1, 2, 3], south: [5, 4, 7, 6], west: [4, 0, 6, 2], east: [1, 5, 3, 7], up: [2, 3, 6, 7], down: [4, 5, 0, 1] };
           for (const [face, uv] of Object.entries(cube.uv)) {
+            const vertices = bedrockCubeFaceVertices(cube, face).map(vertex => {
+              let point = vertex;
+              if (cube.rotation) point = transformPoint(point, { pivot: cube.pivot ?? [0, 0, 0], rotation: cube.rotation });
+              for (const transform of transforms) point = transformPoint(point, transform);
+              const location = entity.vehicle?.location ?? entity.location;
+              return point.map((value, axis) => Math.round((value + [location.x, location.y, -location.z][axis] * 16) * 1e6) / 1e6 || 0);
+            });
             surfaces.push({
               texture: evaluate(controller.textures[0], arrays), material,
               light: controller.light_color_multiplier ?? 1,
               textureSize: [geometry.description.texture_width, geometry.description.texture_height],
-              uv, vertices: faces[face].map(index => corners[index])
+              uv, vertices
             });
           }
           continue;
