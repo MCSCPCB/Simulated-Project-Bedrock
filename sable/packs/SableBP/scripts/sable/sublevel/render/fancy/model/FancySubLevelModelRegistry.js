@@ -19,6 +19,7 @@ function getSubLevelBlockRegistration(typeId) {
   return {
     category: registration.category,
     hardness: registration.hardness,
+    mining: registration.mining,
     placeable: registration.placeable,
     passable: registration.passable,
     support: registration.support

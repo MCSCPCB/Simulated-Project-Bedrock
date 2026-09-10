@@ -722,10 +722,23 @@ export const VANILLA_BLOCK_BREAK_SOUND_EVENTS: readonly GeneratedBlockSoundEvent
     0.8,
     1,
     1
-  ]
+  ],
+  ["block.cinnabar.break", 0.8, 0.8, 1, 1],
+  ["block.sulfur.break", 0.8, 0.8, 1, 1],
+  ["block.potent_sulfur.break", 0.8, 0.8, 1, 1],
+  ["block.sulfur_spike.break", 0.8, 0.8, 1, 1]
 ];
 
 export const VANILLA_BLOCK_BREAK_SOUND_EVENT_INDICES: Readonly<Record<string, number>> = {
+  "minecraft:chiseled_cinnabar": 103,
+  "minecraft:chiseled_sulfur": 104,
+  "minecraft:cinnabar": 103,
+  "minecraft:grass_block": 2,
+  "minecraft:polished_cinnabar": 103,
+  "minecraft:polished_sulfur": 104,
+  "minecraft:potent_sulfur": 105,
+  "minecraft:sulfur": 104,
+  "minecraft:sulfur_spike": 106,
   "minecraft:acacia_button": 0,
   "minecraft:acacia_door": 0,
   "minecraft:acacia_double_slab": 0,
@@ -2628,10 +2641,23 @@ export const VANILLA_BLOCK_PLACE_SOUND_EVENTS: readonly GeneratedBlockSoundEvent
     0.8,
     1,
     1
-  ]
+  ],
+  ["block.cinnabar.place", 0.8, 0.8, 1, 1],
+  ["block.sulfur.place", 0.8, 0.8, 1, 1],
+  ["block.potent_sulfur.place", 0.8, 0.8, 1, 1],
+  ["block.sulfur_spike.place", 0.8, 0.8, 1, 1]
 ];
 
 export const VANILLA_BLOCK_PLACE_SOUND_EVENT_INDICES: Readonly<Record<string, number>> = {
+  "minecraft:chiseled_cinnabar": 106,
+  "minecraft:chiseled_sulfur": 107,
+  "minecraft:cinnabar": 106,
+  "minecraft:grass_block": 2,
+  "minecraft:polished_cinnabar": 106,
+  "minecraft:polished_sulfur": 107,
+  "minecraft:potent_sulfur": 108,
+  "minecraft:sulfur": 107,
+  "minecraft:sulfur_spike": 109,
   "minecraft:acacia_button": 0,
   "minecraft:acacia_door": 0,
   "minecraft:acacia_double_slab": 0,
@@ -4538,6 +4564,7 @@ export const VANILLA_BLOCK_HIT_SOUND_EVENTS: readonly GeneratedBlockSoundEvent[]
 ];
 
 export const VANILLA_BLOCK_HIT_SOUND_EVENT_INDICES = {
+  "minecraft:grass_block": 2,
   "minecraft:acacia_button": 0,
   "minecraft:acacia_door": 0,
   "minecraft:acacia_double_slab": 0,

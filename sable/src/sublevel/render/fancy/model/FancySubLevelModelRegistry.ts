@@ -33,6 +33,7 @@ export function hasFancySubLevelRegistration(typeId: string): boolean {
 export function getSubLevelBlockRegistration(typeId: string): {
   readonly category: string;
   readonly hardness?: number;
+  readonly mining?: import("./FancySubLevelModel.js").SubLevelMiningProperties;
   readonly placeable?: boolean;
   readonly passable?: boolean;
   readonly support?: import("./FancySubLevelModel.js").SubLevelSupportRule;
@@ -42,6 +43,7 @@ export function getSubLevelBlockRegistration(typeId: string): {
   return {
     category: registration.category,
     hardness: registration.hardness,
+    mining: registration.mining,
     placeable: registration.placeable,
     passable: registration.passable,
     support: registration.support

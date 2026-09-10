@@ -1,18 +1,21 @@
 import type { ItemStack } from "@minecraft/server";
+import type { SubLevelMiningProperties } from "../../sublevel/render/fancy/model/FancySubLevelModel.js";
 
 // Vanilla break-time model for a correct tool: ticks = hardness * 30 / speed,
 // with an efficiency enchantment adding level^2 + 1 speed.
 const HARVEST_DIVISOR = 30;
 
-const AXE_SPEEDS: Readonly<Record<string, number>> = {
-  "minecraft:copper_axe": 5,
-  "minecraft:diamond_axe": 8,
-  "minecraft:golden_axe": 12,
-  "minecraft:iron_axe": 6,
-  "minecraft:netherite_axe": 9,
-  "minecraft:stone_axe": 4,
-  "minecraft:wooden_axe": 2
+const TOOL_MATERIALS: Readonly<Record<string, { readonly speed: number; readonly level: number }>> = {
+  copper: { speed: 5, level: 1 },
+  diamond: { speed: 8, level: 3 },
+  golden: { speed: 12, level: 0 },
+  iron: { speed: 6, level: 2 },
+  netherite: { speed: 9, level: 4 },
+  stone: { speed: 4, level: 1 },
+  wooden: { speed: 2, level: 0 }
 };
+
+const DEFAULT_MINING_PROPERTIES: SubLevelMiningProperties = { tool: "axe" };
 
 // The attack-mining scale is anchored to the iron golem: bare-handed, breaking
 // its construction recipe (four iron blocks plus one carved pumpkin) takes
@@ -60,9 +63,10 @@ export function getSubLevelToolProfile(
  */
 export function getSubLevelMiningRequiredHits(
   hardness: number,
-  itemStack?: ItemStack
+  itemStack?: ItemStack,
+  mining?: SubLevelMiningProperties
 ): number {
-  const targetTicks = getSubLevelMiningTargetTicks(hardness, itemStack);
+  const targetTicks = getSubLevelMiningTargetTicks(hardness, itemStack, mining);
   return Math.max(
     1,
     Math.ceil(targetTicks / PC_ATTACK_EQUIVALENT_TICKS)
@@ -71,22 +75,27 @@ export function getSubLevelMiningRequiredHits(
 
 export function getSubLevelMiningTargetTicks(
   hardness: number,
-  itemStack?: ItemStack
+  itemStack?: ItemStack,
+  mining?: SubLevelMiningProperties
 ): number {
-  return getVanillaBlockBreakTicks(hardness, getSubLevelToolProfile(itemStack));
+  return getVanillaBlockBreakTicks(hardness, getSubLevelToolProfile(itemStack), mining);
 }
 
 export function getVanillaBlockBreakTicks(
   hardness: number,
-  profile: SubLevelToolProfile
+  profile: SubLevelToolProfile,
+  mining: SubLevelMiningProperties = DEFAULT_MINING_PROPERTIES
 ): number {
-  const axeSpeed = profile.typeId ? AXE_SPEEDS[profile.typeId] : undefined;
-  let speed = axeSpeed ?? 1;
-  if (axeSpeed !== undefined && profile.efficiencyLevel > 0) {
+  if (hardness === -1) return Number.POSITIVE_INFINITY;
+  const tool = /^minecraft:(wooden|stone|copper|iron|golden|diamond|netherite)_(axe|pickaxe|shovel|hoe)$/.exec(profile.typeId ?? "");
+  const material = tool && tool[2] === mining.tool ? TOOL_MATERIALS[tool[1]!] : undefined;
+  let speed = material?.speed ?? 1;
+  if (material && profile.efficiencyLevel > 0) {
     // Vanilla efficiency bonus: level^2 + 1 added to the tool speed.
     speed += profile.efficiencyLevel * profile.efficiencyLevel + 1;
   }
-  return Math.ceil(Math.max(0, hardness) * HARVEST_DIVISOR / speed);
+  const canHarvest = mining.harvestLevel === undefined || (material !== undefined && material.level >= mining.harvestLevel);
+  return Math.ceil(Math.max(0, hardness) * (canHarvest ? HARVEST_DIVISOR : 100) / speed);
 }
 
 function normalizeEfficiencyLevel(value: number): number {

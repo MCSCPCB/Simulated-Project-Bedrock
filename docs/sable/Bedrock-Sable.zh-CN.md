@@ -1,232 +1,279 @@
 # `Sable` 方块注册
 
-为 Sable 子世界（Sub-Level）的 Fancy 渲染路线注册方块，并生成对应的渲染产物
+为 Sable 子世界的 Fancy 渲染路线配置方块模型、材质和交互属性。未注册的方块使用 Vanilla 手持路线显示。
 
-## 渲染路线
+## 使用示例
 
-Fancy 路线按注册表逐方块渲染：已注册的方块由框架编译出专用的渲染实体与资源，未注册的方块自动回退到 Vanilla 手持路线。未注册不会报错，两条路线可以在同一个子世界内共存。
-
-## 注册流程
-
-注册一种新方块只需要两步：在注册表中添加一条记录，然后运行一次构建工具。
-
-## 注册表
-
-注册表文件为 `sable/src/data/sublevel-block.json`：
+注册表位于 `sable/src/data/sublevel-block.json`，`blocks` 的键是完整方块 ID。以下示例注册一个石头方块：
 
 ```json
 {
   "format_version": "1.0.0",
   "blocks": {
-    "minecraft:方块ID": { "...": "注册记录" }
-  }
-}
-```
-
-键使用完整的带命名空间方块 ID，同一方块只允许注册一次。
-
-## `BlockRegistration`
-
-表示注册表中的一条注册记录。
-
-```ts
-type BlockRegistration = {
-  materials:
-    | "opaque" | "alpha_test" | "alpha_test_tint" | "opaque_tint"
-    | "blend" | "translucent" | "opaque_emissive"
-    | "redstone_torch_emissive";
-  category: string;
-  domain?: string;
-  hardness?: number;
-  placeable?: boolean;
-  passable?: boolean;
-  support?: "none" | "facing_log" | "above_solid" | "above_leaf" | "moss_column" | "vine_faces";
-  states: string[];
-  variants: { condition: string; model: ModelDescription; tint?: TintDescription; flipbook?: FlipbookDescription }[];
-  default: { model: ModelDescription; tint?: TintDescription; flipbook?: FlipbookDescription };
-};
-```
-
-### 属性
-
-| 属性 | 类型 | 说明 |
-| --- | --- | --- |
-| `materials` | `string` | 该方块所有模型使用的渲染材质，取值见「材质」。 |
-| `category` | `string` | 方块所属分类路径，决定产物目录位置与默认共享池，必须取自「分类树」。 |
-| `domain` | `string` | 可选。覆盖共享池的划分键；省略时回落到 `category`。仅在方块不适合与同类目共池时使用。 |
-| `hardness` | `number` | 可选，默认 `1`。原版硬度，驱动挖掘时间与攻击折算击数。 |
-| `placeable` | `boolean` | 可选，默认 `false`。玩家可手持该方块放置到子世界上。 |
-| `passable` | `boolean` | 可选，默认 `false`。交互射线穿透该方块（藤蔓、垂根等可穿透植物；树叶不属于此类）。 |
-| `support` | `string` | 可选，默认 `none`。附着支撑规则，取值见「支撑规则」。 |
-| `states` | `string[]` | 该记录会读取的方块状态名列表，使用带命名空间的完整写法。`condition` 中引用的状态都必须在此声明。 |
-| `variants` | `object[]` | 按声明顺序求值的条件变体，第一个条件为真的变体生效。 |
-| `default` | `object` | 所有变体都不匹配时使用的兜底模型。 |
-
-### 材质
-
-| 值 | 说明 |
-| --- | --- |
-| `opaque` | 不透明方块。 |
-| `alpha_test` | 镂空贴图方块，如树叶、藤蔓。 |
-| `alpha_test_tint` | 镂空且需要染色的方块。必须为每个模型提供 `tint`。 |
-| `opaque_tint` | 不透明且需要染色的方块。必须为每个模型提供 `tint`。 |
-| `blend` | 透明方块，如玻璃、玻璃板. |
-| `translucent` | 半透明方块，如冰、史莱姆外壳。 |
-| `opaque_emissive` | 不透明且自发光的方块。 |
-| `redstone_torch_emissive` | 红石火把自发光材质。 |
-
-### 支撑规则
-
-支撑方块的类别按 `category` 判定。
-
-| 值 | 说明 |
-| --- | --- |
-| `none` | 不做附着判定。 |
-| `facing_log` | 朝向面必须为原木类。 |
-| `above_solid` | 上方必须为实体支撑方块。 |
-| `above_leaf` | `hanging` 态时上方必须为树叶，非悬挂态恒定支撑。 |
-| `moss_column` | 同类列支撑，并重算 `tip` 状态。 |
-| `vine_faces` | 逐面支撑，并重算方向位。 |
-
-### 分类树
-
-`category` 必须是以下路径之一：
-
-- `building/`：`bricks_and_building_materials`、`colored_blocks`、`logs_and_wood`、`other_building_and_functional`、`planks`
-- `nature/`：`crops`、`leaves`、`other_natural_blocks`、`ores_and_metals`、`plants_and_flowers`、`saplings`、`terrain_and_stone`、`water_and_ice`
-- `functional/`：`beds`、`buttons`、`chests_and_containers`、`decorations_and_display`、`doors`、`fences`、`fences_and_climbing`、`light_sources`、`mechanisms_and_technical_blocks`、`rails_and_transport`、`redstone`、`signs`、`slabs`、`stairs`、`workstations`
-
-### 条件语法
-
-`condition` 是一个小型表达式，支持状态读取 `q.block_state('minecraft:状态名')`、字面量（引号包裹的字符串、数字、`true`、`false`）、比较运算 `==`、`!=`、`<`、`<=`、`>`、`>=`，以及逻辑运算 `&&`、`||`、`!` 与括号。不支持函数调用、属性访问或其它 Molang 能力，越界写法会在构建期报错。运行时读取状态值时，带命名空间与不带命名空间的键都会被尝试。
-
-### 模型
-
-`model.type` 决定几何形态，其余字段随类型而定。贴图路径使用资源包相对路径，不带扩展名。
-
-| 类型 | 字段 | 说明 |
-| --- | --- | --- |
-| `full_block` | `textures.up/down/north/south/east/west` | 完整立方体，六面可绑定各自贴图；相同贴图的面自动合并为同一渲染通道。 |
-| `pillar` | `textures.side/top`、`axis` | 柱状方块（原木、木头、泥泞红树根）。`axis` 取 `y/x/z`，水平朝向为整体旋转；全皮方块把 `top` 指向侧面贴图即可。 |
-| `chest` | `texture`、`facing` | 箱体、箱盖与锁，使用 64×64 实体图集（`textures/entity/chest/normal`），按 `facing`（`north/east/south/west`）旋转。提供运行时 `open: 0..1` 状态维度，箱盖带开合缓动。 |
-| `bee_nest` | `textures.down/up/front/side`、`direction` | 蜂巢式方向方块，`direction` 取 `0..3`，front 面随方向旋转。 |
-| `cocoa` | `texture`、`direction`、`age` | 可可果，含果柄，`age` 取 `0..2`，`direction` 取 `0..3`。 |
-| `vine` | `texture`、`faces` | 藤蔓面组合，`faces` 为 `south/west/north/east` 的子集，空数组表示不渲染。 |
-| `hanging_roots` | `texture` | 45° 斜置交叉平面。 |
-| `pale_hanging_moss` | `texture`、`tip` | 苍白垂须，与垂根同几何，`tip` 变体换贴图。 |
-| `mangrove_propagule` | `texture`、`stage` | 红树胎生苗（悬挂形态），`stage` 取 `0..4`；非悬挂状态请用 `vanilla` 回退。 |
-| `mangrove_roots` | `textures.side/top` | 红树根板壳结构，侧面与端面分别绑定贴图。 |
-| `creaking_heart` | `textures.side/top`、`axis` | 绞刑木之心，三轴专用几何。 |
-| `vanilla` | 无 | 该状态组合不走 fancy，回退到逐方块手持路线。 |
-
-### 染色
-
-`tint` 只在 `alpha_test_tint` 与 `opaque_tint` 下合法，且必须提供。
-
-| 写法 | 说明 |
-| --- | --- |
-| `{ "method": "fixed", "color": "#RRGGBB" }` | 固定颜色乘算，如白桦、云杉树叶。 |
-| `{ "method": "foliage" }` | 按子世界的 `foliageTint` 气候场取色，支持跨结构渐变；未提供时使用平原气候。 |
-
-### 翻页贴图
-
-帧序列方块使用 `flipbook` 定义动画：
-
-```json
-"flipbook": {
-  "ticks_per_frame": 2, // 每帧游戏刻
-  "frame_count": 8, // 帧数
-  "axis": "v", // `u` 或 `v`
-  "loop": true // 控制循环播放
-}
-```
-
-### 示例
-
-以干草块为例，按 `pillar_axis` 展开三个朝向：
-
-```json
-"minecraft:hay_block": {
-  "materials": "opaque",
-  "category": "building/other_building_and_functional",
-  "states": ["minecraft:pillar_axis"],
-  "variants": [
-    {
-      "condition": "q.block_state('minecraft:pillar_axis') == 'y'",
-      "model": {
-        "type": "full_block",
-        "textures": {
-          "up": "textures/blocks/hay_block_top",
-          "down": "textures/blocks/hay_block_top",
-          "north": "textures/blocks/hay_block_side",
-          "south": "textures/blocks/hay_block_side",
-          "east": "textures/blocks/hay_block_side",
-          "west": "textures/blocks/hay_block_side"
+    "minecraft:stone": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stone",
+            "down": "textures/blocks/stone",
+            "north": "textures/blocks/stone",
+            "south": "textures/blocks/stone",
+            "east": "textures/blocks/stone",
+            "west": "textures/blocks/stone"
+          }
         }
-      }
-    },
-    {
-      "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
-      "model": {
-        "type": "full_block",
-        "textures": {
-          "up": "textures/blocks/hay_block_side",
-          "down": "textures/blocks/hay_block_side",
-          "north": "textures/blocks/hay_block_side",
-          "south": "textures/blocks/hay_block_side",
-          "east": "textures/blocks/hay_block_top",
-          "west": "textures/blocks/hay_block_top"
-        }
-      }
-    },
-    {
-      "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
-      "model": {
-        "type": "full_block",
-        "textures": {
-          "up": "textures/blocks/hay_block_side",
-          "down": "textures/blocks/hay_block_side",
-          "north": "textures/blocks/hay_block_top",
-          "south": "textures/blocks/hay_block_top",
-          "east": "textures/blocks/hay_block_side",
-          "west": "textures/blocks/hay_block_side"
-        }
-      }
-    }
-  ],
-  "default": {
-    "model": {
-      "type": "full_block",
-      "textures": {
-        "up": "textures/blocks/hay_block_top",
-        "down": "textures/blocks/hay_block_top",
-        "north": "textures/blocks/hay_block_side",
-        "south": "textures/blocks/hay_block_side",
-        "east": "textures/blocks/hay_block_side",
-        "west": "textures/blocks/hay_block_side"
       }
     }
   }
 }
 ```
 
-## 构建
-
-在仓库根目录执行：
+在仓库根目录运行以下命令，生成结果写入 `sable/packs/SableBP` 和 `sable/packs/SableRP`：
 
 ```powershell
 node --experimental-strip-types sable/tools/build-sublevel-block.ts
 ```
 
-工具会先校验注册记录，再为每个最终模型生成 dense 与 sparse 两种行为实体、客户端实体、几何、动画和渲染控制器，写入 `SableBP` 与 `SableRP` 各主目录下的 `sable/sublevel/fancy/<分类路径>/<方块名>/`，同时把编译后的注册数据与转译脚本写入行为包。
+## `BlockRegistration`
 
-### 产物命名
+每个方块 ID 对应一条注册记录。带 `?` 的字段可省略。
 
-- 默认模型使用方块名，如 `hay_block_dense.json`
-- 变体在方块名后追加条件中的状态记号，如 `hay_block_x_sparse.geo.json`
-- 分类目录下的 `pool_*` 文件是该分类的共享池资源，由工具按成员自动生成
+```ts
+type BlockRegistration = {
+  materials:
+    | "opaque" | "alpha_test" | "alpha_test_tint" | "opaque_tint"
+    | "blend" | "translucent" | "opaque_emissive" | "alpha_test_emissive"
+    | "redstone_torch_emissive";
+  category: string;
+  domain?: string;
+  hardness?: number;
+  mining?: MiningDescription;
+  placeable?: boolean;
+  passable?: boolean;
+  support?:
+    | "none" | "facing_log" | "above_solid" | "above_leaf"
+    | "moss_column" | "vine_faces" | "below_block" | "moss_carpet"
+    | "pointed_dripstone" | "multi_face" | "wall_connections";
+  states: string[];
+  variants: (RenderDefinition & { condition: string })[];
+  default: RenderDefinition;
+};
 
-## 备注
+type RenderDefinition = {
+  model: ModelDescription;
+  tint?: TintDescription;
+  flipbook?: FlipbookDescription;
+};
+```
 
-- 模型按最终内容寻址去重：不同方块或同方块的不同变体解析出相同模型时，共用同一套实体与资源，文件落在首个注册方的目录下。
-- 移除注册记录后重新构建即可清理对应产物。
+| 字段 | 说明 |
+| --- | --- |
+| `materials` | 方块的渲染材质。 |
+| `category` | 方块分类，例如 `nature/terrain_and_stone`。 |
+| `domain` | 共享分组名称，默认与 `category` 相同。 |
+| `hardness` | 方块硬度，默认 `1`；`-1` 表示生存和冒险模式不可破坏。 |
+| `mining` | 挖掘工具与采收等级；省略时使用斧类工具加速。 |
+| `placeable` | 是否允许玩家放置到子世界，默认 `true`。 |
+| `passable` | 交互射线是否穿透方块，默认 `false`。 |
+| `support` | 附着方式，默认 `none`。 |
+| `states` | 条件和模型读取的状态名，例如 `minecraft:pillar_axis`。 |
+| `variants` | 按状态选择的显示变体，使用第一个条件成立的条目。 |
+| `default` | 没有变体条件成立时使用的显示配置。 |
+
+## `materials` — 材质
+
+| 值 | 说明 |
+| --- | --- |
+| `opaque` | 不透明。 |
+| `alpha_test` | 透明裁切，如镂空的树叶和藤蔓。 |
+| `alpha_test_tint` | 透明裁切并染色，搭配 `tint`。 |
+| `opaque_tint` | 不透明并染色，搭配 `tint`。 |
+| `blend` | 透明混合，如玻璃。 |
+| `translucent` | 半透明，如冰。 |
+| `opaque_emissive` | 不透明并自发光。 |
+| `alpha_test_emissive` | 透明裁切并自发光。 |
+| `redstone_torch_emissive` | 红石火把自发光材质。 |
+
+## `category` — 分类
+
+分类路径由大类和小类组成，例如 `building/logs_and_wood`。
+
+| 大类 | 小类 |
+| --- | --- |
+| `building/` | `bricks_and_building_materials`、`colored_blocks`、`logs_and_wood`、`other_building_and_functional`、`planks` |
+| `nature/` | `crops`、`leaves`、`other_natural_blocks`、`ores_and_metals`、`plants_and_flowers`、`saplings`、`terrain_and_stone`、`water_and_ice` |
+| `functional/` | `beds`、`buttons`、`chests_and_containers`、`decorations_and_display`、`doors`、`fences`、`fences_and_climbing`、`light_sources`、`mechanisms_and_technical_blocks`、`rails_and_transport`、`redstone`、`signs`、`slabs`、`stairs`、`workstations` |
+
+## `MiningDescription` — 挖掘工具
+
+```ts
+type MiningDescription = {
+  tool: "none" | "axe" | "pickaxe" | "shovel" | "hoe";
+  harvest_level?: number;
+};
+```
+
+| 字段 | 说明 |
+| --- | --- |
+| `tool` | 加速挖掘的工具：`axe` 斧、`pickaxe` 镐、`shovel` 锹、`hoe` 锄；`none` 表示无工具加速。 |
+| `harvest_level` | 最低采收等级：木/金 `0`、石/铜 `1`、铁 `2`、钻石 `3`、下界合金 `4`；省略表示不要求工具等级。 |
+
+例如黑曜石使用镐挖掘，采收等级为 `3`：
+
+```json
+{
+  "tool": "pickaxe",
+  "harvest_level": 3
+}
+```
+
+## `support` — 附着方式
+
+| 值 | 说明 |
+| --- | --- |
+| `none` | 不依赖附着支撑。 |
+| `facing_log` | 附着在朝向面上的原木。 |
+| `above_solid` | 由上方实体方块支撑。 |
+| `above_leaf` | 悬挂时由上方树叶支撑。 |
+| `moss_column` | 同类垂须连续悬挂，并更新末端 `tip`。 |
+| `vine_faces` | 按各个附着面的支撑更新藤蔓。 |
+| `below_block` | 由下方方块支撑。 |
+| `moss_carpet` | 苍白苔藓地毯的上下层与侧面附着。 |
+| `pointed_dripstone` | 滴水石锥的支撑与连接。 |
+| `multi_face` | 六方向逐面附着，可向同一格追加附着面。 |
+| `wall_connections` | 墙体连接。 |
+
+例如普通苔藓地毯使用 `"support": "below_block"`。
+
+## `ModelDescription` — 模型
+
+`model.type` 选择模型，其余字段填写对应模型的参数。纹理使用不带扩展名的资源包路径，例如 `textures/blocks/stone`。
+
+| `type` | 字段 | 说明 |
+| --- | --- | --- |
+| `full_block` | `textures.up/down/north/south/east/west` | 完整立方体，六面分别指定纹理。 |
+| `grass_path` | `textures.up/down/north/south/east/west` | 高 15 像素的方块，用于泥土路径和耕地。 |
+| `pillar` | `textures.side/top`、`axis` | 柱状方块，`axis` 为 `y/x/z`。 |
+| `chest` | `texture`、`facing` | 箱子，纹理为 64×64；`facing` 为 `north/east/south/west`。 |
+| `bee_nest` | `textures.down/up/front/side`、`direction` | 蜂巢，`direction` 为 `0..3`。 |
+| `cocoa` | `texture`、`direction`、`age` | 可可果，`direction` 为 `0..3`，`age` 为 `0..2`。 |
+| `vine` | `texture`、`faces` | 藤蔓，`faces` 为 `south/west/north/east` 中的附着方向数组。 |
+| `hanging_roots` | `texture` | 垂根。 |
+| `pale_hanging_moss` | `texture`、`tip` | 苍白垂须，`tip` 表示是否为末端。 |
+| `mangrove_propagule` | `texture`、`stage` | 悬挂的红树胎生苗，`stage` 为 `0..4`。 |
+| `mangrove_roots` | `textures.side/top` | 红树根。 |
+| `creaking_heart` | `textures.side/top`、`axis` | 嘎枝之心，`axis` 为 `y/x/z`。 |
+| `moss_carpet` | `texture`、`pale`；`pale: true` 时另有 `side_short/side_tall` | 苔藓地毯，`pale` 选择苍白变体。 |
+| `pointed_dripstone` | `texture`、`thickness`、`hanging` | 滴水石锥，`thickness` 为 `tip/frustum/middle/base/merge`，`hanging` 表示悬挂。 |
+| `multi_face` | `texture` | 六方向附着面，读取 `multi_face_direction_bits`。 |
+| `sculk_shrieker` | `textures.bottom/side/top/inner_top` | 潜声尖啸体。 |
+| `wall` | `texture` | 墙体模型。 |
+| `vanilla` | 无 | 使用 Vanilla 手持路线显示。 |
+
+例如竖直干草块的 `model`：
+
+```json
+{
+  "type": "pillar",
+  "textures": {
+    "side": "textures/blocks/hay_block_side",
+    "top": "textures/blocks/hay_block_top"
+  },
+  "axis": "y"
+}
+```
+
+## `condition` — 状态条件
+
+`q.block_state('minecraft:状态名')` 读取 `states` 中列出的方块状态。
+
+| 写法 | 含义 |
+| --- | --- |
+| `'x'`、`1`、`true`、`false` | 字符串、数字和布尔值。 |
+| `==`、`!=`、`<`、`<=`、`>`、`>=` | 比较。 |
+| `&&`、`\|\|`、`!` | 且、或、非。 |
+| `(...)` | 条件分组。 |
+
+例如在 `states` 中填写 `"minecraft:pillar_axis"`，然后在 `variants` 中添加以下条目，使横向干草块沿 X 轴显示：
+
+```json
+{
+  "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+  "model": {
+    "type": "pillar",
+    "textures": {
+      "side": "textures/blocks/hay_block_side",
+      "top": "textures/blocks/hay_block_top"
+    },
+    "axis": "x"
+  }
+}
+```
+
+## `TintDescription` — 染色
+
+在 `default` 或变体中填写 `tint`，搭配 `alpha_test_tint` 或 `opaque_tint` 材质使用。
+
+```ts
+type TintDescription =
+  | { method: "fixed"; color: string }
+  | { method: "foliage" }
+  | { method: "grass" };
+```
+
+| 写法 | 说明 |
+| --- | --- |
+| `{ "method": "fixed", "color": "#RRGGBB" }` | 指定固定颜色。 |
+| `{ "method": "foliage" }` | 使用树叶色图取色。 |
+| `{ "method": "grass" }` | 使用草色图取色。 |
+
+例如白桦叶的 `tint`：
+
+```json
+{
+  "method": "fixed",
+  "color": "#80A755"
+}
+```
+
+## `FlipbookDescription` — 翻页贴图
+
+在 `default` 或变体中填写 `flipbook`，播放纹理中的连续帧。
+
+```ts
+type FlipbookDescription = {
+  ticks_per_frame: number;
+  frame_count: number;
+  axis?: "u" | "v";
+  loop?: boolean;
+  textures?: string[];
+};
+```
+
+| 字段 | 说明 |
+| --- | --- |
+| `ticks_per_frame` | 每帧持续的游戏刻数。 |
+| `frame_count` | 帧数。 |
+| `axis` | 帧排列方向：`u` 横向、`v` 纵向，默认 `v`。 |
+| `loop` | 是否循环，默认 `true`。 |
+| `textures` | 播放动画的纹理路径；省略时应用于模型的全部纹理。 |
+
+例如催发体绽放时的 `flipbook`，仅播放侧面与顶面的动画：
+
+```json
+{
+  "ticks_per_frame": 1,
+  "frame_count": 8,
+  "textures": [
+    "textures/blocks/sculk_catalyst_side_bloom",
+    "textures/blocks/sculk_catalyst_top_bloom"
+  ]
+}
+```

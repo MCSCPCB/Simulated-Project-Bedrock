@@ -1,15 +1,17 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { parseCondition, type ConditionNode } from "./condition.ts";
+import { fancySubLevelStoredStateBits } from "../../src/sublevel/render/fancy/model/FancySubLevelModelTypes.ts";
+import type { FancySubLevelModelDescription } from "../../src/sublevel/render/fancy/model/FancySubLevelModel.ts";
 
 const MODEL_TYPES = new Set([
   "full_block", "pillar", "chest", "bee_nest", "cocoa", "vine", "hanging_roots",
   "mangrove_propagule", "pale_hanging_moss", "mangrove_roots", "creaking_heart",
-  "wall", "moss_carpet", "pointed_dripstone"
+  "wall", "grass_path", "moss_carpet", "pointed_dripstone", "multi_face", "sculk_shrieker"
 ]);
 const MATERIALS = new Set([
   "opaque", "alpha_test", "alpha_test_tint", "opaque_tint",
-  "blend", "translucent", "opaque_emissive", "redstone_torch_emissive",
+  "blend", "translucent", "opaque_emissive", "alpha_test_emissive", "redstone_torch_emissive",
 ]);
 const TINT_MATERIALS = new Set(["alpha_test_tint", "opaque_tint"]);
 const DIRECTIONS = new Set(["north", "east", "south", "west"]);
@@ -67,6 +69,7 @@ export interface RawBlockRegistration {
   readonly category: string;
   readonly domain?: string;
   readonly hardness?: number;
+  readonly mining?: { readonly tool: string; readonly harvest_level?: number };
   readonly placeable?: boolean;
   readonly passable?: boolean;
   readonly support?: string;
@@ -78,7 +81,8 @@ export interface RawBlockRegistration {
 // Attachment support rules the runtime resolver implements; the registry only
 // maps blocks onto them.
 const SUPPORT_RULES = new Set([
-  "none", "facing_log", "above_solid", "above_leaf", "moss_column", "vine_faces", "wall_connections"
+  "none", "facing_log", "above_solid", "above_leaf", "moss_column", "vine_faces", "wall_connections",
+  "below_block", "moss_carpet", "pointed_dripstone", "multi_face"
 ]);
 export interface RawVariant extends RawRenderDefinition { readonly condition: string; }
 export interface RawFlipbook {
@@ -86,6 +90,7 @@ export interface RawFlipbook {
   readonly frame_count: number;
   readonly axis?: "u" | "v";
   readonly loop?: boolean;
+  readonly textures?: readonly string[];
 }
 export interface RawRenderDefinition {
   readonly model: Record<string, unknown>;
@@ -110,9 +115,10 @@ export interface CompiledModel {
   readonly poolKey: string;
   readonly denseEntityTypeId: string;
   readonly sparseEntityTypeId: string;
+  readonly grassTint?: true;
   readonly material:
     | "opaque" | "alpha_test" | "alpha_test_tint" | "opaque_tint"
-    | "blend" | "translucent" | "opaque_emissive" | "redstone_torch_emissive";
+    | "blend" | "translucent" | "opaque_emissive" | "alpha_test_emissive" | "redstone_torch_emissive";
   readonly model: Record<string, unknown>;
   readonly tint?: { readonly method: "foliage" | "grass" | "fixed"; readonly color?: string; readonly palette?: number };
   readonly flipbook?: {
@@ -120,6 +126,7 @@ export interface CompiledModel {
     readonly frameCount: number;
     readonly axis: "u" | "v";
     readonly loop: boolean;
+    readonly textures?: readonly string[];
   };
   pool?: CompiledModelPool;
 }
@@ -146,17 +153,16 @@ export interface CompiledPool {
   readonly stateBits: number;
 }
 
-/** Runtime state bits a model type stores per slot, mirrored by the runtime registry. */
+/** Build-time resources use the same state width as the runtime encoder. */
 export function modelRuntimeStateBits(model: Record<string, unknown>): number {
-  return model.type === "chest"
-    ? 1
-    : model.type === "wall" || (model.type === "moss_carpet" && model.pale === true) ? 9 : 0;
+  return fancySubLevelStoredStateBits(model as unknown as FancySubLevelModelDescription) - 1;
 }
 
 const POOL_MEMBER_CAP = 32;
 export interface CompiledRegistryEntry {
   readonly category: string;
   readonly hardness?: number;
+  readonly mining?: import("../../src/sublevel/render/fancy/model/FancySubLevelModel.ts").SubLevelMiningProperties;
   readonly placeable?: boolean;
   readonly passable?: boolean;
   readonly support?: string;
@@ -173,8 +179,7 @@ export async function readAndCompileRegistry(file: string): Promise<{
   readonly pools: readonly CompiledPool[];
   readonly fixedTintPalette: readonly string[];
 }> {
-  const parsed = JSON.parse(await readFile(file, "utf8")) as RawRegistry;
-  const raw = await addTerrainAndStoneDefaults(parsed, file);
+  const raw = JSON.parse(await readFile(file, "utf8")) as RawRegistry;
   const compiled = compileRegistry(raw);
   const models = [...new Map(
     Object.values(compiled).flatMap(entry => [
@@ -188,307 +193,6 @@ export async function readAndCompileRegistry(file: string): Promise<{
     if (model.tint?.method === "fixed") fixedTintPalette[model.tint.palette!] = model.tint.color!;
   }
   return { compiled, fixedTintPalette, models, pools, raw };
-}
-
-async function addTerrainAndStoneDefaults(source: RawRegistry, file: string): Promise<RawRegistry> {
-  if (!file.replaceAll("\\", "/").endsWith("sable/src/data/sublevel-block.json")) return source;
-  const listPath = new URL("../../../.sample/VanillaBlock/VanillaBlockData/main/自然/地形与石材/blocks.json", import.meta.url);
-  const listed = JSON.parse((await readFile(listPath, "utf8")).replace(/^\uFEFF/, "")) as readonly { name: string }[];
-  const metadataPath = new URL("../../../.sample/VanillaBlock/VanillaBlockResource/bedrock-sample-1.26.40.5/metadata/vanilladata_modules/mojang-blocks.json", import.meta.url);
-  const metadata = JSON.parse(await readFile(metadataPath, "utf8")) as {
-    readonly data_items?: readonly { readonly name: string; readonly properties?: readonly { readonly name: string }[] }[]
-  };
-  const properties = new Map((metadata.data_items ?? []).map(item => [
-    item.name,
-    item.properties?.map(property => property.name.includes(":") ? property.name : `minecraft:${property.name}`) ?? []
-  ] as const));
-  const flipbookPath = new URL("../../../.sample/VanillaBlock/VanillaBlockResource/bedrock-sample-1.26.40.5/resource_pack/textures/flipbook_textures.json", import.meta.url);
-  const flipbooks = await readFlipbooks(flipbookPath);
-  const blocks: Record<string, RawBlockRegistration> = { ...source.blocks };
-  for (const item of listed) {
-    const blockId = `minecraft:${item.name}`;
-    if (blocks[blockId]) continue;
-    blocks[blockId] = terrainBlockRegistration(item.name, properties.get(blockId), flipbooks);
-  }
-  return { ...source, blocks };
-}
-
-function terrainBlockRegistration(
-  name: string,
-  metadataStates: readonly string[] = [],
-  flipbooks: ReadonlyMap<string, RawFlipbook> = new Map()
-): RawBlockRegistration {
-  const category = "nature/terrain_and_stone";
-  const texture = terrainTexture(name);
-  if (name === "grass_block") {
-    return {
-      materials: "opaque_tint",
-      category,
-      states: metadataStates,
-      variants: [],
-      default: { model: { type: "full_block", textures: {
-        up: "textures/blocks/grass_top",
-        down: "textures/blocks/dirt",
-        north: "textures/blocks/grass_side",
-        south: "textures/blocks/grass_side",
-        east: "textures/blocks/grass_side",
-        west: "textures/blocks/grass_side"
-      } }, tint: { method: "grass" } }
-    };
-  }
-  if (name.endsWith("_wall")) return wallRegistration(name);
-  if (name === "basalt" || name === "polished_basalt") {
-    const side = name === "basalt" ? "textures/blocks/basalt_side" : "textures/blocks/basalt_side";
-    const top = name === "basalt" ? "textures/blocks/basalt_top" : "textures/blocks/basalt_top";
-    return axisRegistration(category, side, top);
-  }
-  if (name === "grass_path") {
-    return {
-      materials: "opaque",
-      category,
-      states: metadataStates,
-      variants: [],
-      default: { model: { type: "full_block", textures: {
-        up: "textures/blocks/grass_path_top", down: "textures/blocks/dirt",
-        north: "textures/blocks/grass_path_side", south: "textures/blocks/grass_path_side",
-        east: "textures/blocks/grass_path_side", west: "textures/blocks/grass_path_side"
-      } } }
-    };
-  }
-  if (name === "snow_layer") {
-    const textures = { up: texture, down: texture, north: texture, south: texture, east: texture, west: texture };
-    return {
-      materials: "alpha_test", category, states: metadataStates, variants: Array.from({ length: 8 }, (_, index) => ({
-        condition: `q.block_state('minecraft:height') == ${index}`,
-        model: { type: "full_block", textures, size: [16, index + 1, 16] }
-      })),
-      default: { model: { type: "full_block", textures, size: [16, 1, 16] } }
-    };
-  }
-  if (name === "stone_pressure_plate" || name === "polished_blackstone_pressure_plate") {
-    const textures = { up: texture, down: texture, north: texture, south: texture, east: texture, west: texture };
-    return {
-      materials: "opaque", category, states: metadataStates,
-      variants: [{ condition: "q.block_state('minecraft:redstone_signal') > 0", model: { type: "full_block", textures, size: [16, 1, 16] } }],
-      default: { model: { type: "full_block", textures, size: [16, 2, 16] } }
-    };
-  }
-  if (name === "farmland") {
-    return {
-      materials: "opaque", category, states: metadataStates, variants: [],
-      default: { model: { type: "full_block", textures: {
-        up: texture, down: "textures/blocks/dirt", north: texture, south: texture, east: texture, west: texture
-      }, size: [16, 15, 16] } }
-    };
-  }
-  if (name === "moss_carpet" || name === "pale_moss_carpet") {
-    return {
-      materials: "alpha_test", category, states: metadataStates, variants: [],
-      default: { model: { type: "moss_carpet", texture, pale: name === "pale_moss_carpet" } }
-    };
-  }
-  if (name === "pointed_dripstone") {
-    const variants: RawVariant[] = [];
-    for (const hanging of [false, true]) {
-      for (const thickness of ["tip", "frustum", "middle", "base", "merge"] as const) {
-        variants.push({
-          condition: `q.block_state('minecraft:hanging') == ${hanging} && q.block_state('minecraft:dripstone_thickness') == '${thickness}'`,
-          model: { type: "pointed_dripstone", texture, thickness, hanging }
-        });
-      }
-    }
-    return {
-      materials: "opaque", category, states: metadataStates, variants,
-      default: { model: { type: "pointed_dripstone", texture, thickness: "tip", hanging: false } }
-    };
-  }
-  const material = terrainMaterial(name);
-  const flipbook = flipbooks.get(texture);
-  const definition: RawRenderDefinition = { model: { type: "full_block", textures: {
-    up: texture, down: texture, north: texture, south: texture, east: texture, west: texture
-  } }, ...(flipbook ? { flipbook } : {}) };
-  return {
-    materials: material,
-    category,
-    states: metadataStates.length > 0 ? [...metadataStates] : terrainStates(name),
-    variants: [],
-    default: definition
-  };
-}
-
-function terrainMaterial(name: string): RawBlockRegistration["materials"] {
-  if (["ice", "blue_ice", "packed_ice", "frosted_ice"].includes(name)) return "translucent";
-  if (name === "powder_snow" || /grass|seagrass|sculk_vein|snow_layer/.test(name)) return "alpha_test";
-  if (["glowstone", "glowingobsidian", "sculk", "sculk_catalyst", "sculk_sensor", "sculk_shrieker"].includes(name)) return "opaque_emissive";
-  return "opaque";
-}
-
-async function readFlipbooks(file: URL): Promise<ReadonlyMap<string, RawFlipbook>> {
-  const entries = JSON.parse((await readFile(file, "utf8")).replace(/^\s*\/\/[^\n]*\n/, "")) as readonly {
-    readonly flipbook_texture?: string;
-    readonly frames?: readonly number[];
-    readonly ticks_per_frame?: number;
-  }[];
-  const result = new Map<string, RawFlipbook>();
-  for (const entry of entries) {
-    if (!entry.flipbook_texture) continue;
-    const frameCount = entry.frames?.length ?? await flipbookImageFrameCount(file, entry.flipbook_texture);
-    const ticks = entry.ticks_per_frame ?? 1;
-    if (frameCount <= 1 && entry.ticks_per_frame === undefined) continue;
-    result.set(entry.flipbook_texture, {
-      ticks_per_frame: ticks,
-      frame_count: frameCount,
-      axis: "v",
-      loop: true
-    });
-  }
-  return result;
-}
-
-async function flipbookImageFrameCount(file: URL, texture: string): Promise<number> {
-  const relative = texture.replace(/^textures\//, "");
-  for (const extension of [".png", ".tga"] as const) {
-    try {
-      const bytes = await readFile(new URL(`./${relative}${extension}`, file));
-      if (extension === ".png" && bytes.length >= 24) {
-        const width = bytes.readUInt32BE(16);
-        const height = bytes.readUInt32BE(20);
-        if (width > 0 && height % width === 0) return Math.max(1, height / width);
-      }
-      return 1;
-    } catch {
-      continue;
-    }
-  }
-  return 1;
-}
-
-function terrainStates(name: string): string[] {
-  const states: Readonly<Record<string, readonly string[]>> = {
-    snow_layer: ["minecraft:covered_bit", "minecraft:height"],
-    pointed_dripstone: ["minecraft:dripstone_thickness", "minecraft:hanging"],
-    redstone_wire: ["minecraft:redstone_signal"],
-    stone_pressure_plate: ["minecraft:redstone_signal"],
-    polished_blackstone_pressure_plate: ["minecraft:redstone_signal"],
-    sculk_sensor: ["minecraft:sculk_sensor_phase"],
-    calibrated_sculk_sensor: ["minecraft:cardinal_direction", "minecraft:sculk_sensor_phase"],
-    sculk_shrieker: ["minecraft:active", "minecraft:can_summon"],
-    frosted_ice: ["minecraft:age"],
-    farmland: ["minecraft:moisturized_amount"],
-    grindstone: ["minecraft:attachment", "minecraft:direction"],
-    redstone_torch: ["minecraft:torch_facing_direction"],
-    basalt: ["minecraft:pillar_axis"],
-    polished_basalt: ["minecraft:pillar_axis"]
-  };
-  return [...(states[name] ?? [])];
-}
-
-function terrainTexture(name: string): string {
-  const aliases: Readonly<Record<string, string>> = {
-    basalt: "textures/blocks/basalt_side",
-    polished_basalt: "textures/blocks/polished_basalt_side",
-    calibrated_sculk_sensor: "textures/blocks/calibrated_sculk_sensor_top",
-    chiseled_red_sandstone: "textures/blocks/red_sandstone_carved",
-    chiseled_sandstone: "textures/blocks/sandstone_carved",
-    chiseled_stone_bricks: "textures/blocks/stonebrick_carved",
-    chiseled_deepslate: "textures/blocks/deepslate/chiseled_deepslate",
-    cobbled_deepslate: "textures/blocks/deepslate/cobbled_deepslate",
-    deepslate: "textures/blocks/deepslate/deepslate",
-    deepslate_bricks: "textures/blocks/deepslate/deepslate_bricks",
-    deepslate_tiles: "textures/blocks/deepslate/deepslate_tiles",
-    farmland: "textures/blocks/farmland_wet",
-    cracked_stone_bricks: "textures/blocks/stonebrick_cracked",
-    cracked_deepslate_bricks: "textures/blocks/deepslate/cracked_deepslate_bricks",
-    cracked_deepslate_tiles: "textures/blocks/deepslate/cracked_deepslate_tiles",
-    cut_red_sandstone: "textures/blocks/red_sandstone_smooth",
-    cut_sandstone: "textures/blocks/sandstone_smooth",
-    end_stone_bricks: "textures/blocks/end_bricks",
-    frosted_ice: "textures/blocks/frosted_ice_0",
-    grindstone: "textures/blocks/grindstone_side",
-    glowingobsidian: "textures/blocks/glowing_obsidian",
-    infested_chiseled_stone_bricks: "textures/blocks/stonebrick_carved",
-    infested_cobblestone: "textures/blocks/cobblestone",
-    infested_cracked_stone_bricks: "textures/blocks/stonebrick_cracked",
-    infested_deepslate: "textures/blocks/deepslate/deepslate",
-    infested_mossy_stone_bricks: "textures/blocks/stonebrick_mossy",
-    infested_stone: "textures/blocks/stone",
-    infested_stone_bricks: "textures/blocks/stonebrick",
-    lodestone: "textures/blocks/lodestone_side",
-    moss_carpet: "textures/blocks/moss_block",
-    mossy_cobblestone: "textures/blocks/cobblestone_mossy",
-    mossy_stone_brick: "textures/blocks/stonebrick_mossy",
-    mossy_stone_bricks: "textures/blocks/stonebrick_mossy",
-    mycelium: "textures/blocks/mycelium_side",
-    pale_moss_carpet: "textures/blocks/pale_moss",
-    packed_ice: "textures/blocks/ice",
-    podzol: "textures/blocks/dirt_podzol_side",
-    pointed_dripstone: "textures/blocks/pointed_dripstone_up_middle",
-    red_sandstone: "textures/blocks/red_sandstone_normal",
-    redstone_lamp: "textures/blocks/redstone_lamp_off",
-    lit_redstone_lamp: "textures/blocks/redstone_lamp_on",
-    redstone_torch: "textures/blocks/redstone_torch_on",
-    redstone_wire: "textures/blocks/redstone_dust_cross",
-    reinforced_deepslate: "textures/blocks/reinforced_deepslate_side",
-    sandstone: "textures/blocks/sandstone_normal",
-    sculk_catalyst: "textures/blocks/sculk_catalyst_side",
-    sculk_sensor: "textures/blocks/sculk_sensor_top",
-    sculk_shrieker: "textures/blocks/sculk_shrieker_top",
-    snow_layer: "textures/blocks/snow",
-    short_grass: "textures/blocks/tallgrass",
-    tall_grass: "textures/blocks/tallgrass",
-    smooth_red_sandstone: "textures/blocks/red_sandstone_top",
-    smooth_sandstone: "textures/blocks/sandstone_top",
-    smooth_stone: "textures/blocks/stone_slab_top",
-    suspicious_gravel: "textures/blocks/suspicious_gravel_0",
-    suspicious_sand: "textures/blocks/suspicious_sand_0",
-    stone_pressure_plate: "textures/blocks/stone",
-    polished_blackstone_pressure_plate: "textures/blocks/polished_blackstone",
-    stonecutter: "textures/blocks/stonecutter_top",
-    stonecutter_block: "textures/blocks/stonecutter_top",
-    unlit_redstone_torch: "textures/blocks/redstone_torch_off"
-  };
-  return aliases[name] ?? `textures/blocks/${name}`;
-}
-
-function axisRegistration(category: string, side: string, top: string): RawBlockRegistration {
-  return {
-    materials: "opaque", category, states: ["minecraft:pillar_axis"],
-    variants: [
-      ...(["y", "x", "z"] as const).map(axis => ({
-        condition: `q.block_state('minecraft:pillar_axis') == '${axis}'`,
-        model: { type: "pillar", textures: { side, top }, axis }
-      }))
-    ],
-    default: { model: { type: "pillar", textures: { side, top }, axis: "y" } }
-  };
-}
-
-function wallRegistration(name: string): RawBlockRegistration {
-  const category = "nature/terrain_and_stone";
-  const base = name.replace(/_wall$/, "");
-  const texture = `textures/blocks/${wallTexture(base)}`;
-  const states = [
-    "minecraft:wall_connection_type_north", "minecraft:wall_connection_type_east",
-    "minecraft:wall_connection_type_south", "minecraft:wall_connection_type_west",
-    "minecraft:wall_post_bit"
-  ];
-  return {
-    materials: "opaque", category, support: "wall_connections", states, variants: [],
-    default: { model: { type: "wall", texture } }
-  };
-}
-
-function wallTexture(base: string): string {
-  const aliases: Readonly<Record<string, string>> = {
-    cobbled_deepslate: "deepslate/cobbled_deepslate", deepslate_brick: "deepslate/deepslate_bricks",
-    deepslate_tile: "deepslate/deepslate_tiles", end_stone_brick: "end_bricks",
-    mud_brick: "mud_bricks", polished_blackstone_brick: "polished_blackstone_bricks",
-    polished_deepslate: "deepslate/polished_deepslate", polished_tuff: "polished_tuff",
-    mossy_cobblestone: "cobblestone_mossy", mossy_stone_brick: "stonebrick_mossy",
-    red_sandstone: "red_sandstone", sandstone: "sandstone_normal", stone_brick: "stonebrick",
-    tuff_brick: "tuff_bricks"
-  };
-  return aliases[base] ?? base;
 }
 
 /**
@@ -591,6 +295,7 @@ export function toRuntimeRegistry(
   return Object.fromEntries(Object.entries(compiled).map(([blockId, entry]) => [blockId, {
     category: entry.category,
     ...(entry.hardness !== undefined ? { hardness: entry.hardness } : {}),
+    ...(entry.mining ? { mining: entry.mining } : {}),
     ...(entry.placeable !== undefined ? { placeable: entry.placeable } : {}),
     ...(entry.passable !== undefined ? { passable: entry.passable } : {}),
     ...(entry.support !== undefined ? { support: entry.support } : {}),
@@ -620,9 +325,10 @@ export function compileRegistry(raw: RawRegistry): CompiledRegistry {
     if (entry.domain !== undefined && (typeof entry.domain !== "string" || entry.domain.trim().length === 0)) {
       throw new Error(`${blockId}: domain must be a non-empty string when present.`);
     }
-    if (entry.hardness !== undefined && (!Number.isFinite(entry.hardness) || entry.hardness < 0)) {
-      throw new Error(`${blockId}: hardness must be a non-negative finite number.`);
+    if (entry.hardness !== undefined && (!Number.isFinite(entry.hardness) || (entry.hardness < 0 && entry.hardness !== -1))) {
+      throw new Error(`${blockId}: hardness must be non-negative or -1 for an unbreakable block.`);
     }
+    const mining = validateMining(entry.mining, blockId);
     if (entry.placeable !== undefined && typeof entry.placeable !== "boolean") {
       throw new Error(`${blockId}: placeable must be a boolean when present.`);
     }
@@ -641,7 +347,7 @@ export function compileRegistry(raw: RawRegistry): CompiledRegistry {
     const directory = `${entry.category}/${blockName}`;
     const poolKey = entry.domain ?? entry.category;
     const obtain = (definition: RawRenderDefinition, path: string, suffix: string): CompiledModel | null => (
-      obtainModel(modelsByKey, usedNames, paletteByColor, entry.materials, definition, path, blockName, directory, poolKey, suffix)
+      obtainModel(modelsByKey, usedNames, paletteByColor, entry.materials, definition, path, blockId, directory, poolKey, suffix)
     );
     // The default resolves first so the plain block name lands on the default model.
     const defaultModel = obtain(entry.default, `${blockId}.default`, "");
@@ -656,6 +362,7 @@ export function compileRegistry(raw: RawRegistry): CompiledRegistry {
     result[blockId] = {
       category: entry.category,
       ...(entry.hardness !== undefined ? { hardness: entry.hardness } : {}),
+      ...(mining ? { mining } : {}),
       ...(entry.placeable !== undefined ? { placeable: entry.placeable } : {}),
       ...(entry.passable !== undefined ? { passable: entry.passable } : {}),
       ...(entry.support !== undefined ? { support: entry.support } : {}),
@@ -674,7 +381,7 @@ function obtainModel(
   material: string,
   definition: RawRenderDefinition,
   path: string,
-  blockName: string,
+  blockId: string,
   directory: string,
   poolKey: string,
   suffix: string
@@ -693,9 +400,11 @@ function obtainModel(
   validateModel(model, path);
   const tint = validateTint(material, definition.tint, path, paletteByColor);
   const flipbook = validateFlipbook(definition.flipbook, path);
-  const key = hashModel(material, model, tint, flipbook);
+  const grassTint = blockId === "minecraft:grass_block" && tint !== undefined ? true : undefined;
+  const key = hashModel(material, model, tint, flipbook, grassTint);
   const existing = modelsByKey.get(key);
   if (existing) return existing;
+  const blockName = blockShortName(blockId);
   const name = uniqueModelName(usedNames, suffix ? `${blockName}_${suffix}` : blockName);
   const compiled: CompiledModel = {
     denseEntityTypeId: `sable:fancy_model_${name}_dense`,
@@ -706,6 +415,7 @@ function obtainModel(
     name,
     poolKey,
     sparseEntityTypeId: `sable:fancy_model_${name}_sparse`,
+    ...(grassTint ? { grassTint } : {}),
     ...(tint ? { tint } : {}),
     ...(flipbook ? { flipbook } : {})
   };
@@ -776,7 +486,7 @@ function validateDirection(value: unknown, path: string): void {
 
 function validateModel(model: Record<string, unknown>, path: string): void {
   const type = model.type;
-  if (type === "full_block") {
+  if (type === "full_block" || type === "grass_path") {
     const textures = model.textures;
     if (!textures || typeof textures !== "object") throw new Error(`${path}: full_block textures required.`);
     for (const face of FULL_FACES) validateResource((textures as Record<string, unknown>)[face], `${path}.model.textures.${face}`);
@@ -786,13 +496,24 @@ function validateModel(model: Record<string, unknown>, path: string): void {
     }
     return;
   }
-  if (type === "wall") {
+  if (type === "wall" || type === "multi_face") {
     validateResource(model.texture, `${path}.model.texture`);
     return;
   }
   if (type === "moss_carpet") {
     validateResource(model.texture, `${path}.model.texture`);
     if (typeof model.pale !== "boolean") throw new Error(`${path}: moss_carpet pale is required.`);
+    if (model.pale) {
+      validateResource(model.side_short, `${path}.model.side_short`);
+      validateResource(model.side_tall, `${path}.model.side_tall`);
+    }
+    return;
+  }
+  if (type === "sculk_shrieker") {
+    const textures = model.textures as Record<string, unknown> | undefined;
+    for (const face of ["bottom", "side", "top", "inner_top"]) {
+      validateResource(textures?.[face], `${path}.model.textures.${face}`);
+    }
     return;
   }
   if (type === "pointed_dripstone") {
@@ -893,11 +614,32 @@ function validateFlipbook(
   if (flipbook.loop !== undefined && typeof flipbook.loop !== "boolean") {
     throw new Error(`${path}: flipbook.loop must be a boolean.`);
   }
+  if (flipbook.textures !== undefined) {
+    if (!Array.isArray(flipbook.textures) || flipbook.textures.length === 0 || new Set(flipbook.textures).size !== flipbook.textures.length) {
+      throw new Error(`${path}: flipbook.textures must be a non-empty unique array.`);
+    }
+    for (const texture of flipbook.textures) validateResource(texture, `${path}.flipbook.textures`);
+  }
   return {
     ticksPerFrame: flipbook.ticks_per_frame,
     frameCount: flipbook.frame_count,
     axis: flipbook.axis ?? "v",
-    loop: flipbook.loop ?? true
+    loop: flipbook.loop ?? true,
+    ...(flipbook.textures ? { textures: [...flipbook.textures] } : {})
+  };
+}
+
+function validateMining(mining: RawBlockRegistration["mining"], path: string): CompiledRegistryEntry["mining"] {
+  if (mining === undefined) return undefined;
+  if (!["none", "axe", "pickaxe", "shovel", "hoe"].includes(mining.tool)) {
+    throw new Error(`${path}: invalid mining.tool.`);
+  }
+  if (mining.harvest_level !== undefined && (![0, 1, 2, 3].includes(mining.harvest_level) || mining.tool === "none")) {
+    throw new Error(`${path}: mining.harvest_level requires a tool and must be 0..3.`);
+  }
+  return {
+    tool: mining.tool as NonNullable<CompiledRegistryEntry["mining"]>["tool"],
+    ...(mining.harvest_level !== undefined ? { harvestLevel: mining.harvest_level } : {})
   };
 }
 
@@ -914,10 +656,11 @@ function hashModel(
   material: string,
   model: Record<string, unknown>,
   tint: CompiledModel["tint"],
-  flipbook: CompiledModel["flipbook"]
+  flipbook: CompiledModel["flipbook"],
+  grassTint: CompiledModel["grassTint"]
 ): string {
   return createHash("sha256")
-    .update(JSON.stringify(sortValue({ material, model, tint, flipbook })))
+    .update(JSON.stringify(sortValue({ material, model, tint, flipbook, grassTint })))
     .digest("hex");
 }
 export function sortValue(value: unknown): unknown {

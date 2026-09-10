@@ -562,7 +562,6 @@ function playFancyModelInput(entity, values) {
 }
 function readStoredState(model, assignment) {
   const word = model.words[assignment.word] ?? 0;
-  if (model.format === "sparse") return word % 64;
   if (model.format === "pool") {
     if (word === 0) return 0;
     return Math.floor(word / 2 ** assignment.shift) % 2 ** assignment.bitCount + 1;

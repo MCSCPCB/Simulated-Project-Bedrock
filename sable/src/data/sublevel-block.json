@@ -1,6 +1,1999 @@
 {
   "format_version": "1.0.0",
   "blocks": {
+    "minecraft:grass_block": {
+      "materials": "opaque_tint",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.6,
+      "mining": { "tool": "shovel" },
+      "placeable": true,
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/grass_top",
+            "down": "textures/blocks/dirt",
+            "north": "textures/blocks/grass_side",
+            "south": "textures/blocks/grass_side",
+            "east": "textures/blocks/grass_side",
+            "west": "textures/blocks/grass_side"
+          }
+        },
+        "tint": {
+          "method": "grass"
+        }
+      }
+    },
+    "minecraft:grass_path": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.65,
+      "mining": { "tool": "shovel" },
+      "placeable": true,
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "grass_path",
+          "textures": {
+            "up": "textures/blocks/grass_path_top",
+            "down": "textures/blocks/dirt",
+            "north": "textures/blocks/grass_path_side",
+            "south": "textures/blocks/grass_path_side",
+            "east": "textures/blocks/grass_path_side",
+            "west": "textures/blocks/grass_path_side"
+          }
+        }
+      }
+    },
+    "minecraft:stone": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stone",
+            "down": "textures/blocks/stone",
+            "north": "textures/blocks/stone",
+            "south": "textures/blocks/stone",
+            "east": "textures/blocks/stone",
+            "west": "textures/blocks/stone"
+          }
+        }
+      }
+    },
+    "minecraft:granite": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stone_granite",
+            "down": "textures/blocks/stone_granite",
+            "north": "textures/blocks/stone_granite",
+            "south": "textures/blocks/stone_granite",
+            "east": "textures/blocks/stone_granite",
+            "west": "textures/blocks/stone_granite"
+          }
+        }
+      }
+    },
+    "minecraft:polished_granite": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stone_granite_smooth",
+            "down": "textures/blocks/stone_granite_smooth",
+            "north": "textures/blocks/stone_granite_smooth",
+            "south": "textures/blocks/stone_granite_smooth",
+            "east": "textures/blocks/stone_granite_smooth",
+            "west": "textures/blocks/stone_granite_smooth"
+          }
+        }
+      }
+    },
+    "minecraft:diorite": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stone_diorite",
+            "down": "textures/blocks/stone_diorite",
+            "north": "textures/blocks/stone_diorite",
+            "south": "textures/blocks/stone_diorite",
+            "east": "textures/blocks/stone_diorite",
+            "west": "textures/blocks/stone_diorite"
+          }
+        }
+      }
+    },
+    "minecraft:polished_diorite": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stone_diorite_smooth",
+            "down": "textures/blocks/stone_diorite_smooth",
+            "north": "textures/blocks/stone_diorite_smooth",
+            "south": "textures/blocks/stone_diorite_smooth",
+            "east": "textures/blocks/stone_diorite_smooth",
+            "west": "textures/blocks/stone_diorite_smooth"
+          }
+        }
+      }
+    },
+    "minecraft:andesite": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stone_andesite",
+            "down": "textures/blocks/stone_andesite",
+            "north": "textures/blocks/stone_andesite",
+            "south": "textures/blocks/stone_andesite",
+            "east": "textures/blocks/stone_andesite",
+            "west": "textures/blocks/stone_andesite"
+          }
+        }
+      }
+    },
+    "minecraft:polished_andesite": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stone_andesite_smooth",
+            "down": "textures/blocks/stone_andesite_smooth",
+            "north": "textures/blocks/stone_andesite_smooth",
+            "south": "textures/blocks/stone_andesite_smooth",
+            "east": "textures/blocks/stone_andesite_smooth",
+            "west": "textures/blocks/stone_andesite_smooth"
+          }
+        }
+      }
+    },
+    "minecraft:dirt": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.5,
+      "mining": { "tool": "shovel" },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/dirt",
+            "down": "textures/blocks/dirt",
+            "north": "textures/blocks/dirt",
+            "south": "textures/blocks/dirt",
+            "east": "textures/blocks/dirt",
+            "west": "textures/blocks/dirt"
+          }
+        }
+      }
+    },
+    "minecraft:coarse_dirt": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.5,
+      "mining": { "tool": "shovel" },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/coarse_dirt",
+            "down": "textures/blocks/coarse_dirt",
+            "north": "textures/blocks/coarse_dirt",
+            "south": "textures/blocks/coarse_dirt",
+            "east": "textures/blocks/coarse_dirt",
+            "west": "textures/blocks/coarse_dirt"
+          }
+        }
+      }
+    },
+    "minecraft:dirt_with_roots": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.5,
+      "mining": { "tool": "shovel" },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/dirt_with_roots",
+            "down": "textures/blocks/dirt_with_roots",
+            "north": "textures/blocks/dirt_with_roots",
+            "south": "textures/blocks/dirt_with_roots",
+            "east": "textures/blocks/dirt_with_roots",
+            "west": "textures/blocks/dirt_with_roots"
+          }
+        }
+      }
+    },
+    "minecraft:podzol": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.5,
+      "mining": { "tool": "shovel" },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/dirt_podzol_top",
+            "down": "textures/blocks/dirt",
+            "north": "textures/blocks/dirt_podzol_side",
+            "south": "textures/blocks/dirt_podzol_side",
+            "east": "textures/blocks/dirt_podzol_side",
+            "west": "textures/blocks/dirt_podzol_side"
+          }
+        }
+      }
+    },
+    "minecraft:mycelium": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.6,
+      "mining": { "tool": "shovel" },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/mycelium_top",
+            "down": "textures/blocks/dirt",
+            "north": "textures/blocks/mycelium_side",
+            "south": "textures/blocks/mycelium_side",
+            "east": "textures/blocks/mycelium_side",
+            "west": "textures/blocks/mycelium_side"
+          }
+        }
+      }
+    },
+    "minecraft:cobblestone": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 2,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/cobblestone",
+            "down": "textures/blocks/cobblestone",
+            "north": "textures/blocks/cobblestone",
+            "south": "textures/blocks/cobblestone",
+            "east": "textures/blocks/cobblestone",
+            "west": "textures/blocks/cobblestone"
+          }
+        }
+      }
+    },
+    "minecraft:mossy_cobblestone": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 2,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/cobblestone_mossy",
+            "down": "textures/blocks/cobblestone_mossy",
+            "north": "textures/blocks/cobblestone_mossy",
+            "south": "textures/blocks/cobblestone_mossy",
+            "east": "textures/blocks/cobblestone_mossy",
+            "west": "textures/blocks/cobblestone_mossy"
+          }
+        }
+      }
+    },
+    "minecraft:sand": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.5,
+      "mining": { "tool": "shovel" },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/sand",
+            "down": "textures/blocks/sand",
+            "north": "textures/blocks/sand",
+            "south": "textures/blocks/sand",
+            "east": "textures/blocks/sand",
+            "west": "textures/blocks/sand"
+          }
+        }
+      }
+    },
+    "minecraft:red_sand": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.5,
+      "mining": { "tool": "shovel" },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/red_sand",
+            "down": "textures/blocks/red_sand",
+            "north": "textures/blocks/red_sand",
+            "south": "textures/blocks/red_sand",
+            "east": "textures/blocks/red_sand",
+            "west": "textures/blocks/red_sand"
+          }
+        }
+      }
+    },
+    "minecraft:gravel": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.6,
+      "mining": { "tool": "shovel" },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/gravel",
+            "down": "textures/blocks/gravel",
+            "north": "textures/blocks/gravel",
+            "south": "textures/blocks/gravel",
+            "east": "textures/blocks/gravel",
+            "west": "textures/blocks/gravel"
+          }
+        }
+      }
+    },
+    "minecraft:clay": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.6,
+      "mining": { "tool": "shovel" },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/clay",
+            "down": "textures/blocks/clay",
+            "north": "textures/blocks/clay",
+            "south": "textures/blocks/clay",
+            "east": "textures/blocks/clay",
+            "west": "textures/blocks/clay"
+          }
+        }
+      }
+    },
+    "minecraft:mud": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.5,
+      "mining": { "tool": "shovel" },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/mud",
+            "down": "textures/blocks/mud",
+            "north": "textures/blocks/mud",
+            "south": "textures/blocks/mud",
+            "east": "textures/blocks/mud",
+            "west": "textures/blocks/mud"
+          }
+        }
+      }
+    },
+    "minecraft:packed_mud": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1,
+      "mining": { "tool": "pickaxe" },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/packed_mud",
+            "down": "textures/blocks/packed_mud",
+            "north": "textures/blocks/packed_mud",
+            "south": "textures/blocks/packed_mud",
+            "east": "textures/blocks/packed_mud",
+            "west": "textures/blocks/packed_mud"
+          }
+        }
+      }
+    },
+    "minecraft:calcite": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.75,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/calcite",
+            "down": "textures/blocks/calcite",
+            "north": "textures/blocks/calcite",
+            "south": "textures/blocks/calcite",
+            "east": "textures/blocks/calcite",
+            "west": "textures/blocks/calcite"
+          }
+        }
+      }
+    },
+    "minecraft:dripstone_block": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/dripstone_block",
+            "down": "textures/blocks/dripstone_block",
+            "north": "textures/blocks/dripstone_block",
+            "south": "textures/blocks/dripstone_block",
+            "east": "textures/blocks/dripstone_block",
+            "west": "textures/blocks/dripstone_block"
+          }
+        }
+      }
+    },
+    "minecraft:smooth_stone": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 2,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stone_slab_top",
+            "down": "textures/blocks/stone_slab_top",
+            "north": "textures/blocks/stone_slab_top",
+            "south": "textures/blocks/stone_slab_top",
+            "east": "textures/blocks/stone_slab_top",
+            "west": "textures/blocks/stone_slab_top"
+          }
+        }
+      }
+    },
+    "minecraft:bedrock": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": -1,
+      "mining": { "tool": "none" },
+      "states": ["minecraft:infiniburn_bit"],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/bedrock",
+            "down": "textures/blocks/bedrock",
+            "north": "textures/blocks/bedrock",
+            "south": "textures/blocks/bedrock",
+            "east": "textures/blocks/bedrock",
+            "west": "textures/blocks/bedrock"
+          }
+        }
+      }
+    },
+    "minecraft:obsidian": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 50,
+      "mining": { "tool": "pickaxe", "harvest_level": 3 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/obsidian",
+            "down": "textures/blocks/obsidian",
+            "north": "textures/blocks/obsidian",
+            "south": "textures/blocks/obsidian",
+            "east": "textures/blocks/obsidian",
+            "west": "textures/blocks/obsidian"
+          }
+        }
+      }
+    },
+    "minecraft:crying_obsidian": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 50,
+      "mining": { "tool": "pickaxe", "harvest_level": 3 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/crying_obsidian",
+            "down": "textures/blocks/crying_obsidian",
+            "north": "textures/blocks/crying_obsidian",
+            "south": "textures/blocks/crying_obsidian",
+            "east": "textures/blocks/crying_obsidian",
+            "west": "textures/blocks/crying_obsidian"
+          }
+        }
+      }
+    },
+    "minecraft:netherrack": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.4,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/netherrack",
+            "down": "textures/blocks/netherrack",
+            "north": "textures/blocks/netherrack",
+            "south": "textures/blocks/netherrack",
+            "east": "textures/blocks/netherrack",
+            "west": "textures/blocks/netherrack"
+          }
+        }
+      }
+    },
+    "minecraft:end_stone": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 3,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/end_stone",
+            "down": "textures/blocks/end_stone",
+            "north": "textures/blocks/end_stone",
+            "south": "textures/blocks/end_stone",
+            "east": "textures/blocks/end_stone",
+            "west": "textures/blocks/end_stone"
+          }
+        }
+      }
+    },
+    "minecraft:soul_sand": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.5,
+      "mining": { "tool": "shovel" },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/soul_sand",
+            "down": "textures/blocks/soul_sand",
+            "north": "textures/blocks/soul_sand",
+            "south": "textures/blocks/soul_sand",
+            "east": "textures/blocks/soul_sand",
+            "west": "textures/blocks/soul_sand"
+          }
+        }
+      }
+    },
+    "minecraft:soul_soil": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.5,
+      "mining": { "tool": "shovel" },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/soul_soil",
+            "down": "textures/blocks/soul_soil",
+            "north": "textures/blocks/soul_soil",
+            "south": "textures/blocks/soul_soil",
+            "east": "textures/blocks/soul_soil",
+            "west": "textures/blocks/soul_soil"
+          }
+        }
+      }
+    },
+    "minecraft:crimson_nylium": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.4,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/crimson_nylium_top",
+            "down": "textures/blocks/netherrack",
+            "north": "textures/blocks/crimson_nylium_side",
+            "south": "textures/blocks/crimson_nylium_side",
+            "east": "textures/blocks/crimson_nylium_side",
+            "west": "textures/blocks/crimson_nylium_side"
+          }
+        }
+      }
+    },
+    "minecraft:warped_nylium": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.4,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/warped_nylium_top",
+            "down": "textures/blocks/netherrack",
+            "north": "textures/blocks/warped_nylium_side",
+            "south": "textures/blocks/warped_nylium_side",
+            "east": "textures/blocks/warped_nylium_side",
+            "west": "textures/blocks/warped_nylium_side"
+          }
+        }
+      }
+    },
+    "minecraft:blackstone": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/blackstone_top",
+            "down": "textures/blocks/blackstone_top",
+            "north": "textures/blocks/blackstone",
+            "south": "textures/blocks/blackstone",
+            "east": "textures/blocks/blackstone",
+            "west": "textures/blocks/blackstone"
+          }
+        }
+      }
+    },
+    "minecraft:polished_blackstone": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 2,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/polished_blackstone",
+            "down": "textures/blocks/polished_blackstone",
+            "north": "textures/blocks/polished_blackstone",
+            "south": "textures/blocks/polished_blackstone",
+            "east": "textures/blocks/polished_blackstone",
+            "west": "textures/blocks/polished_blackstone"
+          }
+        }
+      }
+    },
+    "minecraft:chiseled_polished_blackstone": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/chiseled_polished_blackstone",
+            "down": "textures/blocks/chiseled_polished_blackstone",
+            "north": "textures/blocks/chiseled_polished_blackstone",
+            "south": "textures/blocks/chiseled_polished_blackstone",
+            "east": "textures/blocks/chiseled_polished_blackstone",
+            "west": "textures/blocks/chiseled_polished_blackstone"
+          }
+        }
+      }
+    },
+    "minecraft:gilded_blackstone": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/gilded_blackstone",
+            "down": "textures/blocks/gilded_blackstone",
+            "north": "textures/blocks/gilded_blackstone",
+            "south": "textures/blocks/gilded_blackstone",
+            "east": "textures/blocks/gilded_blackstone",
+            "west": "textures/blocks/gilded_blackstone"
+          }
+        }
+      }
+    },
+    "minecraft:smooth_basalt": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.25,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/smooth_basalt",
+            "down": "textures/blocks/smooth_basalt",
+            "north": "textures/blocks/smooth_basalt",
+            "south": "textures/blocks/smooth_basalt",
+            "east": "textures/blocks/smooth_basalt",
+            "west": "textures/blocks/smooth_basalt"
+          }
+        }
+      }
+    },
+    "minecraft:tuff": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/tuff",
+            "down": "textures/blocks/tuff",
+            "north": "textures/blocks/tuff",
+            "south": "textures/blocks/tuff",
+            "east": "textures/blocks/tuff",
+            "west": "textures/blocks/tuff"
+          }
+        }
+      }
+    },
+    "minecraft:polished_tuff": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/polished_tuff",
+            "down": "textures/blocks/polished_tuff",
+            "north": "textures/blocks/polished_tuff",
+            "south": "textures/blocks/polished_tuff",
+            "east": "textures/blocks/polished_tuff",
+            "west": "textures/blocks/polished_tuff"
+          }
+        }
+      }
+    },
+    "minecraft:chiseled_tuff": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/chiseled_tuff_top",
+            "down": "textures/blocks/chiseled_tuff_top",
+            "north": "textures/blocks/chiseled_tuff",
+            "south": "textures/blocks/chiseled_tuff",
+            "east": "textures/blocks/chiseled_tuff",
+            "west": "textures/blocks/chiseled_tuff"
+          }
+        }
+      }
+    },
+    "minecraft:cobbled_deepslate": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 3.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/deepslate/cobbled_deepslate",
+            "down": "textures/blocks/deepslate/cobbled_deepslate",
+            "north": "textures/blocks/deepslate/cobbled_deepslate",
+            "south": "textures/blocks/deepslate/cobbled_deepslate",
+            "east": "textures/blocks/deepslate/cobbled_deepslate",
+            "west": "textures/blocks/deepslate/cobbled_deepslate"
+          }
+        }
+      }
+    },
+    "minecraft:polished_deepslate": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 3.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/deepslate/polished_deepslate",
+            "down": "textures/blocks/deepslate/polished_deepslate",
+            "north": "textures/blocks/deepslate/polished_deepslate",
+            "south": "textures/blocks/deepslate/polished_deepslate",
+            "east": "textures/blocks/deepslate/polished_deepslate",
+            "west": "textures/blocks/deepslate/polished_deepslate"
+          }
+        }
+      }
+    },
+    "minecraft:chiseled_deepslate": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 3.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/deepslate/chiseled_deepslate",
+            "down": "textures/blocks/deepslate/chiseled_deepslate",
+            "north": "textures/blocks/deepslate/chiseled_deepslate",
+            "south": "textures/blocks/deepslate/chiseled_deepslate",
+            "east": "textures/blocks/deepslate/chiseled_deepslate",
+            "west": "textures/blocks/deepslate/chiseled_deepslate"
+          }
+        }
+      }
+    },
+    "minecraft:reinforced_deepslate": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 55,
+      "mining": { "tool": "none" },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/reinforced_deepslate_top",
+            "down": "textures/blocks/reinforced_deepslate_bottom",
+            "north": "textures/blocks/reinforced_deepslate_side",
+            "south": "textures/blocks/reinforced_deepslate_side",
+            "east": "textures/blocks/reinforced_deepslate_side",
+            "west": "textures/blocks/reinforced_deepslate_side"
+          }
+        }
+      }
+    },
+    "minecraft:infested_stone": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.75,
+      "mining": { "tool": "pickaxe" },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/stone",
+            "down": "textures/blocks/stone",
+            "north": "textures/blocks/stone",
+            "south": "textures/blocks/stone",
+            "east": "textures/blocks/stone",
+            "west": "textures/blocks/stone"
+          }
+        }
+      }
+    },
+    "minecraft:infested_cobblestone": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1,
+      "mining": { "tool": "pickaxe" },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/cobblestone",
+            "down": "textures/blocks/cobblestone",
+            "north": "textures/blocks/cobblestone",
+            "south": "textures/blocks/cobblestone",
+            "east": "textures/blocks/cobblestone",
+            "west": "textures/blocks/cobblestone"
+          }
+        }
+      }
+    },
+    "minecraft:sandstone": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.8,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/sandstone_top",
+            "down": "textures/blocks/sandstone_bottom",
+            "north": "textures/blocks/sandstone_normal",
+            "south": "textures/blocks/sandstone_normal",
+            "east": "textures/blocks/sandstone_normal",
+            "west": "textures/blocks/sandstone_normal"
+          }
+        }
+      }
+    },
+    "minecraft:chiseled_sandstone": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.8,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/sandstone_top",
+            "down": "textures/blocks/sandstone_top",
+            "north": "textures/blocks/sandstone_carved",
+            "south": "textures/blocks/sandstone_carved",
+            "east": "textures/blocks/sandstone_carved",
+            "west": "textures/blocks/sandstone_carved"
+          }
+        }
+      }
+    },
+    "minecraft:cut_sandstone": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.8,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/sandstone_top",
+            "down": "textures/blocks/sandstone_top",
+            "north": "textures/blocks/sandstone_smooth",
+            "south": "textures/blocks/sandstone_smooth",
+            "east": "textures/blocks/sandstone_smooth",
+            "west": "textures/blocks/sandstone_smooth"
+          }
+        }
+      }
+    },
+    "minecraft:smooth_sandstone": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 2,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/sandstone_top",
+            "down": "textures/blocks/sandstone_top",
+            "north": "textures/blocks/sandstone_top",
+            "south": "textures/blocks/sandstone_top",
+            "east": "textures/blocks/sandstone_top",
+            "west": "textures/blocks/sandstone_top"
+          }
+        }
+      }
+    },
+    "minecraft:red_sandstone": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.8,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/red_sandstone_top",
+            "down": "textures/blocks/red_sandstone_bottom",
+            "north": "textures/blocks/red_sandstone_normal",
+            "south": "textures/blocks/red_sandstone_normal",
+            "east": "textures/blocks/red_sandstone_normal",
+            "west": "textures/blocks/red_sandstone_normal"
+          }
+        }
+      }
+    },
+    "minecraft:chiseled_red_sandstone": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.8,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/red_sandstone_top",
+            "down": "textures/blocks/red_sandstone_top",
+            "north": "textures/blocks/red_sandstone_carved",
+            "south": "textures/blocks/red_sandstone_carved",
+            "east": "textures/blocks/red_sandstone_carved",
+            "west": "textures/blocks/red_sandstone_carved"
+          }
+        }
+      }
+    },
+    "minecraft:cut_red_sandstone": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.8,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/red_sandstone_top",
+            "down": "textures/blocks/red_sandstone_top",
+            "north": "textures/blocks/red_sandstone_smooth",
+            "south": "textures/blocks/red_sandstone_smooth",
+            "east": "textures/blocks/red_sandstone_smooth",
+            "west": "textures/blocks/red_sandstone_smooth"
+          }
+        }
+      }
+    },
+    "minecraft:smooth_red_sandstone": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 2,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/red_sandstone_top",
+            "down": "textures/blocks/red_sandstone_top",
+            "north": "textures/blocks/red_sandstone_top",
+            "south": "textures/blocks/red_sandstone_top",
+            "east": "textures/blocks/red_sandstone_top",
+            "west": "textures/blocks/red_sandstone_top"
+          }
+        }
+      }
+    },
+    "minecraft:cinnabar": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/cinnabar",
+            "down": "textures/blocks/cinnabar",
+            "north": "textures/blocks/cinnabar",
+            "south": "textures/blocks/cinnabar",
+            "east": "textures/blocks/cinnabar",
+            "west": "textures/blocks/cinnabar"
+          }
+        }
+      }
+    },
+    "minecraft:polished_cinnabar": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/polished_cinnabar",
+            "down": "textures/blocks/polished_cinnabar",
+            "north": "textures/blocks/polished_cinnabar",
+            "south": "textures/blocks/polished_cinnabar",
+            "east": "textures/blocks/polished_cinnabar",
+            "west": "textures/blocks/polished_cinnabar"
+          }
+        }
+      }
+    },
+    "minecraft:chiseled_cinnabar": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/chiseled_cinnabar",
+            "down": "textures/blocks/chiseled_cinnabar",
+            "north": "textures/blocks/chiseled_cinnabar",
+            "south": "textures/blocks/chiseled_cinnabar",
+            "east": "textures/blocks/chiseled_cinnabar",
+            "west": "textures/blocks/chiseled_cinnabar"
+          }
+        }
+      }
+    },
+    "minecraft:sulfur": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/sulfur",
+            "down": "textures/blocks/sulfur",
+            "north": "textures/blocks/sulfur",
+            "south": "textures/blocks/sulfur",
+            "east": "textures/blocks/sulfur",
+            "west": "textures/blocks/sulfur"
+          }
+        }
+      }
+    },
+    "minecraft:polished_sulfur": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/polished_sulfur",
+            "down": "textures/blocks/polished_sulfur",
+            "north": "textures/blocks/polished_sulfur",
+            "south": "textures/blocks/polished_sulfur",
+            "east": "textures/blocks/polished_sulfur",
+            "west": "textures/blocks/polished_sulfur"
+          }
+        }
+      }
+    },
+    "minecraft:chiseled_sulfur": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/chiseled_sulfur",
+            "down": "textures/blocks/chiseled_sulfur",
+            "north": "textures/blocks/chiseled_sulfur",
+            "south": "textures/blocks/chiseled_sulfur",
+            "east": "textures/blocks/chiseled_sulfur",
+            "west": "textures/blocks/chiseled_sulfur"
+          }
+        }
+      }
+    },
+    "minecraft:potent_sulfur": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": ["minecraft:potent_sulfur_state"],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/potent_sulfur",
+            "down": "textures/blocks/potent_sulfur",
+            "north": "textures/blocks/potent_sulfur",
+            "south": "textures/blocks/potent_sulfur",
+            "east": "textures/blocks/potent_sulfur",
+            "west": "textures/blocks/potent_sulfur"
+          }
+        }
+      }
+    },
+    "minecraft:moss_block": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.1,
+      "mining": { "tool": "hoe" },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/moss_block",
+            "down": "textures/blocks/moss_block",
+            "north": "textures/blocks/moss_block",
+            "south": "textures/blocks/moss_block",
+            "east": "textures/blocks/moss_block",
+            "west": "textures/blocks/moss_block"
+          }
+        }
+      }
+    },
+    "minecraft:pale_moss_block": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.1,
+      "mining": { "tool": "hoe" },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/pale_moss_block",
+            "down": "textures/blocks/pale_moss_block",
+            "north": "textures/blocks/pale_moss_block",
+            "south": "textures/blocks/pale_moss_block",
+            "east": "textures/blocks/pale_moss_block",
+            "west": "textures/blocks/pale_moss_block"
+          }
+        }
+      }
+    },
+    "minecraft:basalt": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.25,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": ["minecraft:pillar_axis"],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "pillar",
+            "textures": {
+              "side": "textures/blocks/basalt_side",
+              "top": "textures/blocks/basalt_top"
+            },
+            "axis": "x"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "pillar",
+            "textures": {
+              "side": "textures/blocks/basalt_side",
+              "top": "textures/blocks/basalt_top"
+            },
+            "axis": "z"
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "pillar",
+          "textures": {
+            "side": "textures/blocks/basalt_side",
+            "top": "textures/blocks/basalt_top"
+          },
+          "axis": "y"
+        }
+      }
+    },
+    "minecraft:polished_basalt": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.25,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": ["minecraft:pillar_axis"],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "pillar",
+            "textures": {
+              "side": "textures/blocks/polished_basalt_side",
+              "top": "textures/blocks/polished_basalt_top"
+            },
+            "axis": "x"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "pillar",
+            "textures": {
+              "side": "textures/blocks/polished_basalt_side",
+              "top": "textures/blocks/polished_basalt_top"
+            },
+            "axis": "z"
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "pillar",
+          "textures": {
+            "side": "textures/blocks/polished_basalt_side",
+            "top": "textures/blocks/polished_basalt_top"
+          },
+          "axis": "y"
+        }
+      }
+    },
+    "minecraft:deepslate": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 3,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": ["minecraft:pillar_axis"],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "pillar",
+            "textures": {
+              "side": "textures/blocks/deepslate/deepslate",
+              "top": "textures/blocks/deepslate/deepslate_top"
+            },
+            "axis": "x"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "pillar",
+            "textures": {
+              "side": "textures/blocks/deepslate/deepslate",
+              "top": "textures/blocks/deepslate/deepslate_top"
+            },
+            "axis": "z"
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "pillar",
+          "textures": {
+            "side": "textures/blocks/deepslate/deepslate",
+            "top": "textures/blocks/deepslate/deepslate_top"
+          },
+          "axis": "y"
+        }
+      }
+    },
+    "minecraft:infested_deepslate": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe" },
+      "states": ["minecraft:pillar_axis"],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'x'",
+          "model": {
+            "type": "pillar",
+            "textures": {
+              "side": "textures/blocks/deepslate/deepslate",
+              "top": "textures/blocks/deepslate/deepslate_top"
+            },
+            "axis": "x"
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:pillar_axis') == 'z'",
+          "model": {
+            "type": "pillar",
+            "textures": {
+              "side": "textures/blocks/deepslate/deepslate",
+              "top": "textures/blocks/deepslate/deepslate_top"
+            },
+            "axis": "z"
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "pillar",
+          "textures": {
+            "side": "textures/blocks/deepslate/deepslate",
+            "top": "textures/blocks/deepslate/deepslate_top"
+          },
+          "axis": "y"
+        }
+      }
+    },
+    "minecraft:farmland": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.6,
+      "mining": { "tool": "shovel" },
+      "states": ["minecraft:moisturized_amount"],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:moisturized_amount') == 7",
+          "model": {
+            "type": "grass_path",
+            "textures": {
+              "up": "textures/blocks/farmland_wet",
+              "down": "textures/blocks/dirt",
+              "north": "textures/blocks/dirt",
+              "south": "textures/blocks/dirt",
+              "east": "textures/blocks/dirt",
+              "west": "textures/blocks/dirt"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "grass_path",
+          "textures": {
+            "up": "textures/blocks/farmland_dry",
+            "down": "textures/blocks/dirt",
+            "north": "textures/blocks/dirt",
+            "south": "textures/blocks/dirt",
+            "east": "textures/blocks/dirt",
+            "west": "textures/blocks/dirt"
+          }
+        }
+      }
+    },
+    "minecraft:moss_carpet": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.1,
+      "mining": { "tool": "hoe" },
+      "support": "below_block",
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "moss_carpet",
+          "texture": "textures/blocks/moss_block",
+          "pale": false
+        }
+      }
+    },
+    "minecraft:pale_moss_carpet": {
+      "materials": "alpha_test",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.1,
+      "mining": { "tool": "hoe" },
+      "support": "moss_carpet",
+      "states": [
+        "minecraft:pale_moss_carpet_side_east",
+        "minecraft:pale_moss_carpet_side_north",
+        "minecraft:pale_moss_carpet_side_south",
+        "minecraft:pale_moss_carpet_side_west",
+        "minecraft:upper_block_bit"
+      ],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "moss_carpet",
+          "texture": "textures/blocks/pale_moss_block",
+          "side_short": "textures/blocks/pale_moss_carpet_side_tip",
+          "side_tall": "textures/blocks/pale_moss_carpet_side_base",
+          "pale": true
+        }
+      }
+    },
+    "minecraft:sculk": {
+      "materials": "opaque_emissive",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.2,
+      "mining": { "tool": "hoe" },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/sculk",
+            "down": "textures/blocks/sculk",
+            "north": "textures/blocks/sculk",
+            "south": "textures/blocks/sculk",
+            "east": "textures/blocks/sculk",
+            "west": "textures/blocks/sculk"
+          }
+        },
+        "flipbook": { "ticks_per_frame": 20, "frame_count": 4 }
+      }
+    },
+    "minecraft:sculk_vein": {
+      "materials": "alpha_test",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.2,
+      "mining": { "tool": "hoe" },
+      "passable": true,
+      "support": "multi_face",
+      "states": ["minecraft:multi_face_direction_bits"],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "multi_face",
+          "texture": "textures/blocks/sculk_vein"
+        },
+        "flipbook": { "ticks_per_frame": 20, "frame_count": 4 }
+      }
+    },
+    "minecraft:sculk_catalyst": {
+      "materials": "opaque_emissive",
+      "category": "nature/terrain_and_stone",
+      "hardness": 3,
+      "mining": { "tool": "hoe" },
+      "states": ["minecraft:bloom"],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:bloom') == true",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/sculk_catalyst_top_bloom",
+              "down": "textures/blocks/sculk_catalyst_bottom",
+              "north": "textures/blocks/sculk_catalyst_side_bloom",
+              "south": "textures/blocks/sculk_catalyst_side_bloom",
+              "east": "textures/blocks/sculk_catalyst_side_bloom",
+              "west": "textures/blocks/sculk_catalyst_side_bloom"
+            }
+          },
+          "flipbook": {
+            "ticks_per_frame": 1,
+            "frame_count": 8,
+            "textures": [
+              "textures/blocks/sculk_catalyst_top_bloom",
+              "textures/blocks/sculk_catalyst_side_bloom"
+            ]
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/sculk_catalyst_top",
+            "down": "textures/blocks/sculk_catalyst_bottom",
+            "north": "textures/blocks/sculk_catalyst_side",
+            "south": "textures/blocks/sculk_catalyst_side",
+            "east": "textures/blocks/sculk_catalyst_side",
+            "west": "textures/blocks/sculk_catalyst_side"
+          }
+        }
+      }
+    },
+    "minecraft:sculk_shrieker": {
+      "materials": "alpha_test_emissive",
+      "category": "nature/terrain_and_stone",
+      "hardness": 3,
+      "mining": { "tool": "hoe" },
+      "states": ["minecraft:active", "minecraft:can_summon"],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:can_summon') == true",
+          "model": {
+            "type": "sculk_shrieker",
+            "textures": {
+              "bottom": "textures/blocks/sculk_shrieker_bottom",
+              "side": "textures/blocks/sculk_shrieker_side",
+              "top": "textures/blocks/sculk_shrieker_top",
+              "inner_top": "textures/blocks/sculk_shrieker_can_summon_inner_top"
+            }
+          },
+          "flipbook": {
+            "ticks_per_frame": 3,
+            "frame_count": 10,
+            "textures": ["textures/blocks/sculk_shrieker_can_summon_inner_top"]
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "sculk_shrieker",
+          "textures": {
+            "bottom": "textures/blocks/sculk_shrieker_bottom",
+            "side": "textures/blocks/sculk_shrieker_side",
+            "top": "textures/blocks/sculk_shrieker_top",
+            "inner_top": "textures/blocks/sculk_shrieker_inner_top"
+          }
+        },
+        "flipbook": {
+          "ticks_per_frame": 6,
+          "frame_count": 10,
+          "textures": ["textures/blocks/sculk_shrieker_inner_top"]
+        }
+      }
+    },
+    "minecraft:magma": {
+      "materials": "opaque_emissive",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/magma",
+            "down": "textures/blocks/magma",
+            "north": "textures/blocks/magma",
+            "south": "textures/blocks/magma",
+            "east": "textures/blocks/magma",
+            "west": "textures/blocks/magma"
+          }
+        },
+        "flipbook": { "ticks_per_frame": 10, "frame_count": 3 }
+      }
+    },
+    "minecraft:pointed_dripstone": {
+      "materials": "alpha_test",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe" },
+      "support": "pointed_dripstone",
+      "states": ["minecraft:dripstone_thickness", "minecraft:hanging"],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:hanging') == true && q.block_state('minecraft:dripstone_thickness') == 'tip'",
+          "model": { "type": "pointed_dripstone", "texture": "textures/blocks/pointed_dripstone_down_tip", "thickness": "tip", "hanging": true }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == true && q.block_state('minecraft:dripstone_thickness') == 'frustum'",
+          "model": { "type": "pointed_dripstone", "texture": "textures/blocks/pointed_dripstone_down_frustum", "thickness": "frustum", "hanging": true }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == true && q.block_state('minecraft:dripstone_thickness') == 'middle'",
+          "model": { "type": "pointed_dripstone", "texture": "textures/blocks/pointed_dripstone_down_middle", "thickness": "middle", "hanging": true }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == true && q.block_state('minecraft:dripstone_thickness') == 'base'",
+          "model": { "type": "pointed_dripstone", "texture": "textures/blocks/pointed_dripstone_down_base", "thickness": "base", "hanging": true }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == true && q.block_state('minecraft:dripstone_thickness') == 'merge'",
+          "model": { "type": "pointed_dripstone", "texture": "textures/blocks/pointed_dripstone_down_merge", "thickness": "merge", "hanging": true }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == false && q.block_state('minecraft:dripstone_thickness') == 'frustum'",
+          "model": { "type": "pointed_dripstone", "texture": "textures/blocks/pointed_dripstone_up_frustum", "thickness": "frustum", "hanging": false }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == false && q.block_state('minecraft:dripstone_thickness') == 'middle'",
+          "model": { "type": "pointed_dripstone", "texture": "textures/blocks/pointed_dripstone_up_middle", "thickness": "middle", "hanging": false }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == false && q.block_state('minecraft:dripstone_thickness') == 'base'",
+          "model": { "type": "pointed_dripstone", "texture": "textures/blocks/pointed_dripstone_up_base", "thickness": "base", "hanging": false }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == false && q.block_state('minecraft:dripstone_thickness') == 'merge'",
+          "model": { "type": "pointed_dripstone", "texture": "textures/blocks/pointed_dripstone_up_merge", "thickness": "merge", "hanging": false }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "pointed_dripstone",
+          "texture": "textures/blocks/pointed_dripstone_up_tip",
+          "thickness": "tip",
+          "hanging": false
+        }
+      }
+    },
+    "minecraft:sulfur_spike": {
+      "materials": "alpha_test",
+      "category": "nature/terrain_and_stone",
+      "hardness": 1.5,
+      "mining": { "tool": "pickaxe" },
+      "support": "pointed_dripstone",
+      "states": ["minecraft:dripstone_thickness", "minecraft:hanging"],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:hanging') == true && q.block_state('minecraft:dripstone_thickness') == 'tip'",
+          "model": { "type": "pointed_dripstone", "texture": "textures/blocks/sulfur_spike_down_tip", "thickness": "tip", "hanging": true }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == true && q.block_state('minecraft:dripstone_thickness') == 'frustum'",
+          "model": { "type": "pointed_dripstone", "texture": "textures/blocks/sulfur_spike_down_frustum", "thickness": "frustum", "hanging": true }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == true && q.block_state('minecraft:dripstone_thickness') == 'middle'",
+          "model": { "type": "pointed_dripstone", "texture": "textures/blocks/sulfur_spike_down_middle", "thickness": "middle", "hanging": true }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == true && q.block_state('minecraft:dripstone_thickness') == 'base'",
+          "model": { "type": "pointed_dripstone", "texture": "textures/blocks/sulfur_spike_down_base", "thickness": "base", "hanging": true }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == true && q.block_state('minecraft:dripstone_thickness') == 'merge'",
+          "model": { "type": "pointed_dripstone", "texture": "textures/blocks/sulfur_spike_down_tip_merge", "thickness": "merge", "hanging": true }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == false && q.block_state('minecraft:dripstone_thickness') == 'frustum'",
+          "model": { "type": "pointed_dripstone", "texture": "textures/blocks/sulfur_spike_up_frustum", "thickness": "frustum", "hanging": false }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == false && q.block_state('minecraft:dripstone_thickness') == 'middle'",
+          "model": { "type": "pointed_dripstone", "texture": "textures/blocks/sulfur_spike_up_middle", "thickness": "middle", "hanging": false }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == false && q.block_state('minecraft:dripstone_thickness') == 'base'",
+          "model": { "type": "pointed_dripstone", "texture": "textures/blocks/sulfur_spike_up_base", "thickness": "base", "hanging": false }
+        },
+        {
+          "condition": "q.block_state('minecraft:hanging') == false && q.block_state('minecraft:dripstone_thickness') == 'merge'",
+          "model": { "type": "pointed_dripstone", "texture": "textures/blocks/sulfur_spike_up_tip_merge", "thickness": "merge", "hanging": false }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "pointed_dripstone",
+          "texture": "textures/blocks/sulfur_spike_up_tip",
+          "thickness": "tip",
+          "hanging": false
+        }
+      }
+    },
+    "minecraft:suspicious_sand": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.25,
+      "mining": { "tool": "shovel" },
+      "states": ["minecraft:brushed_progress", "minecraft:hanging"],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:brushed_progress') == 1",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/suspicious_sand_1",
+              "down": "textures/blocks/suspicious_sand_1",
+              "north": "textures/blocks/suspicious_sand_1",
+              "south": "textures/blocks/suspicious_sand_1",
+              "east": "textures/blocks/suspicious_sand_1",
+              "west": "textures/blocks/suspicious_sand_1"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:brushed_progress') == 2",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/suspicious_sand_2",
+              "down": "textures/blocks/suspicious_sand_2",
+              "north": "textures/blocks/suspicious_sand_2",
+              "south": "textures/blocks/suspicious_sand_2",
+              "east": "textures/blocks/suspicious_sand_2",
+              "west": "textures/blocks/suspicious_sand_2"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:brushed_progress') == 3",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/suspicious_sand_3",
+              "down": "textures/blocks/suspicious_sand_3",
+              "north": "textures/blocks/suspicious_sand_3",
+              "south": "textures/blocks/suspicious_sand_3",
+              "east": "textures/blocks/suspicious_sand_3",
+              "west": "textures/blocks/suspicious_sand_3"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/suspicious_sand_0",
+            "down": "textures/blocks/suspicious_sand_0",
+            "north": "textures/blocks/suspicious_sand_0",
+            "south": "textures/blocks/suspicious_sand_0",
+            "east": "textures/blocks/suspicious_sand_0",
+            "west": "textures/blocks/suspicious_sand_0"
+          }
+        }
+      }
+    },
+    "minecraft:suspicious_gravel": {
+      "materials": "opaque",
+      "category": "nature/terrain_and_stone",
+      "hardness": 0.25,
+      "mining": { "tool": "shovel" },
+      "states": ["minecraft:brushed_progress", "minecraft:hanging"],
+      "variants": [
+        {
+          "condition": "q.block_state('minecraft:brushed_progress') == 1",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/suspicious_gravel_1",
+              "down": "textures/blocks/suspicious_gravel_1",
+              "north": "textures/blocks/suspicious_gravel_1",
+              "south": "textures/blocks/suspicious_gravel_1",
+              "east": "textures/blocks/suspicious_gravel_1",
+              "west": "textures/blocks/suspicious_gravel_1"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:brushed_progress') == 2",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/suspicious_gravel_2",
+              "down": "textures/blocks/suspicious_gravel_2",
+              "north": "textures/blocks/suspicious_gravel_2",
+              "south": "textures/blocks/suspicious_gravel_2",
+              "east": "textures/blocks/suspicious_gravel_2",
+              "west": "textures/blocks/suspicious_gravel_2"
+            }
+          }
+        },
+        {
+          "condition": "q.block_state('minecraft:brushed_progress') == 3",
+          "model": {
+            "type": "full_block",
+            "textures": {
+              "up": "textures/blocks/suspicious_gravel_3",
+              "down": "textures/blocks/suspicious_gravel_3",
+              "north": "textures/blocks/suspicious_gravel_3",
+              "south": "textures/blocks/suspicious_gravel_3",
+              "east": "textures/blocks/suspicious_gravel_3",
+              "west": "textures/blocks/suspicious_gravel_3"
+            }
+          }
+        }
+      ],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/suspicious_gravel_0",
+            "down": "textures/blocks/suspicious_gravel_0",
+            "north": "textures/blocks/suspicious_gravel_0",
+            "south": "textures/blocks/suspicious_gravel_0",
+            "east": "textures/blocks/suspicious_gravel_0",
+            "west": "textures/blocks/suspicious_gravel_0"
+          }
+        }
+      }
+    },
     "minecraft:oak_log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",

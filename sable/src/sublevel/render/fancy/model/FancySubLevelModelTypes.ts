@@ -3,9 +3,31 @@ import type {
   FancySubLevelModelState
 } from "./FancySubLevelModel.js";
 
+/** Reserve enough low bits for state + occupancy; the remaining 24 bits hold coordinates. */
+export function fancySubLevelSparseLayout(stateBits: number): {
+  readonly stateBits: number;
+  readonly stateSpan: number;
+  readonly width: number;
+  readonly height: number;
+  readonly depth: number;
+} {
+  const storedBits = Math.max(6, stateBits + 1);
+  const coordinateBits = 24 - storedBits;
+  const yBits = Math.floor(coordinateBits / 3);
+  const xBits = Math.ceil((coordinateBits - yBits) / 2);
+  return {
+    stateBits: storedBits,
+    stateSpan: 2 ** storedBits,
+    width: 2 ** xBits,
+    height: 2 ** yBits,
+    depth: 2 ** (coordinateBits - xBits - yBits)
+  };
+}
+
 export function createFancySubLevelModelState(
   model: FancySubLevelModelDescription
 ): FancySubLevelModelState | undefined {
+  if (model.type === "multi_face") return { bits: 6, dimensions: [], update: () => undefined };
   if (model.type === "wall" || (model.type === "moss_carpet" && model.pale)) {
     return {
       bits: 9,
@@ -28,13 +50,14 @@ export function createFancySubLevelModelState(
 export function fancySubLevelStoredStateBits(
   model: FancySubLevelModelDescription
 ): number {
-  return model.type === "chest" ? 2 : model.type === "wall" || (model.type === "moss_carpet" && model.pale) ? 9 : 1;
+  return model.type === "chest" ? 2 : model.type === "multi_face" ? 7 : model.type === "wall" || (model.type === "moss_carpet" && model.pale) ? 10 : 1;
 }
 
 export function encodeFancySubLevelModelState(
   model: FancySubLevelModelDescription,
   states: Readonly<Record<string, boolean | number | string>> | undefined
 ): number {
+  if (model.type === "multi_face") return Number(states?.multi_face_direction_bits ?? states?.["minecraft:multi_face_direction_bits"] ?? 0);
   if (model.type === "chest") {
     const open = states?.open ?? states?.["minecraft:open"];
     return open === true || open === 1 ? 1 : 0;

@@ -1,4 +1,18 @@
+function fancySubLevelSparseLayout(stateBits) {
+  const storedBits = Math.max(6, stateBits + 1);
+  const coordinateBits = 24 - storedBits;
+  const yBits = Math.floor(coordinateBits / 3);
+  const xBits = Math.ceil((coordinateBits - yBits) / 2);
+  return {
+    stateBits: storedBits,
+    stateSpan: 2 ** storedBits,
+    width: 2 ** xBits,
+    height: 2 ** yBits,
+    depth: 2 ** (coordinateBits - xBits - yBits)
+  };
+}
 function createFancySubLevelModelState(model) {
+  if (model.type === "multi_face") return { bits: 6, dimensions: [], update: () => void 0 };
   if (model.type === "wall" || model.type === "moss_carpet" && model.pale) {
     return {
       bits: 9,
@@ -14,9 +28,10 @@ function createFancySubLevelModelState(model) {
   };
 }
 function fancySubLevelStoredStateBits(model) {
-  return model.type === "chest" ? 2 : model.type === "wall" || model.type === "moss_carpet" && model.pale ? 9 : 1;
+  return model.type === "chest" ? 2 : model.type === "multi_face" ? 7 : model.type === "wall" || model.type === "moss_carpet" && model.pale ? 10 : 1;
 }
 function encodeFancySubLevelModelState(model, states) {
+  if (model.type === "multi_face") return Number(states?.multi_face_direction_bits ?? states?.["minecraft:multi_face_direction_bits"] ?? 0);
   if (model.type === "chest") {
     const open = states?.open ?? states?.["minecraft:open"];
     return open === true || open === 1 ? 1 : 0;
@@ -41,5 +56,6 @@ function encodeFancySubLevelModelState(model, states) {
 export {
   createFancySubLevelModelState,
   encodeFancySubLevelModelState,
+  fancySubLevelSparseLayout,
   fancySubLevelStoredStateBits
 };

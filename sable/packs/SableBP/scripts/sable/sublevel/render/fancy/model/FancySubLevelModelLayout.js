@@ -1,4 +1,5 @@
 import { isFancySubLevelOriginEncodable } from "./FancySubLevelModelCodec.js";
+import { fancySubLevelSparseLayout } from "./FancySubLevelModelTypes.js";
 const FANCY_MODEL_DENSE_SLOT_BUDGET = 245;
 const FANCY_MODEL_DENSE_MAX_AXIS = 32;
 const FANCY_MODEL_SPARSE_SIZE = 64;
@@ -64,17 +65,18 @@ function packModelGroup(group, surfaceBlocks) {
     }, group, SURFACE_FOLIAGE_LAYOUT);
   }
   const candidates = foliage ? FOLIAGE_DENSE_CANDIDATES : DENSE_CANDIDATES;
+  const sparseLayout = fancySubLevelSparseLayout(model.state?.bits ?? 0);
   const sparseOrigin = {
-    x: chooseCenteredAxisOrigin(group, "x", FANCY_MODEL_SPARSE_SIZE),
-    y: chooseCenteredAxisOrigin(group, "y", FANCY_MODEL_SPARSE_SIZE),
-    z: chooseCenteredAxisOrigin(group, "z", FANCY_MODEL_SPARSE_SIZE)
+    x: chooseCenteredAxisOrigin(group, "x", sparseLayout.width),
+    y: chooseCenteredAxisOrigin(group, "y", sparseLayout.height),
+    z: chooseCenteredAxisOrigin(group, "z", sparseLayout.depth)
   };
   const sparseBoxes = bucketBlocks(
     group,
     sparseOrigin,
-    FANCY_MODEL_SPARSE_SIZE,
-    FANCY_MODEL_SPARSE_SIZE,
-    FANCY_MODEL_SPARSE_SIZE
+    sparseLayout.width,
+    sparseLayout.height,
+    sparseLayout.depth
   );
   const sparseValid = sparseBoxes.every(([anchor]) => isFancySubLevelOriginEncodable(anchor)) && group.every(isPackableBlock);
   const sparseBoxKey = /* @__PURE__ */ new Map();
@@ -165,11 +167,8 @@ function packDenseBucket(model, candidate, anchorLocalLocation, bucket) {
     modelRotation: model.dense.rotation
   };
 }
-function packSparseBlocks(model, origin, blocks, layout = {
-  width: FANCY_MODEL_SPARSE_SIZE,
-  height: FANCY_MODEL_SPARSE_SIZE,
-  depth: FANCY_MODEL_SPARSE_SIZE
-}) {
+function packSparseBlocks(model, origin, blocks, layout = fancySubLevelSparseLayout(model.state?.bits ?? 0)) {
+  const encoding = fancySubLevelSparseLayout(model.state?.bits ?? 0);
   const result = [];
   for (const [anchorLocalLocation, bucket] of bucketBlocks(
     blocks,
@@ -188,9 +187,9 @@ function packSparseBlocks(model, origin, blocks, layout = {
         const x = entry.block.localLocation.x - anchorLocalLocation.x;
         const y = entry.block.localLocation.y - anchorLocalLocation.y;
         const z = entry.block.localLocation.z - anchorLocalLocation.z;
-        words[slot] = entry.state + 1 + x * 64 + y * 4096 + z * 262144;
+        words[slot] = entry.state + 1 + encoding.stateSpan * (x + y * encoding.width + z * encoding.width * encoding.height);
         assignments.push({
-          bitCount: 6,
+          bitCount: encoding.stateBits,
           blockKey: fancySubLevelBlockKey(entry.block.localLocation),
           shift: 0,
           slot,
@@ -318,7 +317,7 @@ function packPoolBlocks(pool, blocks, surfaceBlocks) {
 function isPackableBlock(entry) {
   const { x, y, z } = entry.block.localLocation;
   const maximumState = 2 ** (entry.model.state?.bits ?? 0) - 1;
-  return Number.isInteger(x) && Number.isInteger(y) && Number.isInteger(z) && Number.isInteger(entry.state) && entry.state >= 0 && entry.state <= Math.max(0, maximumState) && entry.state + 1 < FANCY_MODEL_SPARSE_STATE_SPAN;
+  return Number.isInteger(x) && Number.isInteger(y) && Number.isInteger(z) && Number.isInteger(entry.state) && entry.state >= 0 && entry.state <= Math.max(0, maximumState);
 }
 function chooseAxisOrigin(blocks, axis, size) {
   const minimum = Math.min(...blocks.map((entry) => entry.block.localLocation[axis]));

@@ -1,1 +1,0 @@
-{"format_version":"1.10.0","render_controllers":{"controller.render.sable_shared_7044bfdeb165b365":{"geometry":"Geometry.r0","materials":[{"*":"Material.r4"}],"textures":["Texture.r128"],"uv_anim":{"offset":[0,"(Math.mod((Math.floor(query.life_time * 20.0 / 4.0)), 18.0) / 18.0)"],"scale":[1,0.05555555555555555]},"part_visibility":[{"*":true}]}}}

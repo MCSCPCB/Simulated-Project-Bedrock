@@ -1,5 +1,6 @@
 import type { Vector3 } from "@minecraft/server";
 import { isFancySubLevelOriginEncodable } from "./FancySubLevelModelCodec.js";
+import { fancySubLevelSparseLayout } from "./FancySubLevelModelTypes.js";
 import type {
   FancySubLevelBlock,
   FancySubLevelModel,
@@ -140,17 +141,18 @@ function packModelGroup(
     }, group, SURFACE_FOLIAGE_LAYOUT);
   }
   const candidates = foliage ? FOLIAGE_DENSE_CANDIDATES : DENSE_CANDIDATES;
+  const sparseLayout = fancySubLevelSparseLayout(model.state?.bits ?? 0);
   const sparseOrigin = {
-    x: chooseCenteredAxisOrigin(group, "x", FANCY_MODEL_SPARSE_SIZE),
-    y: chooseCenteredAxisOrigin(group, "y", FANCY_MODEL_SPARSE_SIZE),
-    z: chooseCenteredAxisOrigin(group, "z", FANCY_MODEL_SPARSE_SIZE)
+    x: chooseCenteredAxisOrigin(group, "x", sparseLayout.width),
+    y: chooseCenteredAxisOrigin(group, "y", sparseLayout.height),
+    z: chooseCenteredAxisOrigin(group, "z", sparseLayout.depth)
   };
   const sparseBoxes = bucketBlocks(
     group,
     sparseOrigin,
-    FANCY_MODEL_SPARSE_SIZE,
-    FANCY_MODEL_SPARSE_SIZE,
-    FANCY_MODEL_SPARSE_SIZE
+    sparseLayout.width,
+    sparseLayout.height,
+    sparseLayout.depth
   );
   const sparseValid = sparseBoxes.every(([anchor]) => isFancySubLevelOriginEncodable(anchor))
     && group.every(isPackableBlock);
@@ -274,10 +276,9 @@ function packSparseBlocks(
   model: FancySubLevelModel,
   origin: Vector3,
   blocks: readonly FancySubLevelBlock[],
-  layout: DenseCandidate = {
-    width: FANCY_MODEL_SPARSE_SIZE, height: FANCY_MODEL_SPARSE_SIZE, depth: FANCY_MODEL_SPARSE_SIZE
-  }
+  layout: DenseCandidate = fancySubLevelSparseLayout(model.state?.bits ?? 0)
 ): PackedFancySubLevelModel[] {
+  const encoding = fancySubLevelSparseLayout(model.state?.bits ?? 0);
   const result: PackedFancySubLevelModel[] = [];
   for (const [anchorLocalLocation, bucket] of bucketBlocks(
     blocks,
@@ -296,9 +297,9 @@ function packSparseBlocks(
         const x = entry.block.localLocation.x - anchorLocalLocation.x;
         const y = entry.block.localLocation.y - anchorLocalLocation.y;
         const z = entry.block.localLocation.z - anchorLocalLocation.z;
-        words[slot] = entry.state + 1 + x * 64 + y * 4096 + z * 262144;
+        words[slot] = entry.state + 1 + encoding.stateSpan * (x + y * encoding.width + z * encoding.width * encoding.height);
         assignments.push({
-          bitCount: 6,
+          bitCount: encoding.stateBits,
           blockKey: fancySubLevelBlockKey(entry.block.localLocation),
           shift: 0,
           slot,
@@ -456,8 +457,7 @@ function isPackableBlock(entry: FancySubLevelBlock): boolean {
     && Number.isInteger(z)
     && Number.isInteger(entry.state)
     && entry.state >= 0
-    && entry.state <= Math.max(0, maximumState)
-    && entry.state + 1 < FANCY_MODEL_SPARSE_STATE_SPAN;
+    && entry.state <= Math.max(0, maximumState);
 }
 
 function chooseAxisOrigin(

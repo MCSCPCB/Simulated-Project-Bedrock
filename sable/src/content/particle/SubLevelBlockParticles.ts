@@ -200,6 +200,8 @@ function resolveFoliageParticleColor(
   foliageTint: SubLevelFoliageTint | undefined
 ): SubLevelBlockParticleColor | undefined {
   const tint = model.tint;
+  // Vanilla grass emits dirt fragments; the masked grass shell never colors them.
+  if (block.typeId === "minecraft:grass_block") return undefined;
   if (!tint) return undefined;
   if (tint.method === "fixed") return parseFixedTintColor(tint.color);
   const field = foliageTint ?? DEFAULT_SUBLEVEL_FOLIAGE_TINT;

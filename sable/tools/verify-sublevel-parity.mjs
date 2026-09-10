@@ -2,12 +2,15 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { dirname, resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import test from "node:test";
 import ts from "typescript";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const sable = join(root, "sable");
 const baseline = join(root, ".sample/TreePhysics");
+const vanilla = join(root, ".sample/VanillaBlock/VanillaBlockResource");
+const nativeRequire = createRequire(import.meta.url);
 const json = path => {
   const result = ts.parseConfigFileTextToJson(path, readFileSync(path, "utf8"));
   if (result.error) throw new Error(`Invalid JSON: ${path}`);
@@ -30,6 +33,7 @@ function moduleLoader(sourceRoot, server, overrides = {}) {
       compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 }
     }).outputText;
     const require = specifier => {
+      if (specifier.startsWith("node:")) return nativeRequire(specifier);
       if (specifier === "@minecraft/server") return server;
       if (specifier === "sable:sublevel-block-registry") {
         return load(join(sable, "packs/SableBP/scripts/sable/generated/sublevel-block-registry.js"));
@@ -364,7 +368,11 @@ test("grass uses ordinary cube faces and an exact, unshifted grass-only multiply
             u = { north: x + 8, south: 8 - x - dx, west: 8 - z - dz, east: z + 8 }[face];
             [v, width, height] = [-8 - y - dy, face === "north" || face === "south" ? dx : dz, dy];
           }
-          if (format === "sparse") assert.deepEqual(uv, { uv: [u, v], uv_size: [width, height] });
+          const slot = Number(bone.name.slice(5));
+          const climateWidth = alias.includes("compact") ? 6 : 7;
+          const ramp = format === "sparse" ? 0 : 16 * (alias.endsWith("_x")
+            ? slot % climateWidth : Math.floor(slot / climateWidth) % climateWidth);
+          assert.deepEqual(uv, { uv: [ramp + u, ramp + v], uv_size: [width, height] });
           for (let row = v; row < v + height; row++) for (let column = u; column < u + width; column++) {
             assert(row >= 0 && row < 16 && column >= 0 && column < 16);
             coverage[face][row * 16 + column]++;
@@ -398,6 +406,284 @@ test("grass uses ordinary cube faces and an exact, unshifted grass-only multiply
   const leafModel = registry.resolveFancySubLevelBlock(block("minecraft:oak_leaves")).model.dense;
   const leaves = reader({ typeId: leafModel.entityTypeId }).client;
   assert(Object.values(leaves.materials).includes("tint_multiply"));
+});
+
+test("corrected terrain classification is complete and the registry is the only source of registrations", async () => {
+  const data = join(root, ".sample/VanillaBlock/VanillaBlockData/main");
+  const readData = file => JSON.parse(readFileSync(join(data, file), "utf8"));
+  const groups = readdirSync(data, { recursive: true }).filter(file => file.endsWith("blocks.json"));
+  const classified = groups.flatMap(readData);
+  const source = readData("blocks-1.26.45.json");
+  assert.equal(classified.length, 1356);
+  assert.equal(new Set(classified.map(entry => entry.name)).size, classified.length);
+  assert.deepEqual(classified.map(entry => entry.name).sort(), source.map(entry => entry.name).sort());
+  for (const [name, category] of Object.entries({
+    redstone_torch: "红石", cobblestone_wall: "围栏与攀爬", wooden_door: "门",
+    diamond_ore: "矿石与金属", bamboo_mosaic_stairs: "楼梯", ice: "水体与冰雪",
+    fire_coral: "水体与冰雪", glowstone: "光源", pale_hanging_moss: "植物与花卉"
+  })) assert.equal(classified.find(entry => entry.name === name).catalog, category, name);
+  const expected = readData("自然/地形与石材/blocks.json").map(entry => `minecraft:${entry.name}`).sort();
+  const file = join(sable, "src/data/sublevel-block.json");
+  const raw = json(file);
+  const compiler = moduleLoader(join(sable, "tools"), {})("sublevel-block/registry.ts");
+  const compiled = await compiler.readAndCompileRegistry(file);
+  assert.equal(Object.keys(raw.blocks).length, 143);
+  assert.equal(expected.length, 81);
+  assert.deepEqual(Object.entries(raw.blocks).filter(([, entry]) => entry.category === "nature/terrain_and_stone").map(([id]) => id).sort(), expected);
+  assert.deepEqual(Object.keys(compiled.compiled).sort(), Object.keys(raw.blocks).sort());
+  const grass = raw.blocks["minecraft:grass_block"];
+  const copies = compiler.compileRegistry({ format_version: "1.0.0", blocks: {
+    "minecraft:grass_block": grass, "example:grass_block": grass
+  } });
+  assert.equal(copies["minecraft:grass_block"].default.grassTint, true);
+  assert.equal(copies["example:grass_block"].default.grassTint, undefined);
+  assert.notEqual(copies["minecraft:grass_block"].default.key, copies["example:grass_block"].default.key);
+  const textures = new Set();
+  const collect = value => {
+    if (typeof value === "string" && value.startsWith("textures/")) textures.add(value);
+    else if (value && typeof value === "object") Object.values(value).forEach(collect);
+  };
+  for (const id of expected) collect(raw.blocks[id]);
+  for (const texture of textures) assert([".png", ".tga"].some(extension => (
+    existsSync(join(vanilla, "bedrock-sample-1.26.40.5/resource_pack", texture + extension))
+  )), texture);
+});
+
+test("terrain tools use the registered category and harvest tier, including unbreakable bedrock", () => {
+  const f = fixture();
+  const { getVanillaBlockBreakTicks } = f.load("content/punching/SubLevelMiningTime.ts");
+  const { getSubLevelBlockRegistration } = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts");
+  const ticks = (id, typeId, efficiencyLevel = 0) => {
+    const entry = getSubLevelBlockRegistration(`minecraft:${id}`);
+    return getVanillaBlockBreakTicks(entry.hardness, { typeId, efficiencyLevel }, entry.mining);
+  };
+  assert.equal(ticks("stone"), 150);
+  assert.equal(ticks("stone", "minecraft:wooden_pickaxe"), 23);
+  assert.equal(ticks("stone", "minecraft:diamond_axe", 5), 150);
+  assert.equal(ticks("grass_block", "minecraft:diamond_shovel"), 3);
+  assert.equal(ticks("grass_block", "minecraft:diamond_pickaxe"), 18);
+  assert.equal(ticks("sculk", "minecraft:wooden_hoe"), 3);
+  assert.equal(ticks("obsidian", "minecraft:diamond_pickaxe"), 188);
+  assert.equal(ticks("obsidian", "minecraft:iron_pickaxe"), 834);
+  assert.equal(ticks("bedrock", "minecraft:netherite_pickaxe", 5), Infinity);
+  const { canBreakSubLevelBlock } = f.load("content/punching/SubLevelBlockPermissions.ts");
+  assert.equal(canBreakSubLevelBlock("survival", "minecraft:bedrock", false, []), false);
+  assert.equal(canBreakSubLevelBlock("creative", "minecraft:bedrock", false, []), true);
+});
+
+test("all multi-face and pale-moss states select the same faces in dense, sparse and available pools", () => {
+  const f = fixture();
+  const { resolveFancySubLevelBlock } = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts");
+  const reader = modelResourceReader(join(sable, "packs/SableRP"), "sable/sublevel/fancy");
+  const cases = [];
+  const bits = { down: 1, up: 2, south: 4, west: 8, north: 16, east: 32 };
+  for (let mask = 0; mask < 64; mask++) cases.push({
+    target: block("minecraft:sculk_vein", 0, 0, 0, { multi_face_direction_bits: mask }),
+    state: mask, visible: Object.entries(bits).filter(([, bit]) => mask & bit).map(([face]) => `${face}_0`).sort()
+  });
+  for (let code = 0; code < 81; code++) for (const upper of [false, true]) {
+    const states = { upper_block_bit: upper };
+    let state = upper ? 256 : 0;
+    const visible = !upper || code === 0 ? ["base_0"] : [];
+    ["north", "east", "south", "west"].forEach((direction, index) => {
+      const digit = Math.floor(code / 3 ** index) % 3;
+      const side = ["none", "short", "tall"][digit];
+      states[`pale_moss_carpet_side_${direction}`] = side;
+      state += digit * 4 ** index;
+      if (digit) visible.push(`${direction}_${side}_0`);
+      else if (upper && code === 0) visible.push(`${direction}_tall_0`);
+    });
+    cases.push({ target: block("minecraft:pale_moss_carpet", 0, 0, 0, states), state, visible: visible.sort() });
+  }
+  for (const { target, state, visible } of cases) {
+    const resolved = resolveFancySubLevelBlock(target);
+    assert.equal(resolved.state, state);
+    for (const format of ["sparse", "dense", ...(resolved.model.pool ? ["pool"] : [])]) {
+      const resource = resolved.model[format];
+      const coordinateBits = (resource.xBits ?? 0) + (resource.yBits ?? 0) + (resource.zBits ?? 0);
+      const descriptor = format === "pool" ? 2 ** (coordinateBits + resource.familyBits + resource.stateBits)
+        + resource.family * 2 ** coordinateBits + state * 2 ** (coordinateBits + resource.familyBits) : state + 1;
+      const entity = { typeId: resource.entityTypeId, molang: {
+        model_variant: resource.variant, origin_y: 2048, s0: descriptor
+      }, getProperty: () => 0 };
+      const resources = reader(entity);
+      const actual = activeRenderPasses(entity, resources).flatMap(({ controller, arrays, evaluate }) => {
+        const visibility = Object.assign({}, ...controller.part_visibility);
+        return resources.geometries.get(evaluate(controller.geometry, arrays)).bones
+          .filter(bone => bone.cubes && bone.name.endsWith("_0") && evaluate(visibility[bone.name] ?? visibility["*"] ?? true))
+          .map(bone => bone.name);
+      });
+      assert.deepEqual(actual.sort(), visible, `${target.typeId}/${format}/${state}`);
+    }
+  }
+});
+
+test("large moss states survive full animation snapshots, sparse removal and dense words beyond s25", () => {
+  const f = fixture();
+  const registry = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts");
+  const layout = f.load("sublevel/render/fancy/model/FancySubLevelModelLayout.ts");
+  const { FancySubLevelModelRenderer } = f.load("sublevel/render/fancy/model/FancySubLevelModelRenderer.ts");
+  const tint = f.load("sublevel/render/fancy/model/FancySubLevelTintCodec.ts").DEFAULT_SUBLEVEL_FOLIAGE_TINT;
+  const states = { upper_block_bit: true, pale_moss_carpet_side_north: "tall", pale_moss_carpet_side_east: "tall", pale_moss_carpet_side_south: "tall", pale_moss_carpet_side_west: "tall" };
+  for (const locations of [[{ x: 0, y: 0, z: 0 }, { x: 30, y: 14, z: 30 }],
+    Array.from({ length: 245 }, (_, slot) => ({ x: slot % 7, y: Math.floor(slot / 49), z: Math.floor(slot / 7) % 7 }))]) {
+    const inputs = locations.map(p => registry.resolveFancySubLevelBlock(block("minecraft:pale_moss_carpet", p.x, p.y, p.z, states)));
+    const result = layout.packFancySubLevelModels(inputs);
+    assert.equal(result.unsupported.length, 0);
+    assert.equal(result.models.length, 1);
+    const packed = result.models[0];
+    assert.equal(packed.format, locations.length === 2 ? "sparse" : "dense");
+    if (packed.format === "dense") assert.equal(packed.words.length, 123);
+    const renderer = new FancySubLevelModelRenderer(body, [packed], f.dimension.spawnEntity, tint, undefined, { x: 0, y: 0, z: 0 });
+    renderer.sync(true); renderer.releaseInitialPose(); f.flush();
+    const entity = renderer.entityIds.map(id => f.entities.get(id)).find(entity => !entity.typeId.includes("carrier"));
+    packed.words.forEach((word, index) => assert.equal(entity.molang[`s${index}`], word));
+    assert(packed.words.every(word => word < 2 ** 24));
+    const assignment = packed.assignments.at(-1);
+    const before = { ...entity.molang };
+    renderer.removeBlocks(new Set([assignment.blockKey]));
+    const span = 2 ** assignment.bitCount;
+    assert.equal(Math.floor(entity.molang[`s${assignment.word}`] / 2 ** assignment.shift) % span, 0);
+    for (let index = 0; index < packed.words.length; index++) if (index !== assignment.word) {
+      assert.equal(entity.molang[`s${index}`], before[`s${index}`]);
+    }
+    f.system.currentTick += 40;
+    const updated = { ...entity.molang };
+    entity.molang = {};
+    renderer.sync();
+    assert.deepEqual(entity.molang, updated);
+    renderer.remove();
+  }
+});
+
+test("terrain sound events match vanilla sound groups and dirt particles remain untinted", () => {
+  const f = fixture();
+  const sounds = f.load("content/sublevel_sounds/SubLevelBlockSounds.ts");
+  const indices = f.load("data/vanilla/sounds/BlockSoundEvents.ts");
+  const rp = join(vanilla, "bedrock-sample-1.26.40.5/resource_pack");
+  const blocks = json(join(rp, "blocks.json"));
+  const groups = json(join(rp, "sounds.json")).block_sounds;
+  const definitions = json(join(sable, "src/data/sublevel-block.json")).blocks;
+  const sample = (value, random) => Array.isArray(value) ? value[0] + (value[1] - value[0]) * random : value;
+  for (const [id, definition] of Object.entries(definitions)) {
+    if (definition.category !== "nature/terrain_and_stone") continue;
+    const group = groups[blocks[id === "minecraft:grass_block" ? "grass" : id.slice(10)].sound];
+    for (const [event, method] of [["break", "resolveVanillaBlockBreakSound"], ["hit", "resolveVanillaBlockHitSound"], ["place", "resolveVanillaBlockPlaceSound"]]) {
+      assert.notEqual(indices[`VANILLA_BLOCK_${event.toUpperCase()}_SOUND_EVENT_INDICES`][id], undefined, `${id}/${event}`);
+      const source = group.events[event];
+      for (const random of [0, 0.5, 1]) {
+        const actual = sounds[method](id, () => random);
+        assert.equal(actual.sound, source.sound, `${id}/${event}`);
+        assert(Math.abs(actual.pitch - sample(source.pitch ?? 1, random) * sample(group.pitch ?? 1, random)) < 1e-8, `${id}/${event}/pitch`);
+        assert(Math.abs(actual.volume - sample(source.volume ?? 1, random) * sample(group.volume ?? 1, random)) < 1e-8, `${id}/${event}/volume`);
+      }
+    }
+  }
+  const particles = f.load("content/particle/SubLevelBlockParticles.ts");
+  const entry = block("minecraft:grass_block");
+  particles.spawnSubLevelBlockDestructParticle(f.dimension, entry.localLocation, entry, undefined, particles.BLOCK_BREAK_PARTICLE_PROFILE);
+  assert.equal(f.particles[0][2].values["variable.block_color_a"], 0);
+  const dirt = json(join(sable, "packs/SableRP/particles/sable/sublevel/block_destruct/block_destruct_dirt.particle.json")).particle_effect;
+  assert.equal(dirt.description.basic_render_parameters.texture, "textures/blocks/dirt");
+  assert.equal(dirt.components["minecraft:particle_appearance_tinting"], undefined);
+});
+
+test("terrain flipbooks animate only the intended textures and retain cutout emissive material", () => {
+  const f = fixture();
+  const { resolveFancySubLevelBlock } = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts");
+  const rp = join(vanilla, "bedrock-sample-1.26.40.5/resource_pack");
+  const flipbooks = JSON.parse(readFileSync(join(rp, "textures/flipbook_textures.json"), "utf8").replace(/^\s*\/\/.*$/gm, ""));
+  const reader = modelResourceReader(join(sable, "packs/SableRP"), "sable/sublevel/fancy");
+  const targets = [block("minecraft:sculk"), block("minecraft:sculk_vein", 0, 0, 0, { multi_face_direction_bits: 63 }), block("minecraft:magma"),
+    block("minecraft:sculk_catalyst", 0, 0, 0, { bloom: true }),
+    ...[false, true].map(can_summon => block("minecraft:sculk_shrieker", 0, 0, 0, { can_summon, active: false }))];
+  for (const target of targets) {
+    const resolved = resolveFancySubLevelBlock(target);
+    for (const format of ["dense", "sparse", ...(resolved.model.pool ? ["pool"] : [])]) {
+      const resource = resolved.model[format];
+      const coordinateBits = (resource.xBits ?? 0) + (resource.yBits ?? 0) + (resource.zBits ?? 0);
+      const descriptor = format === "pool" ? 2 ** (coordinateBits + resource.familyBits + resource.stateBits)
+        + resource.family * 2 ** coordinateBits + resolved.state * 2 ** (coordinateBits + resource.familyBits) : resolved.state + 1;
+      const entity = { typeId: resource.entityTypeId, molang: { model_variant: resource.variant, s0: descriptor, origin_y: 2048 }, getProperty: () => 0 };
+      const resources = reader(entity);
+      const passes = activeRenderPasses(entity, resources).filter(({ controller, evaluate }) => (
+        Object.entries(Object.assign({}, ...controller.part_visibility)).some(([name, value]) => name.endsWith("_0") && evaluate(value)) || controller.part_visibility[0]["*"] === true
+      ));
+      assert(passes.length > 0);
+      for (const { controller, arrays, evaluate } of passes) {
+        const texture = evaluate(controller.textures[0], arrays);
+        const source = flipbooks.find(entry => entry.flipbook_texture === texture);
+        if (!source) assert.equal(controller.uv_anim, undefined, texture);
+        else {
+          assert(controller.uv_anim, texture);
+          assert.equal(resolved.model.flipbook.ticksPerFrame, source.ticks_per_frame, texture);
+          assert.equal(evaluate(controller.uv_anim.scale[1]), 1 / resolved.model.flipbook.frameCount, texture);
+        }
+        const material = evaluate(controller.materials[0]["*"], arrays);
+        if (target.typeId === "minecraft:sculk_shrieker") assert.equal(material, "alpha_test_block_emissive");
+      }
+    }
+  }
+  const materials = json(join(sable, "packs/SableRP/materials/entity.material")).materials;
+  assert.deepEqual(materials["alpha_test_block_emissive:alpha_block"]["+defines"], ["ALPHA_TEST", "USE_EMISSIVE", "USE_UV_ANIM"]);
+  for (const [name, frames] of [["sculk", 4], ["sculk_vein", 4], ["magma", 3]]) {
+    const particle = json(join(sable, `packs/SableRP/particles/sable/sublevel/block_destruct/block_destruct_${name}.particle.json`)).particle_effect;
+    const uv = particle.components["minecraft:particle_appearance_billboard"].uv;
+    assert.deepEqual([uv.texture_width, uv.texture_height, uv.uv_size], [16, 16 * frames, [4, 4]]);
+    assert.deepEqual(uv.uv, ["variable.particle_random_1*12", "variable.particle_random_2*12"]);
+  }
+});
+
+test("terrain partial models match vanilla dimensions, UVs and shared child rotations", () => {
+  const f = fixture();
+  const { resolveFancySubLevelBlock } = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts");
+  const reader = modelResourceReader(join(sable, "packs/SableRP"), "sable/sublevel/fancy");
+  const modelPath = join(vanilla, "minecraft-assets-26.2/assets/minecraft/models/block");
+  for (const [id, reference] of [["farmland", "template_farmland"], ["grass_path", "dirt_path"], ["moss_carpet", "carpet"], ["sculk_shrieker", "template_sculk_shrieker"]]) {
+    const source = json(join(modelPath, `${reference}.json`));
+    const expected = source.elements.flatMap(element => Object.entries(element.faces).map(([face, uv]) => {
+      const origin = element.from.map((value, axis) => value - [8, 24, 8][axis]);
+      const size = element.to.map((value, axis) => value - element.from[axis]);
+      const plane = ["east", "west"].includes(face) ? 0 : ["up", "down"].includes(face) ? 1 : 2;
+      const region = origin.map((value, axis) => axis === plane ? value + (["east", "up", "south"].includes(face) ? size[axis] : 0) : value);
+      return { face, region, extent: size.filter((_, axis) => axis !== plane), uv: { uv: uv.uv.slice(0, 2), uv_size: [uv.uv[2] - uv.uv[0], uv.uv[3] - uv.uv[1]] } };
+    }));
+    const resolved = resolveFancySubLevelBlock(block(`minecraft:${id}`));
+    const resource = resolved.model.sparse;
+    const entity = { typeId: resource.entityTypeId, molang: { model_variant: resource.variant, s0: 1, origin_y: 2048 }, getProperty: () => 0 };
+    const resources = reader(entity);
+    const actual = activeRenderPasses(entity, resources).flatMap(({ controller, evaluate, arrays }) => resources.geometries.get(evaluate(controller.geometry, arrays)).bones
+      .filter(bone => bone.cubes && bone.name.endsWith("_0")).flatMap(bone => bone.cubes.flatMap(cube => Object.entries(cube.uv).map(([face, uv]) => {
+        const plane = ["east", "west"].includes(face) ? 0 : ["up", "down"].includes(face) ? 1 : 2;
+        const region = cube.origin.map((value, axis) => axis === plane ? value + (["east", "up", "south"].includes(face) ? cube.size[axis] : 0) : value);
+        return { face, region, extent: cube.size.filter((_, axis) => axis !== plane), uv };
+      }))));
+    const key = value => JSON.stringify(value, (_, value) => typeof value === "number" ? Math.round(value * 1e6) / 1e6 : value);
+    assert.deepEqual(actual.map(key).sort(), expected.map(key).sort(), id);
+  }
+  const reference = json(join(modelPath, "pointed_dripstone.json"));
+  for (const id of ["pointed_dripstone", "sulfur_spike"]) for (const hanging of [false, true]) for (const thickness of ["tip", "frustum", "middle", "base", "merge"]) {
+    const resolved = resolveFancySubLevelBlock(block(`minecraft:${id}`, 0, 0, 0, { hanging, dripstone_thickness: thickness }));
+    const resource = resolved.model.sparse;
+    const entity = { typeId: resource.entityTypeId, molang: { model_variant: resource.variant, s0: 1, origin_y: 2048 }, getProperty: () => 0 };
+    const resources = reader(entity);
+    const pass = activeRenderPasses(entity, resources)[0];
+    const geometry = resources.geometries.get(pass.evaluate(pass.controller.geometry, pass.arrays));
+    const bone = geometry.bones.find(bone => bone.name === "pointed_0");
+    assert.equal(geometry.bones.find(bone => bone.name === "slot_0").rotation, undefined);
+    assert.deepEqual(bone.rotation, [0, reference.elements[0].rotation.angle, 0]);
+    assert.equal(bone.cubes.length, 2);
+    for (const [index, cube] of bone.cubes.entries()) {
+      const source = reference.elements[index];
+      const size = source.to.map((value, axis) => (value - source.from[axis]) * (axis === 1 ? 1 : Math.SQRT2));
+      cube.size.forEach((value, axis) => assert(Math.abs(value - size[axis]) < 1e-8));
+      for (const uv of Object.values(cube.uv)) assert.deepEqual(uv, { uv: [0, 0], uv_size: [16, 16] });
+    }
+  }
+  for (let moisture = 0; moisture < 8; moisture++) {
+    const result = resolveFancySubLevelBlock(block("minecraft:farmland", 0, 0, 0, { moisturized_amount: moisture }));
+    assert.equal(result.model.description.textures.up, `textures/blocks/farmland_${moisture === 7 ? "wet" : "dry"}`);
+  }
 });
 
 test("grid hit distance, face and starting-cell semantics match the baseline", () => {
@@ -573,6 +859,135 @@ test("failed persistence leaves the live block and effects untouched", () => {
   assert.equal(f.loot.length, 0);
 });
 
+test("terrain attachment placement and removal settle neighbors in both vertical directions", () => {
+  const f = fixture();
+  const support = f.load("content/block_properties/SubLevelBlockSupport.ts");
+  const entries = blocks => blocks.map(snapshot => ({ key: Object.values(snapshot.localLocation).join(","), localLocation: snapshot.localLocation, snapshot }));
+  const mossStates = { upper_block_bit: false, pale_moss_carpet_side_north: "none", pale_moss_carpet_side_east: "none", pale_moss_carpet_side_south: "none", pale_moss_carpet_side_west: "none" };
+  const stone = block("minecraft:stone", 0, -1, 0);
+  const moss = block("minecraft:pale_moss_carpet", 0, 0, 0, mossStates);
+  const wall = block("minecraft:stone", 1, 0, 0);
+  const upperWall = block("minecraft:stone", 1, 1, 0);
+  const placed = support.resolveSubLevelBlockPlacement([stone, wall, upperWall], moss, () => 0);
+  assert.equal(placed.additions.length, 2);
+  assert.equal(placed.additions[0].states.pale_moss_carpet_side_east, "tall");
+  assert.equal(placed.additions[1].states.upper_block_bit, true);
+  assert.equal(placed.additions[1].states.pale_moss_carpet_side_east, "short");
+  const blocks = [stone, wall, upperWall, ...placed.additions];
+  const lowered = support.resolveSubLevelBlockSupport(entries(blocks), new Set(["1,1,0"]));
+  assert.deepEqual([...lowered.unsupportedKeys], ["0,1,0"]);
+  assert.equal(lowered.stateUpdates.get("0,0,0").snapshot.states.pale_moss_carpet_side_east, "short");
+  const detached = support.resolveSubLevelBlockSupport(entries(blocks), new Set(["0,-1,0"]));
+  assert.deepEqual([...detached.unsupportedKeys].sort(), ["0,0,0", "0,1,0"]);
+  assert.equal(support.resolveSubLevelBlockPlacement([], moss), undefined);
+  assert(support.resolveSubLevelBlockPlacement([stone], block("minecraft:moss_carpet")));
+  for (const hanging of [false, true]) {
+    const direction = hanging ? -1 : 1;
+    const host = block("minecraft:stone", 0, 0, 0);
+    const chain = Array.from({ length: 5 }, (_, index) => block("minecraft:pointed_dripstone", 0, direction * (index + 1), 0, { hanging, dripstone_thickness: "tip" }));
+    const rows = entries([host, ...chain]);
+    const updates = support.resolveSubLevelBlockNeighborStateUpdates(rows, new Set(chain.map(b => `0,${b.localLocation.y},0`)));
+    assert.deepEqual(chain.map(b => (updates.get(`0,${b.localLocation.y},0`)?.snapshot ?? b).states.dripstone_thickness), ["base", "middle", "middle", "frustum", "tip"]);
+    const removed = support.resolveSubLevelBlockSupport(rows, new Set(["0,0,0"]));
+    assert.equal(removed.unsupportedKeys.size, 5);
+    const settled = rows.map(row => ({ ...row, snapshot: updates.get(row.key)?.snapshot ?? row.snapshot }));
+    const shortened = support.resolveSubLevelBlockSupport(settled, new Set([`0,${direction * 5},0`]));
+    assert.equal(shortened.unsupportedKeys.size, 0);
+    assert.equal(shortened.stateUpdates.get(`0,${direction * 4},0`).snapshot.states.dripstone_thickness, "tip");
+  }
+  const floor = block("minecraft:stone", 0, -1, 0);
+  const ceiling = block("minecraft:stone", 0, 2, 0);
+  const standing = block("minecraft:pointed_dripstone", 0, 0, 0, { hanging: false, dripstone_thickness: "tip" });
+  for (const thickness of ["tip", "merge"]) {
+    const hanging = block("minecraft:pointed_dripstone", 0, 1, 0, { hanging: true, dripstone_thickness: thickness });
+    const joined = support.resolveSubLevelBlockPlacement([floor, ceiling, standing], hanging);
+    assert.equal(joined.additions[0].states.dripstone_thickness, thickness);
+    assert.equal(joined.stateUpdates.get("0,0,0")?.snapshot.states.dripstone_thickness ?? "tip", thickness);
+  }
+  assert.equal(support.resolveSubLevelBlockPlacement([block("minecraft:grass_path", 0, -1, 0)], standing), undefined);
+  assert(support.resolveSubLevelBlockPlacement([block("minecraft:grass_path", 0, 1, 0)], { ...standing, states: { hanging: true, dripstone_thickness: "tip" } }));
+});
+
+test("multi-face placement merges supported faces and neighbor edits persist through reconstruction", () => {
+  const f = managedFixture();
+  const { resolveSubLevelBlockPlacement } = f.load("content/block_properties/SubLevelBlockSupport.ts");
+  const defaults = { multi_face_direction_bits: 0 };
+  const previousResolve = f.server.BlockPermutation.resolve;
+  f.server.BlockPermutation.resolve = (typeId, states) => previousResolve(typeId, states ?? (typeId === "minecraft:sculk_vein" ? defaults : {}));
+  const floor = block("minecraft:stone", 0, -1, 0);
+  const east = block("minecraft:stone", 1, 0, 0);
+  const managed = f.manager.createSubLevel(f.dimension, { x: 0, y: 0, z: 0 }, [floor, east]);
+  const item = { typeId: "minecraft:sculk_vein" };
+  assert(f.manager.placeBlockForPlayerEdit({}, item, managed.handle, floor, { x: 0, y: 0, z: 0 }, "north", "up"));
+  assert(f.manager.placeBlockForPlayerEdit({}, item, managed.handle, east, { x: 0, y: 0, z: 0 }, "north", "west"));
+  assert.equal(managed.blockCount, 3);
+  const at = () => managed.handle.getBlockAtLocalLocation({ x: 0, y: 0, z: 0 });
+  assert.equal(at().states.multi_face_direction_bits, 33);
+  assert.equal(f.manager.placeBlockForPlayerEdit({}, item, managed.handle, east, { x: 0, y: 0, z: 0 }, "north", "west"), false);
+  const unsupported = block("minecraft:sculk_vein", 0, 0, 0, { multi_face_direction_bits: 2 });
+  assert.equal(resolveSubLevelBlockPlacement(managed.handle.blocks, unsupported), undefined);
+  assert(f.manager.breakBlockForPlayerEdit({}, undefined, managed.handle, floor));
+  assert.equal(at().states.multi_face_direction_bits, 32);
+  const saved = structuredClone(f.saved.get(managed.id));
+  assert.equal(saved.blocks.find(b => b.typeId === item.typeId).states.multi_face_direction_bits, 32);
+  const restored = managedFixture();
+  restored.saved.set(managed.id, saved);
+  restored.manager.initialize();
+  restored.manager.tick(20);
+  const handle = [...restored.runtime.getRaycastCandidates(restored.dimension.id)][0];
+  assert.equal(handle.getBlockAtLocalLocation({ x: 0, y: 0, z: 0 }).states.multi_face_direction_bits, 32);
+  assert(restored.manager.breakBlockForPlayerEdit({}, undefined, handle, east));
+  assert.equal(handle.getBlockAtLocalLocation({ x: 0, y: 0, z: 0 }), undefined);
+  assert.equal(restored.saved.size, 0);
+});
+
+test("player placement rays reach support faces through existing multi-face attachments", () => {
+  const f = managedFixture();
+  const Controller = f.load("content/block_outline_render/SubLevelOutlineController.ts").SubLevelOutlineController;
+  const player = {
+    id: "player", isValid: true, dimension: f.dimension, selectedSlotIndex: 0,
+    getGameMode: () => "creative", inputInfo: { lastInputModeUsed: "keyboard" },
+    getHeadLocation: () => ({ x: -2, y: 0.5, z: 0.5 }), getViewDirection: () => ({ x: 1, y: 0, z: 0 }),
+    getBlockFromViewDirection: () => undefined
+  };
+  const controller = new Controller(f.runtime, { players: () => [player] });
+  controller.start(); f.flush();
+  const vein = { ...block("minecraft:sculk_vein", 0, 0, 0, { multi_face_direction_bits: 1 }), collisionResponse: false };
+  const managed = f.manager.createSubLevel(f.dimension, { x: 0, y: 0, z: 0 }, [
+    block("minecraft:stone", 0, -1, 0), block("minecraft:stone", 1, 0, 0), vein
+  ]);
+  controller.setPlaceHandler((...args) => f.manager.placeBlockForPlayerEdit(...args));
+  controller.setPlacementEffectHandler((...args) => f.manager.emitBlockPlacementEffects(...args));
+  const previousResolve = f.server.BlockPermutation.resolve;
+  f.server.BlockPermutation.resolve = (id, states) => previousResolve(id, states ?? { multi_face_direction_bits: 0 });
+  const expected = controller.captureActionTarget(player);
+  assert(expected);
+  controller.handlePlace(player, { typeId: "minecraft:sculk_vein", getCanPlaceOn: () => [] }, expected);
+  assert.equal(managed.handle.getBlockAtLocalLocation({ x: 0, y: 0, z: 0 }).states.multi_face_direction_bits, 33);
+  assert.equal(managed.blockCount, 3);
+  assert.equal(f.sounds.length, 1);
+});
+
+test("neighbor-dependent placement rolls back blocks, states and renderers when saving fails", () => {
+  const f = managedFixture();
+  const states = { upper_block_bit: false, pale_moss_carpet_side_north: "none", pale_moss_carpet_side_east: "none", pale_moss_carpet_side_south: "none", pale_moss_carpet_side_west: "none" };
+  const floor = block("minecraft:stone", 0, -1, 0);
+  const moss = block("minecraft:pale_moss_carpet", 0, 0, 0, states);
+  const managed = f.manager.createSubLevel(f.dimension, { x: 0, y: 0, z: 0 }, [floor, moss]);
+  const before = structuredClone(f.saved.get(managed.id));
+  const save = f.storage.saveSubLevel;
+  let failOnce = true;
+  f.storage.saveSubLevel = function (...args) {
+    if (failOnce) { failOnce = false; return false; }
+    return save.apply(this, args);
+  };
+  assert.throws(() => f.manager.placeBlockForPlayerEdit({}, { typeId: "minecraft:stone" }, managed.handle, floor, { x: 1, y: 0, z: 0 }, "north", "up"), /persist/i);
+  assert.deepEqual(managed.handle.blocks, before.blocks);
+  assert.deepEqual(f.saved.get(managed.id).blocks, before.blocks);
+  f.flush();
+  assert(managed.handle.renderData.hasIntactEntities());
+});
+
 test("placement can cross between registered models and the ordinary render route", () => {
   const f = managedFixture();
   const target = block("minecraft:oak_log");
@@ -722,7 +1137,7 @@ test("placement keeps shared direction rules independent of block names and stat
 test("placement writes vanilla numeric direction states from their own placement rules", () => {
   const f = managedFixture();
   const target = block("minecraft:oak_log");
-  const managed = f.manager.createSubLevel(f.dimension, { x: 0, y: 0, z: 0 }, [target]);
+  const managed = f.manager.createSubLevel(f.dimension, { x: 0, y: 0, z: 0 }, [target, block("minecraft:jungle_log", -1, 1, 0)]);
   const previousResolve = f.server.BlockPermutation.resolve;
   f.server.BlockPermutation.resolve = (typeId) => previousResolve(
     typeId,
@@ -895,11 +1310,11 @@ test("block sounds and particle emissions match the baseline for registered tree
   const definitions = json(join(sable, "src/data/sublevel-block.json")).blocks;
   const field = { gradientAxis: "z", mapKind: 1, uAtLocalOrigin: 0.35, uPerLocalX: 0.018, vAtLocalOrigin: 0.43, vPerLocalZ: -0.009 };
   for (const typeId of Object.keys(definitions)) {
+    const kind = kinds.playerEditableContraptionBlockKind(typeId);
+    if (kind === undefined) continue;
     for (const name of ["resolveVanillaBlockBreakSound", "resolveVanillaBlockHitSound", "resolveVanillaBlockPlaceSound"]) {
       for (const random of [0, 0.3, 1]) assert.deepEqual(actualSounds[name](typeId, () => random), expectedSounds[name](typeId, () => random), typeId);
     }
-    const kind = kinds.playerEditableContraptionBlockKind(typeId);
-    if (kind === undefined) continue;
     const entry = block(typeId, 2, 1, 5, {
       pillar_axis: "y", "minecraft:cardinal_direction": "north", hanging: true,
       propagule_stage: 2, direction: 1, age: 1, honey_level: 5, tip: true,
@@ -1539,7 +1954,7 @@ test("registered non-chest state variants select baseline textures, materials, v
   for (const [typeId, definition] of Object.entries(definitions)) {
     // Chest geometry is compared separately; its world facing has a native-
     // verified expectation in the cardinal-direction test above.
-    if (typeId === "minecraft:chest") continue;
+    if (typeId === "minecraft:chest" || kinds.playerEditableContraptionBlockKind(typeId) === undefined) continue;
     let permutations = [{}];
     for (const name of definition.states) {
       const values = stateValues[name.replace("minecraft:", "")];

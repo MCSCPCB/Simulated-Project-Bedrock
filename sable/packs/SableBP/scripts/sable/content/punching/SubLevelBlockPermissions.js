@@ -1,8 +1,10 @@
 import {
   GameMode
 } from "@minecraft/server";
+import { getSubLevelBlockRegistration } from "../../sublevel/render/fancy/model/FancySubLevelModelRegistry.js";
 function canBreakSubLevelBlock(gameMode, blockTypeId, itemIsSword, adventureCanDestroy) {
   if (gameMode === GameMode.Spectator) return false;
+  if (gameMode !== GameMode.Creative && getSubLevelBlockRegistration(blockTypeId)?.hardness === -1) return false;
   if (gameMode === GameMode.Adventure) return blockListContains(adventureCanDestroy, blockTypeId);
   return gameMode !== GameMode.Creative || !itemIsSword;
 }

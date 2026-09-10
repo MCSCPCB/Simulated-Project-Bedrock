@@ -9,6 +9,10 @@ const ADDON_SUBSTITUTE_PARTICLE_TEXTURES = [
 ];
 function destructParticleTexture(description) {
   switch (description.type) {
+    case "grass_path":
+      return description.textures.down;
+    case "sculk_shrieker":
+      return description.textures.bottom;
     case "full_block":
       return description.textures.north === "textures/blocks/grass_side" ? description.textures.down : description.textures.north;
     case "pillar":

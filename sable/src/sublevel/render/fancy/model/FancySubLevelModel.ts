@@ -2,13 +2,14 @@ import type { SubLevelBlock, SubLevelBlockMapColor } from "../../../SubLevel.js"
 
 export type FancySubLevelMaterial =
   | "opaque" | "alpha_test" | "alpha_test_tint" | "opaque_tint"
-  | "blend" | "translucent" | "opaque_emissive" | "redstone_torch_emissive";
+  | "blend" | "translucent" | "opaque_emissive" | "alpha_test_emissive" | "redstone_torch_emissive";
 
 export interface FancySubLevelFlipbook {
   readonly ticksPerFrame: number;
   readonly frameCount: number;
   readonly axis: "u" | "v";
   readonly loop: boolean;
+  readonly textures?: readonly string[];
 }
 
 /** Descriptor pool an individual model can share with its neighbours. */
@@ -88,6 +89,18 @@ export interface RootModelDescription {
   readonly textures: Readonly<{ top: string; side: string }>;
 }
 
+export interface GrassPathModelDescription {
+  readonly type: "grass_path";
+  readonly textures: Readonly<Record<"up" | "down" | FancySubLevelFacing, string>>;
+}
+
+export interface PointedDripstoneModelDescription {
+  readonly type: "pointed_dripstone";
+  readonly texture: string;
+  readonly thickness: "tip" | "frustum" | "middle" | "base" | "merge";
+  readonly hanging: boolean;
+}
+
 export interface WallModelDescription {
   readonly type: "wall";
   readonly texture: string;
@@ -97,10 +110,24 @@ export interface MossCarpetModelDescription {
   readonly type: "moss_carpet";
   readonly texture: string;
   readonly pale: boolean;
+  readonly side_short?: string;
+  readonly side_tall?: string;
+}
+
+export interface MultiFaceModelDescription {
+  readonly type: "multi_face";
+  readonly texture: string;
+}
+
+export interface SculkShriekerModelDescription {
+  readonly type: "sculk_shrieker";
+  readonly textures: Readonly<Record<"bottom" | "side" | "top" | "inner_top", string>>;
 }
 
 export type FancySubLevelModelDescription =
   | FullBlockModelDescription
+  | GrassPathModelDescription
+  | PointedDripstoneModelDescription
   | PillarModelDescription
   | ChestModelDescription
   | BeeNestModelDescription
@@ -111,6 +138,8 @@ export type FancySubLevelModelDescription =
   | PaleHangingMossModelDescription
   | RootModelDescription
   | WallModelDescription
+  | MultiFaceModelDescription
+  | SculkShriekerModelDescription
   | MossCarpetModelDescription;
 
 export type FancySubLevelTint =
@@ -178,11 +207,22 @@ export type SubLevelSupportRule =
   | "above_leaf"
   | "moss_column"
   | "vine_faces"
-  | "wall_connections";
+  | "wall_connections"
+  | "below_block"
+  | "moss_carpet"
+  | "pointed_dripstone"
+  | "multi_face";
+
+export interface SubLevelMiningProperties {
+  readonly tool: "none" | "axe" | "pickaxe" | "shovel" | "hoe";
+  /** Minimum tool tier for the normal 30-tick harvest divisor; absent allows hand harvesting. */
+  readonly harvestLevel?: number;
+}
 
 export interface CompiledBlockRegistration {
   readonly category: string;
   readonly hardness?: number;
+  readonly mining?: SubLevelMiningProperties;
   readonly placeable?: boolean;
   readonly passable?: boolean;
   readonly support?: SubLevelSupportRule;

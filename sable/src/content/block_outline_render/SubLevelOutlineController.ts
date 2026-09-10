@@ -283,13 +283,13 @@ export class SubLevelOutlineController {
     if (!result) return;
     if (!canPlayerBreakSubLevelBlock(player, itemStack, result.hit.block.typeId)) return;
     // Every projected block mines; unregistered blocks use the default hardness.
-    const hardness = getSubLevelBlockRegistration(result.hit.block.typeId)?.hardness
-      ?? DEFAULT_BLOCK_HARDNESS;
+    const registration = getSubLevelBlockRegistration(result.hit.block.typeId);
+    const hardness = registration?.hardness ?? DEFAULT_BLOCK_HARDNESS;
     const targetKey = blockKey(result.hit.block.localLocation);
     const progress = this.#miningProgress.advance(
       `${result.handle.id}|${targetKey}`,
       system.currentTick,
-      getSubLevelMiningTargetTicks(hardness, itemStack),
+      getSubLevelMiningTargetTicks(hardness, itemStack, registration?.mining),
       player.inputInfo.lastInputModeUsed === InputMode.Touch
         ? { playerId: player.id, type: "touch" }
         : { type: "attack" }
@@ -322,7 +322,9 @@ export class SubLevelOutlineController {
     expected?: SubLevelOutlineActionTarget
   ): void {
     if (!this.#startupCleanupComplete || !BlockTypes.get(itemStack.typeId)) return;
-    const result = this.#validatedActionResult(player, expected);
+    const selected = this.#validatedActionResult(player, expected);
+    if (!selected) return;
+    const result = this.#placementRaycastResult(player, selected, itemStack);
     if (!result) return;
     if (!canPlayerPlaceSubLevelBlock(player, itemStack, result.hit.block.typeId)) return;
     if (!result.handle.supportsBlockPlacement) return;
@@ -770,15 +772,16 @@ export class SubLevelOutlineController {
       record.contentRevision = result.handle.contentRevision;
       state.shapeSignature = undefined;
     }
-    // The preview outline is a pure function of these inputs, so an input
-    // signature can gate all placement resolution and edge building.
+    // Resolve the support behind a multi-face attachment before caching the
+    // preview; the support can change while the selected cell stays the same.
     const item = selectedItem(player);
-    const target = result.hit.block.localLocation;
-    const normal = result.hit.localNormal;
+    const placementResult = item ? this.#placementRaycastResult(player, result, item) : result;
+    const target = (placementResult ?? result).hit.block.localLocation;
+    const normal = (placementResult ?? result).hit.localNormal;
     const signature = `b|${record.contentRevision}:${blockKey(target)}:`
       + `${normal.x},${normal.y},${normal.z}:${item?.typeId ?? ""}`;
     if (signature === state.shapeSignature) return;
-    const blockPlacement = item ? this.#getPlacementTarget(result, item) : undefined;
+    const blockPlacement = item && placementResult ? this.#getPlacementTarget(placementResult, item) : undefined;
     const locations = blockPlacement ? [target, blockPlacement] : [target];
     const edges = createAabbOutline(locations);
     if (edges.length === 0) return;
@@ -795,6 +798,17 @@ export class SubLevelOutlineController {
     state.shapeSignature = signature;
   }
 
+  #placementRaycastResult(
+    player: Player,
+    result: SubLevelRaycastResult,
+    itemStack: ItemStack
+  ): SubLevelRaycastResult | undefined {
+    if (result.hit.block.typeId !== itemStack.typeId
+      || getSubLevelBlockRegistration(itemStack.typeId)?.support !== "multi_face") return result;
+    const support = this.#raycastPlayerSubLevels(player, result.origin, result.direction, true);
+    return support?.handle === result.handle ? support : undefined;
+  }
+
   #getPlacementTarget(result: SubLevelRaycastResult, itemStack: ItemStack): Vector3 | undefined {
     if (!BlockTypes.get(itemStack.typeId)) return undefined;
     const target = {
@@ -805,7 +819,9 @@ export class SubLevelOutlineController {
     if (!Number.isInteger(target.x) || !Number.isInteger(target.y) || !Number.isInteger(target.z)) {
       throw new Error(`Sub-level placement target is not on the local block grid: ${blockKey(target)}.`);
     }
-    return result.handle.getBlockAtLocalLocation(target) ? undefined : target;
+    const existing = result.handle.getBlockAtLocalLocation(target);
+    return !existing || (existing.typeId === itemStack.typeId
+      && getSubLevelBlockRegistration(itemStack.typeId)?.support === "multi_face") ? target : undefined;
   }
 
   #validatedActionResult(
@@ -855,13 +871,15 @@ export class SubLevelOutlineController {
   #raycastPlayerSubLevels(
     player: Player,
     origin: Vector3,
-    direction: Vector3
+    direction: Vector3,
+    ignorePassableBlocks = false
   ): SubLevelRaycastResult | undefined {
     if (!this.#runtime.hasSubLevels(player.dimension.id)) return undefined;
     let closest: SubLevelRaycastResult | undefined;
     for (const handle of this.#runtime.getRaycastCandidates(player.dimension.id)) {
       const hit = handle.raycast(origin, direction, INTERACTION_REACH, {
-        skipContainingBlock: true
+        skipContainingBlock: true,
+        ignorePassableBlocks
       });
       if (!hit || (closest && hit.distance >= closest.hit.distance)) continue;
       closest = { handle, direction, hit, origin };

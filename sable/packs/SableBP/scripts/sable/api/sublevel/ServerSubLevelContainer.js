@@ -14,7 +14,7 @@ import { captureSubLevelFoliageTint } from "../../render/dynamic_biome/DynamicBi
 import { SubLevelRenderer } from "../../sublevel/render/SubLevelRenderer.js";
 import {
   resolveSubLevelBlockSupport,
-  resolveSubLevelBlockNeighborStateUpdates
+  resolveSubLevelBlockPlacement
 } from "../../content/block_properties/SubLevelBlockSupport.js";
 import {
   resolveVanillaBlockBreakSound,
@@ -313,7 +313,6 @@ class ServerSubLevelContainer {
     const record = this.#recordsByHandleId.get(handle.id);
     if (!record || record.removed || !handle.isValid) return false;
     if (getSubLevelBlockRegistration(itemStack.typeId)?.placeable === false) return false;
-    if (handle.getBlockAtLocalLocation(placement)) return false;
     const placed = buildPlacedBlock(
       player,
       itemStack.typeId,
@@ -322,30 +321,22 @@ class ServerSubLevelContainer {
       placementFace
     );
     if (!placed) return false;
+    const placementResult = resolveSubLevelBlockPlacement(handle.blocks, placed);
+    if (!placementResult) return false;
     const previousBlocks = [...handle.blocks];
     const previousBindings = new Set(
       this.#containerBindings(record).map((binding) => binding.storageId)
     );
     try {
-      if (!resolveFancySubLevelBlock(placed) || !handle.addBlock(placed)) {
-        const blocks = [...handle.blocks, placed];
-        record.subLevel = {
-          ...record.subLevel,
-          blocks
-        };
-        this.#recreateRender(record, blocks);
-        handle.resetBlocks(blocks);
+      for (const addition of placementResult.additions) {
+        if (!resolveFancySubLevelBlock(addition) || !handle.addBlock(addition)) {
+          const blocks = [...handle.blocks, addition];
+          record.subLevel = { ...record.subLevel, blocks };
+          this.#recreateRender(record, blocks);
+          handle.resetBlocks(blocks);
+        }
       }
-      const entries = handle.blocks.map((entry) => ({
-        key: blockLocationKey(entry.localLocation),
-        localLocation: entry.localLocation,
-        snapshot: entry
-      }));
-      const neighborUpdates = resolveSubLevelBlockNeighborStateUpdates(
-        entries,
-        /* @__PURE__ */ new Set([blockLocationKey(placed.localLocation)])
-      );
-      if (neighborUpdates.size > 0) this.#applyStateUpdates(record, neighborUpdates);
+      if (placementResult.stateUpdates.size > 0) this.#applyStateUpdates(record, placementResult.stateUpdates);
       record.subLevel = { ...record.subLevel, blocks: [...handle.blocks] };
       this.#blockBehaviors.get(placed.typeId)?.onBlockAdded?.({
         block: placed,
@@ -562,7 +553,7 @@ function sourceRemovalOrder(block) {
   const registration = getSubLevelBlockRegistration(block.typeId);
   return registration?.support ? 0 : registration?.category === "nature/leaves" ? 1 : 2;
 }
-function buildPlacedBlock(_player, typeId, placement, cardinalDirection, placementFace) {
+function buildPlacedBlock(player, typeId, placement, cardinalDirection, placementFace) {
   let states;
   try {
     states = { ...BlockPermutation.resolve(typeId).getAllStates() };
@@ -597,6 +588,17 @@ function buildPlacedBlock(_player, typeId, placement, cardinalDirection, placeme
   const axisState = states["minecraft:pillar_axis"] !== void 0 ? "minecraft:pillar_axis" : states.pillar_axis !== void 0 ? "pillar_axis" : void 0;
   if (axisState && placementFace) {
     states[axisState] = placementFace === "east" || placementFace === "west" ? "x" : placementFace === "north" || placementFace === "south" ? "z" : "y";
+  }
+  if (getSubLevelBlockRegistration(typeId)?.support === "pointed_dripstone") {
+    const hangingState = states.hanging !== void 0 ? "hanging" : "minecraft:hanging";
+    const thicknessState = states.dripstone_thickness !== void 0 ? "dripstone_thickness" : "minecraft:dripstone_thickness";
+    states[hangingState] = placementFace === "down" || placementFace !== "up" && player.getViewDirection().y > 0;
+    states[thicknessState] = player.isSneaking ? "tip" : "merge";
+  }
+  if (getSubLevelBlockRegistration(typeId)?.support === "multi_face" && placementFace) {
+    const faceState = states.multi_face_direction_bits !== void 0 ? "multi_face_direction_bits" : "minecraft:multi_face_direction_bits";
+    const bits = { up: 1, down: 2, north: 4, east: 8, south: 16, west: 32 };
+    states[faceState] = bits[placementFace];
   }
   const rotation = resolveSubLevelBlockRotation(typeId, states);
   const visualYOffset = resolveSubLevelBlockVisualYOffset(typeId, states);

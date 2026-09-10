@@ -121,6 +121,7 @@ function addonBlockKind(model) {
 }
 function resolveFoliageParticleColor(block, model, foliageTint) {
   const tint = model.tint;
+  if (block.typeId === "minecraft:grass_block") return void 0;
   if (!tint) return void 0;
   if (tint.method === "fixed") return parseFixedTintColor(tint.color);
   const field = foliageTint ?? DEFAULT_SUBLEVEL_FOLIAGE_TINT;

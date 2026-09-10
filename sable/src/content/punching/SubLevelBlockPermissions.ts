@@ -4,9 +4,11 @@ import {
   type ItemStack,
   type Player
 } from "@minecraft/server";
+import { getSubLevelBlockRegistration } from "../../sublevel/render/fancy/model/FancySubLevelModelRegistry.js";
 
 export function canBreakSubLevelBlock(gameMode: GameMode, blockTypeId: string, itemIsSword: boolean, adventureCanDestroy: readonly string[]): boolean {
   if (gameMode === GameMode.Spectator) return false;
+  if (gameMode !== GameMode.Creative && getSubLevelBlockRegistration(blockTypeId)?.hardness === -1) return false;
   if (gameMode === GameMode.Adventure) return blockListContains(adventureCanDestroy, blockTypeId);
   // Vanilla swords can mine in Survival, but deliberately cannot destroy blocks in Creative.
   return gameMode !== GameMode.Creative || !itemIsSword;

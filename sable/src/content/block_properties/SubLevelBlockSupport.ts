@@ -1,7 +1,8 @@
 import type { Vector3 } from "@minecraft/server";
 import { add, blockLocationKey, parseBlockLocationKey } from "../../util/SableVector3Utils.js";
 import type { SubLevelBlock } from "../../sublevel/SubLevel.js";
-import { getSubLevelBlockRegistration } from "../../sublevel/render/fancy/model/FancySubLevelModelRegistry.js";
+import { getSubLevelBlockRegistration, resolveFancySubLevelBlock } from "../../sublevel/render/fancy/model/FancySubLevelModelRegistry.js";
+import type { SubLevelBlockFace } from "../raycast/SubLevelGridRaycast.js";
 
 // Registry categories that stand in for the block classes the support rules
 // reference; membership is entirely data-driven.
@@ -26,6 +27,16 @@ const WALL_DIRECTIONS = [
   { name: "west", offset: { x: -1, y: 0, z: 0 } }
 ] as const;
 
+// Bedrock's multi_face_direction_bits order differs from Java's Direction ordinal.
+const MULTI_FACE_SUPPORTS = [
+  { name: "down", offset: BELOW_OFFSET, bit: 1, hostFace: "up" },
+  { name: "up", offset: ABOVE_OFFSET, bit: 2, hostFace: "down" },
+  { name: "south", offset: { x: 0, y: 0, z: 1 }, bit: 4, hostFace: "north" },
+  { name: "west", offset: { x: -1, y: 0, z: 0 }, bit: 8, hostFace: "east" },
+  { name: "north", offset: { x: 0, y: 0, z: -1 }, bit: 16, hostFace: "south" },
+  { name: "east", offset: { x: 1, y: 0, z: 0 }, bit: 32, hostFace: "west" }
+] as const;
+
 export interface SubLevelBlockSupportEntry {
   readonly key: string;
   readonly localLocation: Vector3;
@@ -43,32 +54,49 @@ export interface SubLevelBlockSupportResolution {
   readonly unsupportedKeys: ReadonlySet<string>;
 }
 
-/** Recomputes vanilla wall connection states after a local neighbor change. */
+/** Propagate shape changes through adjacent cells until their states settle. */
 export function resolveSubLevelBlockNeighborStateUpdates(
   entries: readonly SubLevelBlockSupportEntry[],
   changedKeys: ReadonlySet<string>
 ): ReadonlyMap<string, SubLevelBlockSupportStateUpdate> {
   const entriesByKey = new Map(entries.map(entry => [entry.key, entry] as const));
-  const affected = new Set<string>();
-  for (const key of changedKeys) {
+  const queued = new Set<string>();
+  const affected: string[] = [];
+  const enqueue = (key: string): void => {
+    if (queued.has(key)) return;
+    queued.add(key);
+    affected.push(key);
+  };
+  const enqueueNeighbors = (key: string): void => {
     const location = parseBlockLocationKey(key);
-    for (const direction of [...WALL_DIRECTIONS, { name: "self", offset: { x: 0, y: 0, z: 0 } }]) {
-      affected.add(blockLocationKey(add(location, direction.offset)));
+    for (const direction of MULTI_FACE_SUPPORTS) {
+      enqueue(blockLocationKey(add(location, direction.offset)));
     }
+  };
+  for (const key of changedKeys) {
+    enqueue(key);
+    enqueueNeighbors(key);
   }
   const updates = new Map<string, SubLevelBlockSupportStateUpdate>();
-  for (const key of affected) {
+  for (let index = 0; index < affected.length; index++) {
+    const key = affected[index]!;
+    queued.delete(key);
     const entry = entriesByKey.get(key);
     if (!entry) continue;
     const registration = getSubLevelBlockRegistration(entry.snapshot.typeId);
     const states = registration?.support === "wall_connections"
       ? wallStates(entry.localLocation, entry.snapshot, entriesByKey)
-      : entry.snapshot.typeId === "minecraft:pale_moss_carpet"
+      : registration?.support === "moss_carpet"
         ? paleMossCarpetStates(entry.localLocation, entry.snapshot, entriesByKey)
-        : undefined;
+        : registration?.support === "pointed_dripstone"
+          ? pointedDripstoneStates(entry.localLocation, entry.snapshot, entriesByKey)
+          : undefined;
     if (!states) continue;
     if (statesEqual(entry.snapshot.states ?? {}, states)) continue;
-    updates.set(key, { key, snapshot: { ...entry.snapshot, states } });
+    const snapshot = { ...entry.snapshot, states };
+    updates.set(key, { key, snapshot });
+    entriesByKey.set(key, { ...entry, snapshot });
+    enqueueNeighbors(key);
   }
   return updates;
 }
@@ -78,23 +106,51 @@ function paleMossCarpetStates(
   snapshot: SubLevelBlock,
   entries: ReadonlyMap<string, SubLevelBlockSupportEntry>
 ): NonNullable<SubLevelBlock["states"]> {
-  const values: Record<string, boolean | number | string> = {};
-  for (const direction of WALL_DIRECTIONS) {
+  let states = snapshot.states!;
+  const upper = stateValue(snapshot, "upper_block_bit") === true;
+  const above = entries.get(blockLocationKey(add(location, ABOVE_OFFSET)))?.snapshot;
+  const below = entries.get(blockLocationKey(add(location, BELOW_OFFSET)))?.snapshot;
+  for (const direction of MULTI_FACE_SUPPORTS.filter(direction => direction.offset.y === 0)) {
     const neighbor = entries.get(blockLocationKey(add(location, direction.offset)))?.snapshot;
-    values[`minecraft:pale_moss_carpet_side_${direction.name}`] = wallConnectionType(neighbor);
+    const name = `pale_moss_carpet_side_${direction.name}`;
+    let side = isSolidAttachmentHost(neighbor, direction.hostFace)
+      ? upper ? stateValue(snapshot, name) : "short"
+      : "none";
+    if (side === "short") {
+      if (above?.typeId === snapshot.typeId && stateValue(above, "upper_block_bit") === true && stateValue(above, name) !== "none") side = "tall";
+      if (upper && below?.typeId === snapshot.typeId && stateValue(below, name) === "none") side = "none";
+    }
+    states = replaceState({ ...snapshot, states }, name, side!);
   }
-  const current = snapshot.states ?? {};
-  return Object.fromEntries(Object.keys(current).map(key => [key, values[key] ?? current[key]!])) as NonNullable<SubLevelBlock["states"]>;
+  return states;
+}
+
+function pointedDripstoneStates(
+  location: Vector3,
+  snapshot: SubLevelBlock,
+  entries: ReadonlyMap<string, SubLevelBlockSupportEntry>
+): NonNullable<SubLevelBlock["states"]> {
+  const hanging = stateValue(snapshot, "hanging") === true;
+  const forward = entries.get(blockLocationKey(add(location, hanging ? BELOW_OFFSET : ABOVE_OFFSET)))?.snapshot;
+  const rear = entries.get(blockLocationKey(add(location, hanging ? ABOVE_OFFSET : BELOW_OFFSET)))?.snapshot;
+  let thickness: string;
+  if (forward?.typeId !== snapshot.typeId) thickness = "tip";
+  else if (stateValue(forward, "hanging") !== hanging) {
+    thickness = stateValue(snapshot, "dripstone_thickness") === "merge" || stateValue(forward, "dripstone_thickness") === "merge" ? "merge" : "tip";
+  } else if (["tip", "merge"].includes(String(stateValue(forward, "dripstone_thickness")))) thickness = "frustum";
+  else thickness = rear?.typeId === snapshot.typeId && stateValue(rear, "hanging") === hanging ? "middle" : "base";
+  return replaceState(snapshot, "dripstone_thickness", thickness);
 }
 
 /**
  * Resolves which attachments stay supported after the given keys are removed,
- * cascading top-down so an unsupported attachment cannot keep its dependents
- * alive, and rewriting per-face states (vine bits, moss tips) along the way.
+ * cascading in both vertical directions so an unsupported attachment cannot
+ * keep its dependents alive, and rewriting per-face states along the way.
  */
 export function resolveSubLevelBlockSupport(
   entries: readonly SubLevelBlockSupportEntry[],
-  removedKeys: ReadonlySet<string>
+  removedKeys: ReadonlySet<string>,
+  changedKeys: ReadonlySet<string> = removedKeys
 ): SubLevelBlockSupportResolution {
   const entriesByKey = new Map<string, SubLevelBlockSupportEntry>();
   for (const entry of entries) {
@@ -105,44 +161,106 @@ export function resolveSubLevelBlockSupport(
   }
 
   const unsupportedKeys = new Set<string>();
-  const stateUpdates = new Map<string, SubLevelBlockSupportStateUpdate>();
+  const stateUpdates = new Map(resolveSubLevelBlockNeighborStateUpdates(
+    entries.filter(entry => !removedKeys.has(entry.key)), changedKeys
+  ));
   const supportKeysByAttachment = new Map<string, readonly string[]>();
   const attachments = entries
     .filter(entry => hasSubLevelSupportRule(entry.snapshot) && !removedKeys.has(entry.key))
     .sort((left, right) => right.localLocation.y - left.localLocation.y);
-  for (const entry of attachments) {
-    if (
-      removedKeys.has(entry.key)
-      || unsupportedKeys.has(entry.key)
-    ) continue;
-    const snapshot = entry.snapshot;
-    const result = resolveAttachment(
-      entry.localLocation,
-      snapshot,
-      entriesByKey,
-      removedKeys,
-      unsupportedKeys,
-      stateUpdates
-    );
-    if (!result.supported) {
-      unsupportedKeys.add(entry.key);
-      continue;
+  let removed: string[];
+  do {
+    removed = [];
+    for (const entry of attachments) {
+      if (unsupportedKeys.has(entry.key)) continue;
+      const snapshot = stateUpdates.get(entry.key)?.snapshot ?? entry.snapshot;
+      const result = resolveAttachment(
+        entry.localLocation,
+        snapshot,
+        entriesByKey,
+        removedKeys,
+        unsupportedKeys,
+        stateUpdates
+      );
+      if (!result.supported) {
+        unsupportedKeys.add(entry.key);
+        stateUpdates.delete(entry.key);
+        supportKeysByAttachment.delete(entry.key);
+        removed.push(entry.key);
+        continue;
+      }
+      if (result.states && !statesEqual(snapshot.states ?? {}, result.states)) {
+        stateUpdates.set(entry.key, {
+          key: entry.key,
+          snapshot: { ...snapshot, states: result.states }
+        });
+      }
+      supportKeysByAttachment.set(entry.key, result.supportKeys);
     }
-    if (result.states && !statesEqual(snapshot.states ?? {}, result.states)) {
-      stateUpdates.set(entry.key, {
-        key: entry.key,
-        snapshot: { ...snapshot, states: result.states }
-      });
+    if (removed.length > 0) {
+      const remainingEntries = entries.filter(entry => !removedKeys.has(entry.key) && !unsupportedKeys.has(entry.key))
+        .map(entry => ({ ...entry, snapshot: stateUpdates.get(entry.key)?.snapshot ?? entry.snapshot }));
+      const neighborUpdates = resolveSubLevelBlockNeighborStateUpdates(remainingEntries, new Set(removed));
+      for (const [key, update] of neighborUpdates) stateUpdates.set(key, update);
     }
-    supportKeysByAttachment.set(entry.key, result.supportKeys);
-  }
-  const remainingEntries = entries.filter(entry => !removedKeys.has(entry.key));
-  const neighborUpdates = resolveSubLevelBlockNeighborStateUpdates(
-    remainingEntries,
-    removedKeys
-  );
-  for (const [key, update] of neighborUpdates) stateUpdates.set(key, update);
+  } while (removed.length > 0);
   return { stateUpdates, supportKeysByAttachment, unsupportedKeys };
+}
+
+/** Validate the placed attachment and resolve its neighbors before committing the edit. */
+export function resolveSubLevelBlockPlacement(
+  blocks: readonly SubLevelBlock[],
+  placed: SubLevelBlock,
+  random: () => number = Math.random
+): { readonly additions: readonly SubLevelBlock[]; readonly stateUpdates: ReadonlyMap<string, SubLevelBlockSupportStateUpdate> } | undefined {
+  const key = blockLocationKey(placed.localLocation);
+  const entries = new Map(blocks.map(snapshot => [blockLocationKey(snapshot.localLocation), {
+    key: blockLocationKey(snapshot.localLocation), localLocation: snapshot.localLocation, snapshot
+  }] as const));
+  const existing = entries.get(key)?.snapshot;
+  const rule = supportRuleOf(placed);
+  const requestedFaces = rule === "multi_face" ? integerState(placed, "multi_face_direction_bits", 0, 63) : 0;
+  if (existing) {
+    if (existing.typeId !== placed.typeId || rule !== "multi_face") return undefined;
+    const previousFaces = integerState(existing, "multi_face_direction_bits", 0, 63);
+    if ((previousFaces & requestedFaces) === requestedFaces) return undefined;
+    placed = { ...existing, states: replaceState(existing, "multi_face_direction_bits", previousFaces | requestedFaces) };
+  }
+  if (rule === "pointed_dripstone" && !resolveAttachment(placed.localLocation, placed, entries, new Set(), new Set(), new Map()).supported) {
+    placed = { ...placed, states: replaceState(placed, "hanging", stateValue(placed, "hanging") !== true) };
+  }
+  entries.set(key, { key, localLocation: placed.localLocation, snapshot: placed });
+  const addedKeys = new Set(existing ? [] : [key]);
+  if (rule === "moss_carpet") {
+    const location = add(placed.localLocation, ABOVE_OFFSET);
+    const aboveKey = blockLocationKey(location);
+    if (!entries.has(aboveKey)) {
+      let topper: SubLevelBlock = { ...placed, localLocation: location, states: replaceState(placed, "upper_block_bit", true) };
+      let hasFace = false;
+      for (const direction of MULTI_FACE_SUPPORTS.filter(direction => direction.offset.y === 0)) {
+        const lowerHost = entries.get(blockLocationKey(add(placed.localLocation, direction.offset)))?.snapshot;
+        const upperHost = entries.get(blockLocationKey(add(location, direction.offset)))?.snapshot;
+        const side = isSolidAttachmentHost(lowerHost, direction.hostFace) && isSolidAttachmentHost(upperHost, direction.hostFace) && random() < 0.5 ? "short" : "none";
+        hasFace ||= side !== "none";
+        topper = { ...topper, states: replaceState(topper, `pale_moss_carpet_side_${direction.name}`, side) };
+      }
+      if (hasFace) {
+        entries.set(aboveKey, { key: aboveKey, localLocation: location, snapshot: topper });
+        addedKeys.add(aboveKey);
+      }
+    }
+  }
+  const support = resolveSubLevelBlockSupport([...entries.values()], new Set(), new Set([key, ...addedKeys]));
+  if (support.unsupportedKeys.has(key)) return undefined;
+  const resolved = support.stateUpdates.get(key)?.snapshot ?? placed;
+  if (rule === "multi_face" && (integerState(resolved, "multi_face_direction_bits", 0, 63) & requestedFaces) !== requestedFaces) return undefined;
+  const stateUpdates = new Map([...support.stateUpdates].filter(([key]) => !addedKeys.has(key)));
+  if (existing) stateUpdates.set(key, { key, snapshot: resolved });
+  return {
+    additions: [...addedKeys].filter(key => !support.unsupportedKeys.has(key))
+      .map(key => support.stateUpdates.get(key)?.snapshot ?? entries.get(key)!.snapshot),
+    stateUpdates
+  };
 }
 
 interface AttachmentResolution {
@@ -184,6 +302,45 @@ function resolveAttachment(
         supported: isSolidAttachmentHost(read(supportKey)),
         supportKeys: [supportKey]
       };
+    }
+    case "below_block": {
+      const supportKey = keyAt(BELOW_OFFSET);
+      return { supported: read(supportKey) !== undefined, supportKeys: [supportKey] };
+    }
+    case "moss_carpet": {
+      const supportKey = keyAt(BELOW_OFFSET);
+      const below = read(supportKey);
+      const upper = stateValue(snapshot, "upper_block_bit") === true;
+      return {
+        supported: upper
+          ? below?.typeId === snapshot.typeId && stateValue(below, "upper_block_bit") === false
+            && WALL_DIRECTIONS.some(direction => stateValue(snapshot, `pale_moss_carpet_side_${direction.name}`) !== "none")
+          : below !== undefined,
+        supportKeys: [supportKey]
+      };
+    }
+    case "pointed_dripstone": {
+      const hanging = stateValue(snapshot, "hanging") === true;
+      const supportKey = keyAt(hanging ? ABOVE_OFFSET : BELOW_OFFSET);
+      const support = read(supportKey);
+      return {
+        supported: isSolidAttachmentHost(support, hanging ? "down" : "up")
+          || (support?.typeId === snapshot.typeId && stateValue(support, "hanging") === hanging),
+        supportKeys: [supportKey]
+      };
+    }
+    case "multi_face": {
+      const bits = integerState(snapshot, "multi_face_direction_bits", 0, 63);
+      let retained = 0;
+      const supportKeys: string[] = [];
+      for (const direction of MULTI_FACE_SUPPORTS) {
+        const key = keyAt(direction.offset);
+        if ((bits & direction.bit) && isSolidAttachmentHost(read(key), direction.hostFace)) {
+          retained |= direction.bit;
+          supportKeys.push(key);
+        }
+      }
+      return { supported: retained !== 0, supportKeys, states: replaceState(snapshot, "multi_face_direction_bits", retained) };
     }
     case "above_leaf": {
       // Only the hanging form depends on the leaf above; the planted form
@@ -294,8 +451,22 @@ function supportRuleOf(snapshot: SubLevelBlock): string | undefined {
   return getSubLevelBlockRegistration(snapshot.typeId)?.support;
 }
 
-function isSolidAttachmentHost(snapshot: SubLevelBlock | undefined): boolean {
-  return snapshot !== undefined && !hasSubLevelSupportRule(snapshot);
+function isSolidAttachmentHost(snapshot: SubLevelBlock | undefined, face: SubLevelBlockFace = "down"): boolean {
+  if (!snapshot || snapshot.collidable === false || snapshot.collisionShape === "none") return false;
+  if (snapshot.collisionShape === "full") return true;
+  const model = resolveFancySubLevelBlock(snapshot)?.model.description;
+  if (!model) return !hasSubLevelSupportRule(snapshot);
+  switch (model.type) {
+    case "full_block":
+    case "pillar":
+    case "creaking_heart":
+    case "bee_nest":
+    case "mangrove_roots": return true;
+    case "grass_path":
+    case "sculk_shrieker": return face === "down";
+    case "moss_carpet": return face === "down" && (!model.pale || stateValue(snapshot, "upper_block_bit") === false);
+    default: return false;
+  }
 }
 
 function integerState(
@@ -324,7 +495,7 @@ function replaceState(
   snapshot: SubLevelBlock,
   name: string,
   value: boolean | number | string
-): SubLevelBlock["states"] {
+): NonNullable<SubLevelBlock["states"]> {
   const states = snapshot.states ?? {};
   const key = states[name] !== undefined ? name : `minecraft:${name}`;
   if (states[key] === undefined) {

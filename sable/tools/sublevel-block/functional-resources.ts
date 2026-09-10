@@ -15,8 +15,8 @@ import type { CompiledModel } from "./registry.ts";
 
 type JsonObject = Record<string, unknown>;
 
-// Chest particles sample the 64x64 chest entity atlas; every other texture is a
-// plain 16x16 block texture sampled with a random 4x4 window.
+// Chest particles sample the chest entity texture; flipbook particles sample
+// the first 16x16 frame. Every particle uses a random 4x4 window.
 const CHEST_PARTICLE_ATLAS = {
   height: 64,
   u: "14+variable.particle_random_1*10",
@@ -53,7 +53,7 @@ export async function collectFunctionalResourceTargets(
 
 interface DestructParticleVisual {
   alpha: boolean;
-  atlas?: typeof CHEST_PARTICLE_ATLAS;
+  atlas?: { readonly width: number; readonly height: number; readonly u: string; readonly v: string };
   texture: string;
   tinted: boolean;
 }
@@ -74,11 +74,20 @@ export function collectDestructParticleTargets(
       tinted: false
     };
     visual.alpha ||= model.material === "alpha_test"
+      || model.material === "alpha_test_emissive"
       || model.material === "alpha_test_tint"
       || model.material === "blend"
       || model.material === "translucent"
       || model.material === "redstone_torch_emissive";
-    visual.tinted ||= model.tint !== undefined;
+    visual.tinted ||= model.tint !== undefined && !model.grassTint;
+    if (model.flipbook && (!model.flipbook.textures || model.flipbook.textures.includes(texture))) {
+      visual.atlas = {
+        width: model.flipbook.axis === "u" ? 16 * model.flipbook.frameCount : 16,
+        height: model.flipbook.axis === "v" ? 16 * model.flipbook.frameCount : 16,
+        u: "variable.particle_random_1*12",
+        v: "variable.particle_random_2*12"
+      };
+    }
     if (description.type === "chest") {
       // Chest particles sample an opaque region of the entity atlas; the cutout
       // material the chest model renders with does not apply to its quads.

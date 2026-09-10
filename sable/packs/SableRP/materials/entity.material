@@ -39,12 +39,14 @@
                 "USE_UV_ANIM"
             ]
         },
-        "redstone_torch_block_emissive:alpha_block": {
+        "alpha_test_block_emissive:alpha_block": {
             "+defines": [
                 "ALPHA_TEST",
                 "USE_EMISSIVE",
                 "USE_UV_ANIM"
-            ],
+            ]
+        },
+        "redstone_torch_block_emissive:alpha_test_block_emissive": {
             "-defines": [
                 "FANCY"
             ]
