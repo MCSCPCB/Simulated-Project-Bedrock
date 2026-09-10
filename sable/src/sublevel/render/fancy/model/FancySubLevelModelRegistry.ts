@@ -22,7 +22,7 @@ export function resolveFancySubLevelBlock(
   // A null model routes this state combination to the hand-held route.
   if (!selected) return undefined;
   const model = materializeModel(selected);
-  return { block, category: registration.category, model, state: encodeFancySubLevelModelState(model.description, block.states) };
+  return { block, category: registration.category, model, state: block.renderState ?? encodeFancySubLevelModelState(model.description, block.states) };
 }
 
 export function hasFancySubLevelRegistration(typeId: string): boolean {

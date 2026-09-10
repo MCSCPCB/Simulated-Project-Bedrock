@@ -803,8 +803,9 @@ export class SubLevelOutlineController {
     result: SubLevelRaycastResult,
     itemStack: ItemStack
   ): SubLevelRaycastResult | undefined {
+    const rule = getSubLevelBlockRegistration(itemStack.typeId)?.support;
     if (result.hit.block.typeId !== itemStack.typeId
-      || getSubLevelBlockRegistration(itemStack.typeId)?.support !== "multi_face") return result;
+      || (rule !== "multi_face" && rule !== "vine_faces")) return result;
     const support = this.#raycastPlayerSubLevels(player, result.origin, result.direction, true);
     return support?.handle === result.handle ? support : undefined;
   }
@@ -820,8 +821,9 @@ export class SubLevelOutlineController {
       throw new Error(`Sub-level placement target is not on the local block grid: ${blockKey(target)}.`);
     }
     const existing = result.handle.getBlockAtLocalLocation(target);
+    const rule = getSubLevelBlockRegistration(itemStack.typeId)?.support;
     return !existing || (existing.typeId === itemStack.typeId
-      && getSubLevelBlockRegistration(itemStack.typeId)?.support === "multi_face") ? target : undefined;
+      && (rule === "multi_face" || rule === "vine_faces")) ? target : undefined;
   }
 
   #validatedActionResult(

@@ -8,7 +8,7 @@ function resolveFancySubLevelBlock(block) {
   const selected = variant ? variant.model : registration.default;
   if (!selected) return void 0;
   const model = materializeModel(selected);
-  return { block, category: registration.category, model, state: encodeFancySubLevelModelState(model.description, block.states) };
+  return { block, category: registration.category, model, state: block.renderState ?? encodeFancySubLevelModelState(model.description, block.states) };
 }
 function hasFancySubLevelRegistration(typeId) {
   return blockRegistry[typeId] !== void 0;

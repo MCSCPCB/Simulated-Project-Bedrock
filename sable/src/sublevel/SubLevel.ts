@@ -17,6 +17,7 @@ export interface SubLevelFoliageTint {
   readonly vPerLocalZ: number;
 }
 
+/** Block-local bounds, with each coordinate in 0..1. */
 export interface SubLevelBlockCollisionBox {
   readonly min: Vector3;
   readonly max: Vector3;
@@ -30,6 +31,8 @@ export interface SubLevelBlock {
   readonly localLocation: Vector3;
   readonly mapColor?: SubLevelBlockMapColor;
   readonly rotation?: Vector3;
+  /** Neighbor-derived model state; rebuilt from the block grid on load. */
+  readonly renderState?: number;
   readonly runtimeCollidable?: boolean;
   readonly states?: SubLevelBlockStates;
   readonly typeId: string;

@@ -48,6 +48,7 @@ function cloneSubLevelBlock(block) {
   if (block.rotation) cloned.rotation = { ...block.rotation };
   if (block.states) cloned.states = { ...block.states };
   if (block.visualOffset) cloned.visualOffset = { ...block.visualOffset };
+  delete cloned.renderState;
   return cloned;
 }
 function isSerializedSubLevelBlock(value) {

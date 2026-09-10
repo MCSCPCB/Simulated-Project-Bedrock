@@ -27,6 +27,7 @@ export function fancySubLevelSparseLayout(stateBits: number): {
 export function createFancySubLevelModelState(
   model: FancySubLevelModelDescription
 ): FancySubLevelModelState | undefined {
+  if (model.type === "vine" && model.faces.includes("up")) return { bits: 1, dimensions: [], update: () => undefined };
   if (model.type === "multi_face") return { bits: 6, dimensions: [], update: () => undefined };
   if (model.type === "wall" || (model.type === "moss_carpet" && model.pale)) {
     return {
@@ -50,6 +51,7 @@ export function createFancySubLevelModelState(
 export function fancySubLevelStoredStateBits(
   model: FancySubLevelModelDescription
 ): number {
+  if (model.type === "vine" && model.faces.includes("up")) return 2;
   return model.type === "chest" ? 2 : model.type === "multi_face" ? 7 : model.type === "wall" || (model.type === "moss_carpet" && model.pale) ? 10 : 1;
 }
 

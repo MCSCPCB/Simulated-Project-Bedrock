@@ -13,12 +13,12 @@ const ABOVE_OFFSET: Vector3 = { x: 0, y: 1, z: 0 };
 const BELOW_OFFSET: Vector3 = { x: 0, y: -1, z: 0 };
 // Horizontal directions indexed like the vanilla `direction` state, paired
 // with the vine face bit each one supports.
-const HORIZONTAL_SUPPORTS: readonly { readonly offset: Vector3; readonly bit: number }[] = [
-  { offset: { x: 0, y: 0, z: 1 }, bit: 1 },
-  { offset: { x: -1, y: 0, z: 0 }, bit: 2 },
-  { offset: { x: 0, y: 0, z: -1 }, bit: 4 },
-  { offset: { x: 1, y: 0, z: 0 }, bit: 8 }
-];
+const HORIZONTAL_SUPPORTS = [
+  { offset: { x: 0, y: 0, z: 1 }, bit: 1, hostFace: "north" },
+  { offset: { x: -1, y: 0, z: 0 }, bit: 2, hostFace: "east" },
+  { offset: { x: 0, y: 0, z: -1 }, bit: 4, hostFace: "south" },
+  { offset: { x: 1, y: 0, z: 0 }, bit: 8, hostFace: "west" }
+] as const;
 
 const WALL_DIRECTIONS = [
   { name: "north", offset: { x: 0, y: 0, z: -1 } },
@@ -84,16 +84,18 @@ export function resolveSubLevelBlockNeighborStateUpdates(
     const entry = entriesByKey.get(key);
     if (!entry) continue;
     const registration = getSubLevelBlockRegistration(entry.snapshot.typeId);
+    const renderState = registration?.support === "vine_faces"
+      ? Number(isSolidAttachmentHost(entriesByKey.get(blockLocationKey(add(entry.localLocation, ABOVE_OFFSET)))?.snapshot))
+      : entry.snapshot.renderState;
     const states = registration?.support === "wall_connections"
       ? wallStates(entry.localLocation, entry.snapshot, entriesByKey)
       : registration?.support === "moss_carpet"
         ? paleMossCarpetStates(entry.localLocation, entry.snapshot, entriesByKey)
         : registration?.support === "pointed_dripstone"
           ? pointedDripstoneStates(entry.localLocation, entry.snapshot, entriesByKey)
-          : undefined;
-    if (!states) continue;
-    if (statesEqual(entry.snapshot.states ?? {}, states)) continue;
-    const snapshot = { ...entry.snapshot, states };
+          : entry.snapshot.states;
+    if (statesEqual(entry.snapshot.states ?? {}, states ?? {}) && (entry.snapshot.renderState ?? 0) === (renderState ?? 0)) continue;
+    const snapshot = { ...entry.snapshot, states, ...(renderState !== undefined ? { renderState } : {}) };
     updates.set(key, { key, snapshot });
     entriesByKey.set(key, { ...entry, snapshot });
     enqueueNeighbors(key);
@@ -219,12 +221,16 @@ export function resolveSubLevelBlockPlacement(
   }] as const));
   const existing = entries.get(key)?.snapshot;
   const rule = supportRuleOf(placed);
-  const requestedFaces = rule === "multi_face" ? integerState(placed, "multi_face_direction_bits", 0, 63) : 0;
+  const faceState = rule === "multi_face" ? "multi_face_direction_bits" : rule === "vine_faces" ? "vine_direction_bits" : undefined;
+  const faceMask = rule === "multi_face" ? 63 : 15;
+  const requestedFaces = faceState ? integerState(placed, faceState, 0, faceMask) : 0;
+  const requestedTop = rule === "vine_faces" && placed.renderState === 1;
+  if (rule === "vine_faces" && requestedFaces === 0 && !requestedTop) return undefined;
   if (existing) {
-    if (existing.typeId !== placed.typeId || rule !== "multi_face") return undefined;
-    const previousFaces = integerState(existing, "multi_face_direction_bits", 0, 63);
-    if ((previousFaces & requestedFaces) === requestedFaces) return undefined;
-    placed = { ...existing, states: replaceState(existing, "multi_face_direction_bits", previousFaces | requestedFaces) };
+    if (existing.typeId !== placed.typeId || !faceState) return undefined;
+    const previousFaces = integerState(existing, faceState, 0, faceMask);
+    if ((previousFaces & requestedFaces) === requestedFaces && (!requestedTop || existing.renderState === 1)) return undefined;
+    placed = { ...existing, states: replaceState(existing, faceState, previousFaces | requestedFaces) };
   }
   if (rule === "pointed_dripstone" && !resolveAttachment(placed.localLocation, placed, entries, new Set(), new Set(), new Map()).supported) {
     placed = { ...placed, states: replaceState(placed, "hanging", stateValue(placed, "hanging") !== true) };
@@ -253,7 +259,8 @@ export function resolveSubLevelBlockPlacement(
   const support = resolveSubLevelBlockSupport([...entries.values()], new Set(), new Set([key, ...addedKeys]));
   if (support.unsupportedKeys.has(key)) return undefined;
   const resolved = support.stateUpdates.get(key)?.snapshot ?? placed;
-  if (rule === "multi_face" && (integerState(resolved, "multi_face_direction_bits", 0, 63) & requestedFaces) !== requestedFaces) return undefined;
+  if (requestedTop && resolved.renderState !== 1) return undefined;
+  if (faceState && (integerState(resolved, faceState, 0, faceMask) & requestedFaces) !== requestedFaces) return undefined;
   const stateUpdates = new Map([...support.stateUpdates].filter(([key]) => !addedKeys.has(key)));
   if (existing) stateUpdates.set(key, { key, snapshot: resolved });
   return {
@@ -374,15 +381,19 @@ function resolveAttachment(
       const currentBits = integerState(snapshot, "vine_direction_bits", 0, 15);
       const aboveKey = keyAt(ABOVE_OFFSET);
       const above = read(aboveKey);
+      const supportedAbove = isSolidAttachmentHost(above);
       const aboveBits = above?.typeId === snapshot.typeId
         ? integerState(above, "vine_direction_bits", 0, 15)
         : 0;
       let retainedBits = 0;
       const supportKeys: string[] = [];
+      // Java's vine rule requires a complete support or collision face.
+      // A vine above can carry side faces without supplying a ceiling face.
+      if (supportedAbove) supportKeys.push(aboveKey);
       for (const direction of HORIZONTAL_SUPPORTS) {
         if ((currentBits & direction.bit) === 0) continue;
         const sideKey = keyAt(direction.offset);
-        if (isSolidAttachmentHost(read(sideKey))) {
+        if (isSolidAttachmentHost(read(sideKey), direction.hostFace)) {
           retainedBits |= direction.bit;
           supportKeys.push(sideKey);
         } else if ((aboveBits & direction.bit) !== 0) {
@@ -392,7 +403,7 @@ function resolveAttachment(
       }
       return {
         states: replaceState(snapshot, "vine_direction_bits", retainedBits),
-        supported: retainedBits !== 0,
+        supported: retainedBits !== 0 || supportedAbove,
         supportKeys
       };
     }
@@ -454,6 +465,25 @@ function supportRuleOf(snapshot: SubLevelBlock): string | undefined {
 function isSolidAttachmentHost(snapshot: SubLevelBlock | undefined, face: SubLevelBlockFace = "down"): boolean {
   if (!snapshot || snapshot.collidable === false || snapshot.collisionShape === "none") return false;
   if (snapshot.collisionShape === "full") return true;
+  if (snapshot.collisionShape) {
+    const axis = face === "east" || face === "west" ? "x" : face === "up" || face === "down" ? "y" : "z";
+    const positive = face === "east" || face === "up" || face === "south";
+    const [u, v] = axis === "x" ? ["y", "z"] as const : axis === "y" ? ["x", "z"] as const : ["x", "y"] as const;
+    const boxes = snapshot.collisionShape.filter(box => box[positive ? "max" : "min"][axis] === (positive ? 1 : 0));
+    const cuts = (axis: keyof Vector3): number[] => [...new Set([0, 1, ...boxes.flatMap(box => [box.min[axis], box.max[axis]])])].sort((a, b) => a - b);
+    const uCuts = cuts(u);
+    const vCuts = cuts(v);
+    // Subdivide only at box edges, so overlaps cannot hide a gap in the face.
+    for (let i = 1; i < uCuts.length; i++) {
+      for (let j = 1; j < vCuts.length; j++) {
+        if (!boxes.some(box => box.min[u] <= uCuts[i - 1]! && box.max[u] >= uCuts[i]!
+          && box.min[v] <= vCuts[j - 1]! && box.max[v] >= vCuts[j]!)) return false;
+      }
+    }
+    return true;
+  }
+  // Powder snow has no support or collision shape in an empty entity context.
+  if (snapshot.typeId === "minecraft:powder_snow") return false;
   const model = resolveFancySubLevelBlock(snapshot)?.model.description;
   if (!model) return !hasSubLevelSupportRule(snapshot);
   switch (model.type) {

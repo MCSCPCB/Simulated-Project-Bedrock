@@ -471,7 +471,7 @@ function blockShortName(blockId: string): string {
 }
 
 const AXES = new Set(["y", "x", "z"]);
-const VINE_FACES = new Set(["south", "west", "north", "east"]);
+const VINE_FACES = new Set(["south", "west", "north", "east", "up"]);
 
 function validateSideTop(model: Record<string, unknown>, path: string): void {
   const textures = model.textures;

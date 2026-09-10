@@ -583,7 +583,8 @@ class SubLevelOutlineController {
     state.shapeSignature = signature;
   }
   #placementRaycastResult(player, result, itemStack) {
-    if (result.hit.block.typeId !== itemStack.typeId || getSubLevelBlockRegistration(itemStack.typeId)?.support !== "multi_face") return result;
+    const rule = getSubLevelBlockRegistration(itemStack.typeId)?.support;
+    if (result.hit.block.typeId !== itemStack.typeId || rule !== "multi_face" && rule !== "vine_faces") return result;
     const support = this.#raycastPlayerSubLevels(player, result.origin, result.direction, true);
     return support?.handle === result.handle ? support : void 0;
   }
@@ -598,7 +599,8 @@ class SubLevelOutlineController {
       throw new Error(`Sub-level placement target is not on the local block grid: ${blockKey(target)}.`);
     }
     const existing = result.handle.getBlockAtLocalLocation(target);
-    return !existing || existing.typeId === itemStack.typeId && getSubLevelBlockRegistration(itemStack.typeId)?.support === "multi_face" ? target : void 0;
+    const rule = getSubLevelBlockRegistration(itemStack.typeId)?.support;
+    return !existing || existing.typeId === itemStack.typeId && (rule === "multi_face" || rule === "vine_faces") ? target : void 0;
   }
   #validatedActionResult(player, expected) {
     const result = this.#raycastForEvent(player);

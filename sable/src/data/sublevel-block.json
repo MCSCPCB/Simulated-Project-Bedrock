@@ -5021,7 +5021,9 @@
           "model": {
             "type": "vine",
             "texture": "textures/blocks/vine",
-            "faces": []
+            "faces": [
+              "up"
+            ]
           },
           "tint": {
             "method": "foliage"
@@ -5033,7 +5035,8 @@
             "type": "vine",
             "texture": "textures/blocks/vine",
             "faces": [
-              "south"
+              "south",
+              "up"
             ]
           },
           "tint": {
@@ -5046,7 +5049,8 @@
             "type": "vine",
             "texture": "textures/blocks/vine",
             "faces": [
-              "west"
+              "west",
+              "up"
             ]
           },
           "tint": {
@@ -5060,7 +5064,8 @@
             "texture": "textures/blocks/vine",
             "faces": [
               "south",
-              "west"
+              "west",
+              "up"
             ]
           },
           "tint": {
@@ -5073,7 +5078,8 @@
             "type": "vine",
             "texture": "textures/blocks/vine",
             "faces": [
-              "north"
+              "north",
+              "up"
             ]
           },
           "tint": {
@@ -5087,7 +5093,8 @@
             "texture": "textures/blocks/vine",
             "faces": [
               "south",
-              "north"
+              "north",
+              "up"
             ]
           },
           "tint": {
@@ -5101,7 +5108,8 @@
             "texture": "textures/blocks/vine",
             "faces": [
               "west",
-              "north"
+              "north",
+              "up"
             ]
           },
           "tint": {
@@ -5116,7 +5124,8 @@
             "faces": [
               "south",
               "west",
-              "north"
+              "north",
+              "up"
             ]
           },
           "tint": {
@@ -5129,7 +5138,8 @@
             "type": "vine",
             "texture": "textures/blocks/vine",
             "faces": [
-              "east"
+              "east",
+              "up"
             ]
           },
           "tint": {
@@ -5143,7 +5153,8 @@
             "texture": "textures/blocks/vine",
             "faces": [
               "south",
-              "east"
+              "east",
+              "up"
             ]
           },
           "tint": {
@@ -5157,7 +5168,8 @@
             "texture": "textures/blocks/vine",
             "faces": [
               "west",
-              "east"
+              "east",
+              "up"
             ]
           },
           "tint": {
@@ -5172,7 +5184,8 @@
             "faces": [
               "south",
               "west",
-              "east"
+              "east",
+              "up"
             ]
           },
           "tint": {
@@ -5186,7 +5199,8 @@
             "texture": "textures/blocks/vine",
             "faces": [
               "north",
-              "east"
+              "east",
+              "up"
             ]
           },
           "tint": {
@@ -5201,7 +5215,8 @@
             "faces": [
               "south",
               "north",
-              "east"
+              "east",
+              "up"
             ]
           },
           "tint": {
@@ -5216,7 +5231,8 @@
             "faces": [
               "west",
               "north",
-              "east"
+              "east",
+              "up"
             ]
           },
           "tint": {
@@ -5232,7 +5248,8 @@
               "south",
               "west",
               "north",
-              "east"
+              "east",
+              "up"
             ]
           },
           "tint": {
@@ -5244,7 +5261,9 @@
         "model": {
           "type": "vine",
           "texture": "textures/blocks/vine",
-          "faces": []
+          "faces": [
+            "up"
+          ]
         },
         "tint": {
           "method": "foliage"

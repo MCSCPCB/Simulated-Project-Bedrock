@@ -12,6 +12,7 @@ function fancySubLevelSparseLayout(stateBits) {
   };
 }
 function createFancySubLevelModelState(model) {
+  if (model.type === "vine" && model.faces.includes("up")) return { bits: 1, dimensions: [], update: () => void 0 };
   if (model.type === "multi_face") return { bits: 6, dimensions: [], update: () => void 0 };
   if (model.type === "wall" || model.type === "moss_carpet" && model.pale) {
     return {
@@ -28,6 +29,7 @@ function createFancySubLevelModelState(model) {
   };
 }
 function fancySubLevelStoredStateBits(model) {
+  if (model.type === "vine" && model.faces.includes("up")) return 2;
   return model.type === "chest" ? 2 : model.type === "multi_face" ? 7 : model.type === "wall" || model.type === "moss_carpet" && model.pale ? 10 : 1;
 }
 function encodeFancySubLevelModelState(model, states) {

@@ -289,17 +289,18 @@ function modelChannels(model: CompiledModel): ModelChannel[] {
   }
   if (type === "wall") {
     const texture = String(description.texture);
-    const bones: LibraryBone[] = [];
-    bones.push({ name: "post_{s}", pivot: [0, -16, 0], cubes: [{ origin: [-4, -24, -4], size: [8, 16, 8], uv: faceUvMap(FULL_FACES) }] });
+    const bones: LibraryBone[] = [{ name: "slot_{s}", pivot: [0, -16, 0] }];
+    bones.push({ name: "post_{s}", parent: "slot_{s}", pivot: [0, -16, 0], cubes: [{ origin: [-4, -24, -4], size: [8, 16, 8], uv: faceUvMap(FULL_FACES) }] });
     for (const [direction, origin, size] of [
-      ["north", [-3, -24, -8], [6, 14, 11]], ["north", [-3, -24, -8], [6, 16, 11]],
-      ["south", [-3, -24, -3], [6, 14, 11]], ["south", [-3, -24, -3], [6, 16, 11]],
+      ["north", [-3, -24, -3], [6, 14, 11]], ["north", [-3, -24, -3], [6, 16, 11]],
+      ["south", [-3, -24, -8], [6, 14, 11]], ["south", [-3, -24, -8], [6, 16, 11]],
       ["west", [-8, -24, -3], [11, 14, 6]], ["west", [-8, -24, -3], [11, 16, 6]],
       ["east", [-3, -24, -3], [11, 14, 6]], ["east", [-3, -24, -3], [11, 16, 6]]
     ] as const) {
       const height = size[1] === 16 ? "tall" : "short";
       bones.push({
         name: `${direction}_${height}_{s}`,
+        parent: "slot_{s}",
         pivot: [0, -16, 0],
         cubes: [{ origin, size, uv: faceUvMap(FULL_FACES) }]
       });
@@ -311,20 +312,26 @@ function modelChannels(model: CompiledModel): ModelChannel[] {
     const pale = Boolean(description.pale);
     const channels: ModelChannel[] = [{
       name: "default", texture, textureSize: [16, 16],
-      bones: [{ name: pale ? "base_{s}" : "slot_{s}", pivot: [0, -16, 0], cubes: [{
-        origin: [-8, -24, -8], size: [16, 1, 16],
-        uv: Object.fromEntries(FULL_FACES.map(face => [face, {
-          uv: face === "up" || face === "down" ? [0, 0] : [0, 15],
-          uv_size: face === "up" || face === "down" ? [16, 16] : [16, 1]
-        }]))
-      }] }]
+      bones: [
+        ...(pale ? [{ name: "slot_{s}", pivot: [0, -16, 0] }] : []),
+        { name: pale ? "base_{s}" : "slot_{s}", ...(pale ? { parent: "slot_{s}" } : {}), pivot: [0, -16, 0], cubes: [{
+          origin: [-8, -24, -8], size: [16, 1, 16],
+          uv: Object.fromEntries(FULL_FACES.map(face => [face, {
+            uv: face === "up" || face === "down" ? [0, 0] : [0, 15],
+            uv_size: face === "up" || face === "down" ? [16, 16] : [16, 1]
+          }]))
+        }] }
+      ]
     }];
     if (pale) for (const height of ["short", "tall"] as const) {
       channels.push({
         name: height, texture: String(description[`side_${height}`]), textureSize: [16, 16],
-        bones: (["north", "east", "south", "west"] as const).map(face => ({
-          name: `${face}_${height}_{s}`, pivot: [0, -16, 0], cubes: [attachmentFaceCube(face)]
-        }))
+        bones: [
+          { name: "slot_{s}", pivot: [0, -16, 0] },
+          ...(["north", "east", "south", "west"] as const).map(face => ({
+            name: `${face}_${height}_{s}`, parent: "slot_{s}", pivot: [0, -16, 0], cubes: [attachmentFaceCube(face)]
+          }))
+        ]
       });
     }
     return channels;
@@ -348,7 +355,10 @@ function modelChannels(model: CompiledModel): ModelChannel[] {
   if (type === "multi_face") {
     return [{
       name: "default", texture: String(description.texture), textureSize: [16, 16],
-      bones: FULL_FACES.map(face => ({ name: `${face}_{s}`, pivot: [0, -16, 0], cubes: [attachmentFaceCube(face)] }))
+      bones: [
+        { name: "slot_{s}", pivot: [0, -16, 0] },
+        ...FULL_FACES.map(face => ({ name: `${face}_{s}`, parent: "slot_{s}", pivot: [0, -16, 0], cubes: [attachmentFaceCube(face)] }))
+      ]
     }];
   }
   if (type === "sculk_shrieker") {
@@ -437,11 +447,15 @@ function modelChannels(model: CompiledModel): ModelChannel[] {
   if (type === "vine") {
     const channel = libraryChannels(type, "default").default!;
     const faces = new Set((description.faces as string[]).map(face => `vine_${face}_{s}`));
+    const north = channel.bones.find(bone => bone.name === "vine_north_{s}")!;
     return [{
       name: "default",
       texture,
       textureSize: channel.textureSize,
-      bones: channel.bones.filter(bone => bone.name === "slot_{s}" || faces.has(bone.name))
+      bones: [
+        ...channel.bones.filter(bone => bone.name === "slot_{s}" || faces.has(bone.name)),
+        ...(faces.has("vine_up_{s}") ? [{ ...north, name: "vine_up_{s}", rotation: [-90, 0, 0] }] : [])
+      ]
     }];
   }
   if (type === "mangrove_propagule") {
@@ -454,18 +468,22 @@ function modelChannels(model: CompiledModel): ModelChannel[] {
 
 // Shared by mossy_carpet_side and sculk_vein: the vanilla plane lies 0.1px
 // inside its supporting face, with the outside UV mirrored on the back.
+// Sable mirrors world Z; Bedrock names its minimum-X face east. Horizontal
+// faces reverse V between front/back, while vertical faces reverse U.
 function attachmentFaceCube(face: FullFace): JsonObject {
   const planes = {
-    north: { origin: [-8, -24, -7.9], size: [16, 16, 0], back: "north", front: "south" },
-    south: { origin: [-8, -24, 7.9], size: [16, 16, 0], back: "south", front: "north" },
-    east: { origin: [7.9, -24, -8], size: [0, 16, 16], back: "east", front: "west" },
-    west: { origin: [-7.9, -24, -8], size: [0, 16, 16], back: "west", front: "east" },
+    north: { origin: [-8, -24, 7.9], size: [16, 16, 0], back: "south", front: "north" },
+    south: { origin: [-8, -24, -7.9], size: [16, 16, 0], back: "north", front: "south" },
+    east: { origin: [7.9, -24, -8], size: [0, 16, 16], back: "west", front: "east" },
+    west: { origin: [-7.9, -24, -8], size: [0, 16, 16], back: "east", front: "west" },
     up: { origin: [-8, -8.1, -8], size: [16, 0, 16], back: "up", front: "down" },
     down: { origin: [-8, -23.9, -8], size: [16, 0, 16], back: "down", front: "up" }
   };
   const { origin, size, back, front } = planes[face];
   return { origin, size, uv: {
-    [back]: { uv: [16, 0], uv_size: [-16, 16] },
+    [back]: face === "up" || face === "down"
+      ? { uv: [0, 16], uv_size: [16, -16] }
+      : { uv: [16, 0], uv_size: [-16, 16] },
     [front]: { uv: [0, 0], uv_size: [16, 16] }
   } };
 }
@@ -939,12 +957,13 @@ function slotVisibility(
   model?: CompiledModel
 ): JsonObject[] {
   // Occupancy is already applied to the slot parent by the transform animation.
-  if (channel.bones.some(bone => bone.name === "slot_{s}")) return [{ "*": true }];
+  if (channel.bones.some(bone => bone.name === "slot_{s}")
+    && (!model || channel.bones.every(bone => stateBoneVisibility(model, bone.name, "0") === "1"))) return [{ "*": true }];
   const visibility: JsonObject[] = [{ "*": false }];
   for (let slot = 0; slot < slotCountOf(format); slot++) {
     for (const name of channelBoneNames(channel, slot)) {
-      const condition = model && stateBits(model) > 0
-        ? `(v.c${slot} > 0) && (${stateBoneVisibility(model, name, `(v.c${slot} - 1)`)})`
+      const condition = model
+        ? visibleBoneCondition(model, name, `(v.c${slot} - 1)`, `(v.c${slot} > 0)`)
         : `(v.c${slot} > 0)`;
       visibility.push({ [name]: condition });
     }
@@ -953,6 +972,8 @@ function slotVisibility(
 }
 
 function stateBoneVisibility(model: CompiledModel, name: string, value: string): string {
+  if (name.startsWith("slot_")) return "1";
+  if (model.model.type === "vine" && name.startsWith("vine_up_")) return `${value} > 0`;
   if (model.model.type === "multi_face") {
     const face = name.split("_")[0]!;
     const bits: Record<string, number> = { down: 1, up: 2, south: 4, west: 8, north: 16, east: 32 };
@@ -975,6 +996,11 @@ function stateBoneVisibility(model: CompiledModel, name: string, value: string):
   return `math.mod(math.floor(${value} / ${2 ** shifts[direction!]!}), 4) == ${height === "short" ? 1 : 2}`;
 }
 
+function visibleBoneCondition(model: CompiledModel, name: string, value: string, occupied: string): string {
+  const state = stateBoneVisibility(model, name, value);
+  return state === "1" ? occupied : `${occupied} && (${state})`;
+}
+
 function denseColormapController(
   model: CompiledModel,
   channels: readonly ModelChannel[]
@@ -983,8 +1009,8 @@ function denseColormapController(
   for (let slot = 0; slot < DENSE_SLOT_COUNT; slot++) {
     channels.forEach((channel, index) => {
       const prefix = channels.length > 1 ? `c${index}_` : "";
-      for (const name of channelBoneNames(channel, slot, prefix)) {
-        visibility.push({ [name]: `(v.c${slot} > 0)` });
+      for (const name of channelBoneNames(channel, slot)) {
+        visibility.push({ [prefix + name]: visibleBoneCondition(model, name, `(v.c${slot} - 1)`, `(v.c${slot} > 0)`) });
       }
     });
   }
@@ -1039,8 +1065,9 @@ function sparseColormapController(
     },
     part_visibility: [
       { "*": false },
-      ...[...new Set(tintedModels.flatMap(model => tintChannels(model).flatMap(channel => channelBoneNames(channel, slot))))]
-        .map(name => ({ [name]: `(v.c${slot} > 0)` }))
+      ...[...new Map(tintedModels.flatMap(model => tintChannels(model).flatMap(channel => channelBoneNames(channel, slot)
+        .map(name => [name, visibleBoneCondition(model, name, `(v.c${slot} - 1)`, `(v.c${slot} > 0)`)] as const))))]
+        .map(([name, condition]) => ({ [name]: condition }))
     ]
   };
 }
@@ -1354,9 +1381,7 @@ export function createPoolRenderController(pool: CompiledPool): JsonObject {
       const visibility: JsonObject[] = [{ "*": false }];
       for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
         for (const name of channelBoneNames(channel, slot)) {
-          const stateCondition = stateBoneVisibility(member, name, `v.st${slot}`);
-          visibility.push({ [name]: stateCondition === "1" ? poolSlotCondition(slot, family)
-            : `${poolSlotCondition(slot, family)} && (${stateCondition})` });
+          visibility.push({ [name]: visibleBoneCondition(member, name, `v.st${slot}`, poolSlotCondition(slot, family)) });
         }
       }
       controllers[`controller.render.${key}.m${family}_${channel.name}`] = {
@@ -1387,8 +1412,8 @@ export function createPoolRenderController(pool: CompiledPool): JsonObject {
       const channels = modelChannels(pool.members[family]!);
       channels.forEach((channel, index) => {
         const prefix = `t${family}_${channels.length > 1 ? `c${index}_` : ""}`;
-        for (const name of channelBoneNames(channel, slot, prefix)) {
-          visibility.push({ [name]: poolSlotCondition(slot, family) });
+        for (const name of channelBoneNames(channel, slot)) {
+          visibility.push({ [prefix + name]: visibleBoneCondition(pool.members[family]!, name, `v.st${slot}`, poolSlotCondition(slot, family)) });
         }
       });
     }
@@ -1419,8 +1444,8 @@ export function createPoolRenderController(pool: CompiledPool): JsonObject {
     for (let slot = 0; slot < SPARSE_SLOT_COUNT; slot++) {
       channels.forEach((channel, index) => {
         const prefix = `t${family}_${channels.length > 1 ? `c${index}_` : ""}`;
-        for (const name of channelBoneNames(channel, slot, prefix)) {
-          visibility.push({ [name]: poolSlotCondition(slot, family) });
+        for (const name of channelBoneNames(channel, slot)) {
+          visibility.push({ [prefix + name]: visibleBoneCondition(pool.members[family]!, name, `v.st${slot}`, poolSlotCondition(slot, family)) });
         }
       });
     }

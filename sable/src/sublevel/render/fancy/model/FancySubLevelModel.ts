@@ -64,7 +64,7 @@ export interface CocoaModelDescription {
 export interface VineModelDescription {
   readonly type: "vine";
   readonly texture: string;
-  readonly faces: readonly FancySubLevelFacing[];
+  readonly faces: readonly (FancySubLevelFacing | "up")[];
 }
 
 export interface SingleTextureModelDescription {

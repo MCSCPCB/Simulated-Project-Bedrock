@@ -14,7 +14,8 @@ import { captureSubLevelFoliageTint } from "../../render/dynamic_biome/DynamicBi
 import { SubLevelRenderer } from "../../sublevel/render/SubLevelRenderer.js";
 import {
   resolveSubLevelBlockSupport,
-  resolveSubLevelBlockPlacement
+  resolveSubLevelBlockPlacement,
+  resolveSubLevelBlockNeighborStateUpdates
 } from "../../content/block_properties/SubLevelBlockSupport.js";
 import {
   resolveVanillaBlockBreakSound,
@@ -440,6 +441,12 @@ class ServerSubLevelContainer {
     record.invalidateBody();
   }
   #createRuntimeRecord(id, dimension, origin, blocks, foliageTint) {
+    const vineKeys = new Set(blocks.filter((block) => getSubLevelBlockRegistration(block.typeId)?.support === "vine_faces").map((block) => blockLocationKey(block.localLocation)));
+    if (vineKeys.size > 0) {
+      const entries = blocks.map((snapshot) => ({ key: blockLocationKey(snapshot.localLocation), localLocation: snapshot.localLocation, snapshot }));
+      const updates = resolveSubLevelBlockNeighborStateUpdates(entries, vineKeys);
+      blocks = entries.map((entry) => updates.get(entry.key)?.snapshot ?? entry.snapshot);
+    }
     let removed = false;
     const body = {
       get isValid() {
@@ -602,6 +609,11 @@ function buildPlacedBlock(player, typeId, placement, cardinalDirection, placemen
     const bits = { up: 1, down: 2, north: 4, east: 8, south: 16, west: 32 };
     states[faceState] = bits[placementFace];
   }
+  if (getSubLevelBlockRegistration(typeId)?.support === "vine_faces" && placementFace) {
+    const faceState = states.vine_direction_bits !== void 0 ? "vine_direction_bits" : "minecraft:vine_direction_bits";
+    const bits = { up: 0, down: 0, north: 1, east: 2, south: 4, west: 8 };
+    states[faceState] = bits[placementFace];
+  }
   const rotation = resolveSubLevelBlockRotation(typeId, states);
   const visualYOffset = resolveSubLevelBlockVisualYOffset(typeId, states);
   const visualOffset = resolveSubLevelBlockVisualOffset(typeId, states);
@@ -609,6 +621,7 @@ function buildPlacedBlock(player, typeId, placement, cardinalDirection, placemen
     localLocation: { ...placement },
     states,
     typeId,
+    ...getSubLevelBlockRegistration(typeId)?.support === "vine_faces" ? { renderState: Number(placementFace === "down") } : {},
     ...rotation ? { rotation } : {},
     ...visualYOffset !== 0 ? { visualYOffset } : {},
     ...visualOffset ? { visualOffset } : {},
