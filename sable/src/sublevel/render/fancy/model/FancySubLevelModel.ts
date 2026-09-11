@@ -89,6 +89,32 @@ export interface RootModelDescription {
   readonly textures: Readonly<{ top: string; side: string }>;
 }
 
+export interface CropModelDescription {
+  readonly type: "crop" | "cross";
+  readonly texture: string;
+}
+
+export interface StemModelDescription {
+  readonly type: "stem";
+  readonly texture: string;
+  readonly connectedTexture: string;
+  readonly growth: number;
+  readonly direction: number;
+}
+
+export interface OrientableModelDescription {
+  readonly type: "orientable";
+  readonly textures: Readonly<{ top: string; side: string; front: string }>;
+  readonly facing: FancySubLevelFacing;
+}
+
+export interface PitcherCropModelDescription {
+  readonly type: "pitcher_crop";
+  readonly growth: number;
+  readonly upper: boolean;
+  readonly textures: Readonly<{ bottom: string; side: string; top: string; stage?: string }>;
+}
+
 export interface GrassPathModelDescription {
   readonly type: "grass_path";
   readonly textures: Readonly<Record<"up" | "down" | FancySubLevelFacing, string>>;
@@ -132,6 +158,10 @@ export type FancySubLevelModelDescription =
   | ChestModelDescription
   | BeeNestModelDescription
   | CocoaModelDescription
+  | CropModelDescription
+  | StemModelDescription
+  | OrientableModelDescription
+  | PitcherCropModelDescription
   | VineModelDescription
   | SingleTextureModelDescription
   | MangrovePropaguleModelDescription

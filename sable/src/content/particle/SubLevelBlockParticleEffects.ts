@@ -38,6 +38,11 @@ export function destructParticleTexture(
     case "bee_nest": return description.textures.side;
     case "mangrove_roots": return description.textures.side;
     case "wall": return description.texture;
+    case "crop":
+    case "cross": return description.texture;
+    case "stem": return description.texture;
+    case "orientable": return description.textures.side;
+    case "pitcher_crop": return description.textures.side;
     default: return description.texture;
   }
 }

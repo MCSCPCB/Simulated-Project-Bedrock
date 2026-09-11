@@ -164,6 +164,11 @@ type MiningDescription = {
 | `chest` | `texture`、`facing` | 箱子，纹理为 64×64；`facing` 为 `north/east/south/west`。 |
 | `bee_nest` | `textures.down/up/front/side`、`direction` | 蜂巢，`direction` 为 `0..3`。 |
 | `cocoa` | `texture`、`direction`、`age` | 可可果，`direction` 为 `0..3`，`age` 为 `0..2`。 |
+| `crop` | `texture` | 普通作物薄面模型。 |
+| `cross` | `texture` | 两组交叉薄面模型。 |
+| `stem` | `texture`、`connectedTexture`、`growth`、`direction` | 南瓜梗或西瓜梗；`growth` 为 `0..7`，`direction` 为 `0..5`。 |
+| `orientable` | `textures.top/side/front`、`facing` | 带正面的可旋转完整方块。 |
+| `pitcher_crop` | `growth`、`upper`、`textures.bottom/side/top`、`textures.stage?` | 瓶子草的下半体和上半体；`growth` 为 `0..4`，`upper` 表示上半体。 |
 | `vine` | `texture`、`faces` | 藤蔓，`faces` 为 `south/west/north/east/up` 中的附着方向数组。 |
 | `hanging_roots` | `texture` | 垂根。 |
 | `pale_hanging_moss` | `texture`、`tip` | 苍白垂须，`tip` 表示是否为末端。 |

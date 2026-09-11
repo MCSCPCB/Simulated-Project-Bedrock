@@ -472,15 +472,18 @@ test("corrected terrain classification is complete and the registry is the only 
   })) assert.equal(classified.find(entry => entry.name === name).catalog, category, name);
   const expected = readData("自然/地形与石材/blocks.json").map(entry => `minecraft:${entry.name}`).sort();
   const expectedOres = readData("自然/矿石与金属/blocks.json").map(entry => `minecraft:${entry.name}`).sort();
+  const expectedCrops = readData("自然/农作物/blocks.json").map(entry => `minecraft:${entry.name}`).sort();
   const file = join(sable, "src/data/sublevel-block.json");
   const raw = json(file);
   const compiler = moduleLoader(join(sable, "tools"), {})("sublevel-block/registry.ts");
   const compiled = await compiler.readAndCompileRegistry(file);
-  assert.equal(Object.keys(raw.blocks).length, 176);
+  assert.equal(Object.keys(raw.blocks).length, 190);
   assert.equal(expected.length, 81);
   assert.equal(expectedOres.length, 33);
+  assert.equal(expectedCrops.length, 15);
   assert.deepEqual(Object.entries(raw.blocks).filter(([, entry]) => entry.category === "nature/terrain_and_stone").map(([id]) => id).sort(), expected);
   assert.deepEqual(Object.entries(raw.blocks).filter(([, entry]) => entry.category === "nature/ores_and_metals").map(([id]) => id).sort(), expectedOres);
+  assert.deepEqual(Object.entries(raw.blocks).filter(([, entry]) => entry.category === "nature/crops").map(([id]) => id).sort(), expectedCrops);
   assert.deepEqual(Object.keys(compiled.compiled).sort(), Object.keys(raw.blocks).sort());
   const grass = raw.blocks["minecraft:grass_block"];
   const copies = compiler.compileRegistry({ format_version: "1.0.0", blocks: {
@@ -856,6 +859,84 @@ test("terrain partial models match vanilla dimensions, UVs and shared child rota
     const result = resolveFancySubLevelBlock(block("minecraft:farmland", 0, 0, 0, { moisturized_amount: moisture }));
     assert.equal(result.model.description.textures.up, `textures/blocks/farmland_${moisture === 7 ? "wet" : "dry"}`);
   }
+});
+
+test("crop state keys and Java model channels retain their Bedrock stages", async () => {
+  const f = fixture();
+  const registry = f.load("sublevel/render/fancy/model/FancySubLevelModelRegistry.ts");
+  const resolve = (typeId, states) => registry.resolveFancySubLevelBlock(block(typeId, 0, 0, 0, states)).model;
+  const stage = (typeId, values, expected) => values.forEach((value, index) => {
+    assert.equal(resolve(typeId, { growth: value }).description.texture, expected[index], `${typeId} growth=${value}`);
+  });
+  stage("minecraft:beetroot", [0, 1, 2, 3, 4, 5, 6, 7], [
+    "textures/blocks/beetroots_stage_0", "textures/blocks/beetroots_stage_0", "textures/blocks/beetroots_stage_0",
+    "textures/blocks/beetroots_stage_1", "textures/blocks/beetroots_stage_2", "textures/blocks/beetroots_stage_0",
+    "textures/blocks/beetroots_stage_0", "textures/blocks/beetroots_stage_3"
+  ]);
+  for (const typeId of ["minecraft:carrots", "minecraft:potatoes"]) stage(typeId, [0, 1, 2, 3, 4, 5, 6, 7], [
+    `textures/blocks/${typeId.slice("minecraft:".length)}_stage_0`, `textures/blocks/${typeId.slice("minecraft:".length)}_stage_0`,
+    `textures/blocks/${typeId.slice("minecraft:".length)}_stage_1`, `textures/blocks/${typeId.slice("minecraft:".length)}_stage_1`,
+    `textures/blocks/${typeId.slice("minecraft:".length)}_stage_2`, `textures/blocks/${typeId.slice("minecraft:".length)}_stage_2`,
+    `textures/blocks/${typeId.slice("minecraft:".length)}_stage_2`, `textures/blocks/${typeId.slice("minecraft:".length)}_stage_3`
+  ]);
+  const wartStages = [0, 1, 1, 2, 0, 0, 0, 0];
+  for (let age = 0; age < wartStages.length; age++) {
+    assert.equal(resolve("minecraft:nether_wart", { age }).description.texture,
+      `textures/blocks/nether_wart_stage_${wartStages[age]}`, `nether wart age=${age}`);
+  }
+  const berries = [0, 1, 2, 3].map(growth => resolve("minecraft:sweet_berry_bush", { growth }).description.texture);
+  assert.deepEqual(berries, [0, 1, 2, 3].map(value => `textures/blocks/sweet_berry_bush_stage${value}`));
+  assert.equal(resolve("minecraft:torchflower_crop", { growth: 0 }).description.texture, "textures/blocks/torchflower_crop_stage_0");
+  assert.equal(resolve("minecraft:torchflower_crop", { growth: 4 }).description.texture, "textures/blocks/torchflower_crop_stage_1");
+  for (const typeId of ["minecraft:melon_stem", "minecraft:pumpkin_stem"]) {
+    for (let growth = 0; growth < 8; growth++) {
+      const description = resolve(typeId, { facing_direction: 0, growth }).description;
+      assert.equal(description.type, "stem");
+      assert.equal(description.growth, growth, `${typeId} growth=${growth}`);
+    }
+    for (const [direction, rotation] of [[2, 90], [3, 270], [4, 0], [5, 180]]) {
+      const model = resolve(typeId, { facing_direction: direction, growth: 7 });
+      assert.equal(model.description.direction, direction);
+      assert.deepEqual(model.dense.rotation, [0, rotation, 0], `${typeId} direction=${direction}`);
+    }
+  }
+  const pitcher = (growth, upper) => resolve("minecraft:pitcher_crop", { growth, upper_block_bit: upper });
+  for (const growth of [0, 1, 2, 3, 4, 5, 6, 7]) {
+    const expected = ({ 0: 0, 1: 1, 3: 2, 5: 3, 7: 4 })[growth] ?? 0;
+    const model = pitcher(growth, false);
+    assert.equal(model.description.growth, expected, `pitcher lower growth=${growth}`);
+    assert.equal(model.description.upper, false);
+  }
+  for (const growth of [0, 1, 3]) {
+    const model = pitcher(growth, true);
+    assert.equal(model.description.growth, 0, `pitcher empty upper growth=${growth}`);
+    assert.equal(model.description.upper, true);
+  }
+  for (const growth of [5, 7]) {
+    const model = pitcher(growth, true);
+    assert.equal(model.description.growth, growth === 5 ? 3 : 4, `pitcher upper growth=${growth}`);
+    assert.equal(model.description.upper, true);
+  }
+  const resources = modelResourceIndex(join(sable, "packs/SableRP"));
+  const findGeometryByBone = suffix => {
+    const geometry = [...resources.geometries.values()]
+      .find(candidate => candidate.bones?.some(bone => bone.name.endsWith(suffix)));
+    assert(geometry, `missing generated pitcher geometry bone ${suffix}`);
+    return geometry;
+  };
+  const lowerSide = findGeometryByBone("pitcher_base_side_0");
+  const lowerTop = findGeometryByBone("pitcher_base_top_0");
+  const lowerBottom = findGeometryByBone("pitcher_base_bottom_0");
+  const sideCube = lowerSide.bones.find(bone => bone.name === "pitcher_base_side_0").cubes[0];
+  const topCube = lowerTop.bones.find(bone => bone.name === "pitcher_base_top_0").cubes[0];
+  const bottomCube = lowerBottom.bones.find(bone => bone.name === "pitcher_base_bottom_0").cubes[0];
+  assert.deepEqual(Object.keys(sideCube.uv).sort(), ["east", "north", "south", "west"]);
+  assert.deepEqual(Object.keys(topCube.uv), ["up"]);
+  assert.deepEqual(Object.keys(bottomCube.uv), ["down"]);
+  const upperStage3 = findGeometryByBone("pitcher_upper_3_x_0");
+  const upperBone = upperStage3.bones.find(bone => bone.name === "pitcher_upper_3_x_0");
+  assert.deepEqual(upperBone.pivot, [0, -8, 0]);
+  assert.deepEqual(upperBone.cubes[0].origin, [-8, -24, 0]);
 });
 
 test("grid hit distance, face and starting-cell semantics match the baseline", () => {
@@ -2388,6 +2469,8 @@ test("registered non-chest state variants select baseline textures, materials, v
   const kinds = f.reference("content/tree/block/Blocks.ts");
   const stateValues = {
     pillar_axis: ["y", "x", "z"], cardinal_direction: ["south", "west", "north", "east"],
+    facing_direction: [0, 1, 2, 3, 4, 5], growth: [0, 1, 2, 3, 4, 5, 6, 7],
+    upper_block_bit: [false, true],
     old_log_type: ["oak", "spruce", "birch", "jungle"], new_log_type: ["acacia", "dark_oak"],
     old_leaf_type: ["oak", "spruce", "birch", "jungle"], new_leaf_type: ["acacia", "dark_oak"],
     direction: [0, 1, 2, 3], age: [0, 1, 2], honey_level: [0, 1, 4, 5],

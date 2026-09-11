@@ -6082,6 +6082,209 @@
           "axis": "y"
         }
       }
+    },
+    "minecraft:wheat": {
+      "materials": "alpha_test",
+      "category": "nature/crops",
+      "hardness": 0,
+      "passable": true,
+      "support": "below_block",
+      "states": ["minecraft:growth"],
+      "variants": [
+        { "condition": "q.block_state('minecraft:growth') == 1", "model": { "type": "crop", "texture": "textures/blocks/wheat_stage_1" } },
+        { "condition": "q.block_state('minecraft:growth') == 2", "model": { "type": "crop", "texture": "textures/blocks/wheat_stage_2" } },
+        { "condition": "q.block_state('minecraft:growth') == 3", "model": { "type": "crop", "texture": "textures/blocks/wheat_stage_3" } },
+        { "condition": "q.block_state('minecraft:growth') == 4", "model": { "type": "crop", "texture": "textures/blocks/wheat_stage_4" } },
+        { "condition": "q.block_state('minecraft:growth') == 5", "model": { "type": "crop", "texture": "textures/blocks/wheat_stage_5" } },
+        { "condition": "q.block_state('minecraft:growth') == 6", "model": { "type": "crop", "texture": "textures/blocks/wheat_stage_6" } },
+        { "condition": "q.block_state('minecraft:growth') == 7", "model": { "type": "crop", "texture": "textures/blocks/wheat_stage_7" } }
+      ],
+      "default": { "model": { "type": "crop", "texture": "textures/blocks/wheat_stage_0" } }
+    },
+    "minecraft:beetroot": {
+      "materials": "alpha_test",
+      "category": "nature/crops",
+      "hardness": 0,
+      "passable": true,
+      "support": "below_block",
+      "states": ["minecraft:growth"],
+      "variants": [
+        { "condition": "q.block_state('minecraft:growth') == 3", "model": { "type": "crop", "texture": "textures/blocks/beetroots_stage_1" } },
+        { "condition": "q.block_state('minecraft:growth') == 4", "model": { "type": "crop", "texture": "textures/blocks/beetroots_stage_2" } },
+        { "condition": "q.block_state('minecraft:growth') == 7", "model": { "type": "crop", "texture": "textures/blocks/beetroots_stage_3" } }
+      ],
+      "default": { "model": { "type": "crop", "texture": "textures/blocks/beetroots_stage_0" } }
+    },
+    "minecraft:carrots": {
+      "materials": "alpha_test",
+      "category": "nature/crops",
+      "hardness": 0,
+      "passable": true,
+      "support": "below_block",
+      "states": ["minecraft:growth"],
+      "variants": [
+        { "condition": "q.block_state('minecraft:growth') == 2 || q.block_state('minecraft:growth') == 3", "model": { "type": "crop", "texture": "textures/blocks/carrots_stage_1" } },
+        { "condition": "q.block_state('minecraft:growth') == 4 || q.block_state('minecraft:growth') == 5 || q.block_state('minecraft:growth') == 6", "model": { "type": "crop", "texture": "textures/blocks/carrots_stage_2" } },
+        { "condition": "q.block_state('minecraft:growth') == 7", "model": { "type": "crop", "texture": "textures/blocks/carrots_stage_3" } }
+      ],
+      "default": { "model": { "type": "crop", "texture": "textures/blocks/carrots_stage_0" } }
+    },
+    "minecraft:potatoes": {
+      "materials": "alpha_test",
+      "category": "nature/crops",
+      "hardness": 0,
+      "passable": true,
+      "support": "below_block",
+      "states": ["minecraft:growth"],
+      "variants": [
+        { "condition": "q.block_state('minecraft:growth') == 2 || q.block_state('minecraft:growth') == 3", "model": { "type": "crop", "texture": "textures/blocks/potatoes_stage_1" } },
+        { "condition": "q.block_state('minecraft:growth') == 4 || q.block_state('minecraft:growth') == 5 || q.block_state('minecraft:growth') == 6", "model": { "type": "crop", "texture": "textures/blocks/potatoes_stage_2" } },
+        { "condition": "q.block_state('minecraft:growth') == 7", "model": { "type": "crop", "texture": "textures/blocks/potatoes_stage_3" } }
+      ],
+      "default": { "model": { "type": "crop", "texture": "textures/blocks/potatoes_stage_0" } }
+    },
+    "minecraft:nether_wart": {
+      "materials": "alpha_test",
+      "category": "nature/crops",
+      "hardness": 0,
+      "passable": true,
+      "support": "below_block",
+      "states": ["minecraft:age"],
+      "variants": [
+        { "condition": "q.block_state('minecraft:age') == 1", "model": { "type": "crop", "texture": "textures/blocks/nether_wart_stage_1" } },
+        { "condition": "q.block_state('minecraft:age') == 2", "model": { "type": "crop", "texture": "textures/blocks/nether_wart_stage_1" } },
+        { "condition": "q.block_state('minecraft:age') == 3", "model": { "type": "crop", "texture": "textures/blocks/nether_wart_stage_2" } }
+      ],
+      "default": { "model": { "type": "crop", "texture": "textures/blocks/nether_wart_stage_0" } }
+    },
+    "minecraft:sweet_berry_bush": {
+      "materials": "alpha_test",
+      "category": "nature/crops",
+      "hardness": 0.2,
+      "passable": true,
+      "support": "below_block",
+      "states": ["minecraft:growth"],
+      "variants": [
+        { "condition": "q.block_state('minecraft:growth') == 1", "model": { "type": "cross", "texture": "textures/blocks/sweet_berry_bush_stage1" } },
+        { "condition": "q.block_state('minecraft:growth') == 2", "model": { "type": "cross", "texture": "textures/blocks/sweet_berry_bush_stage2" } },
+        { "condition": "q.block_state('minecraft:growth') == 3", "model": { "type": "cross", "texture": "textures/blocks/sweet_berry_bush_stage3" } }
+      ],
+      "default": { "model": { "type": "cross", "texture": "textures/blocks/sweet_berry_bush_stage0" } }
+    },
+    "minecraft:torchflower_crop": {
+      "materials": "alpha_test",
+      "category": "nature/crops",
+      "hardness": 0,
+      "passable": true,
+      "support": "below_block",
+      "states": ["minecraft:growth"],
+      "variants": [
+        { "condition": "q.block_state('minecraft:growth') == 4", "model": { "type": "cross", "texture": "textures/blocks/torchflower_crop_stage_1" } }
+      ],
+      "default": { "model": { "type": "cross", "texture": "textures/blocks/torchflower_crop_stage_0" } }
+    },
+    "minecraft:reeds": {
+      "materials": "alpha_test",
+      "category": "nature/crops",
+      "hardness": 0,
+      "passable": true,
+      "support": "below_block",
+      "states": ["minecraft:age"],
+      "variants": [],
+      "default": { "model": { "type": "cross", "texture": "textures/blocks/reeds" } }
+    },
+    "minecraft:melon_block": {
+      "materials": "opaque",
+      "category": "nature/crops",
+      "hardness": 1,
+      "mining": { "tool": "axe" },
+      "states": [],
+      "variants": [],
+      "default": { "model": { "type": "pillar", "textures": { "side": "textures/blocks/melon_side", "top": "textures/blocks/melon_top" }, "axis": "y" } }
+    },
+    "minecraft:pumpkin": {
+      "materials": "opaque",
+      "category": "nature/crops",
+      "hardness": 1,
+      "mining": { "tool": "axe" },
+      "states": ["minecraft:cardinal_direction"],
+      "variants": [],
+      "default": { "model": { "type": "pillar", "textures": { "side": "textures/blocks/pumpkin_side", "top": "textures/blocks/pumpkin_top" }, "axis": "y" } }
+    },
+    "minecraft:carved_pumpkin": {
+      "materials": "opaque",
+      "category": "nature/crops",
+      "hardness": 1,
+      "mining": { "tool": "axe" },
+      "states": ["minecraft:cardinal_direction"],
+      "variants": [
+        { "condition": "q.block_state('minecraft:cardinal_direction') == 'west'", "model": { "type": "orientable", "textures": { "top": "textures/blocks/pumpkin_top", "side": "textures/blocks/pumpkin_side", "front": "textures/blocks/pumpkin_face_off" }, "facing": "west" } },
+        { "condition": "q.block_state('minecraft:cardinal_direction') == 'north'", "model": { "type": "orientable", "textures": { "top": "textures/blocks/pumpkin_top", "side": "textures/blocks/pumpkin_side", "front": "textures/blocks/pumpkin_face_off" }, "facing": "north" } },
+        { "condition": "q.block_state('minecraft:cardinal_direction') == 'east'", "model": { "type": "orientable", "textures": { "top": "textures/blocks/pumpkin_top", "side": "textures/blocks/pumpkin_side", "front": "textures/blocks/pumpkin_face_off" }, "facing": "east" } }
+      ],
+      "default": { "model": { "type": "orientable", "textures": { "top": "textures/blocks/pumpkin_top", "side": "textures/blocks/pumpkin_side", "front": "textures/blocks/pumpkin_face_off" }, "facing": "south" } }
+    },
+    "minecraft:melon_stem": {
+      "materials": "alpha_test",
+      "category": "nature/crops",
+      "hardness": 0,
+      "passable": true,
+      "support": "below_block",
+      "states": ["minecraft:facing_direction", "minecraft:growth"],
+      "variants": [
+        { "condition": "q.block_state('minecraft:facing_direction') < 2 && q.block_state('minecraft:growth') == 1", "model": { "type": "stem", "texture": "textures/blocks/melon_stem_disconnected", "connectedTexture": "textures/blocks/melon_stem_connected", "growth": 1, "direction": 0 } },
+        { "condition": "q.block_state('minecraft:facing_direction') < 2 && q.block_state('minecraft:growth') == 2", "model": { "type": "stem", "texture": "textures/blocks/melon_stem_disconnected", "connectedTexture": "textures/blocks/melon_stem_connected", "growth": 2, "direction": 0 } },
+        { "condition": "q.block_state('minecraft:facing_direction') < 2 && q.block_state('minecraft:growth') == 3", "model": { "type": "stem", "texture": "textures/blocks/melon_stem_disconnected", "connectedTexture": "textures/blocks/melon_stem_connected", "growth": 3, "direction": 0 } },
+        { "condition": "q.block_state('minecraft:facing_direction') < 2 && q.block_state('minecraft:growth') == 4", "model": { "type": "stem", "texture": "textures/blocks/melon_stem_disconnected", "connectedTexture": "textures/blocks/melon_stem_connected", "growth": 4, "direction": 0 } },
+        { "condition": "q.block_state('minecraft:facing_direction') < 2 && q.block_state('minecraft:growth') == 5", "model": { "type": "stem", "texture": "textures/blocks/melon_stem_disconnected", "connectedTexture": "textures/blocks/melon_stem_connected", "growth": 5, "direction": 0 } },
+        { "condition": "q.block_state('minecraft:facing_direction') < 2 && q.block_state('minecraft:growth') == 6", "model": { "type": "stem", "texture": "textures/blocks/melon_stem_disconnected", "connectedTexture": "textures/blocks/melon_stem_connected", "growth": 6, "direction": 0 } },
+        { "condition": "q.block_state('minecraft:facing_direction') < 2 && q.block_state('minecraft:growth') == 7", "model": { "type": "stem", "texture": "textures/blocks/melon_stem_disconnected", "connectedTexture": "textures/blocks/melon_stem_connected", "growth": 7, "direction": 0 } },
+        { "condition": "q.block_state('minecraft:facing_direction') == 2 && q.block_state('minecraft:growth') == 7", "model": { "type": "stem", "texture": "textures/blocks/melon_stem_disconnected", "connectedTexture": "textures/blocks/attached_melon_stem", "growth": 7, "direction": 2 } },
+        { "condition": "q.block_state('minecraft:facing_direction') == 3 && q.block_state('minecraft:growth') == 7", "model": { "type": "stem", "texture": "textures/blocks/melon_stem_disconnected", "connectedTexture": "textures/blocks/attached_melon_stem", "growth": 7, "direction": 3 } },
+        { "condition": "q.block_state('minecraft:facing_direction') == 4 && q.block_state('minecraft:growth') == 7", "model": { "type": "stem", "texture": "textures/blocks/melon_stem_disconnected", "connectedTexture": "textures/blocks/attached_melon_stem", "growth": 7, "direction": 4 } },
+        { "condition": "q.block_state('minecraft:facing_direction') == 5 && q.block_state('minecraft:growth') == 7", "model": { "type": "stem", "texture": "textures/blocks/melon_stem_disconnected", "connectedTexture": "textures/blocks/attached_melon_stem", "growth": 7, "direction": 5 } }
+      ],
+      "default": { "model": { "type": "stem", "texture": "textures/blocks/melon_stem_disconnected", "connectedTexture": "textures/blocks/attached_melon_stem", "growth": 0, "direction": 0 } }
+    },
+    "minecraft:pumpkin_stem": {
+      "materials": "alpha_test",
+      "category": "nature/crops",
+      "hardness": 0,
+      "passable": true,
+      "support": "below_block",
+      "states": ["minecraft:facing_direction", "minecraft:growth"],
+      "variants": [
+        { "condition": "q.block_state('minecraft:facing_direction') < 2 && q.block_state('minecraft:growth') == 1", "model": { "type": "stem", "texture": "textures/blocks/pumpkin_stem_disconnected", "connectedTexture": "textures/blocks/pumpkin_stem_connected", "growth": 1, "direction": 0 } },
+        { "condition": "q.block_state('minecraft:facing_direction') < 2 && q.block_state('minecraft:growth') == 2", "model": { "type": "stem", "texture": "textures/blocks/pumpkin_stem_disconnected", "connectedTexture": "textures/blocks/pumpkin_stem_connected", "growth": 2, "direction": 0 } },
+        { "condition": "q.block_state('minecraft:facing_direction') < 2 && q.block_state('minecraft:growth') == 3", "model": { "type": "stem", "texture": "textures/blocks/pumpkin_stem_disconnected", "connectedTexture": "textures/blocks/pumpkin_stem_connected", "growth": 3, "direction": 0 } },
+        { "condition": "q.block_state('minecraft:facing_direction') < 2 && q.block_state('minecraft:growth') == 4", "model": { "type": "stem", "texture": "textures/blocks/pumpkin_stem_disconnected", "connectedTexture": "textures/blocks/pumpkin_stem_connected", "growth": 4, "direction": 0 } },
+        { "condition": "q.block_state('minecraft:facing_direction') < 2 && q.block_state('minecraft:growth') == 5", "model": { "type": "stem", "texture": "textures/blocks/pumpkin_stem_disconnected", "connectedTexture": "textures/blocks/pumpkin_stem_connected", "growth": 5, "direction": 0 } },
+        { "condition": "q.block_state('minecraft:facing_direction') < 2 && q.block_state('minecraft:growth') == 6", "model": { "type": "stem", "texture": "textures/blocks/pumpkin_stem_disconnected", "connectedTexture": "textures/blocks/pumpkin_stem_connected", "growth": 6, "direction": 0 } },
+        { "condition": "q.block_state('minecraft:facing_direction') < 2 && q.block_state('minecraft:growth') == 7", "model": { "type": "stem", "texture": "textures/blocks/pumpkin_stem_disconnected", "connectedTexture": "textures/blocks/pumpkin_stem_connected", "growth": 7, "direction": 0 } },
+        { "condition": "q.block_state('minecraft:facing_direction') == 2 && q.block_state('minecraft:growth') == 7", "model": { "type": "stem", "texture": "textures/blocks/pumpkin_stem_disconnected", "connectedTexture": "textures/blocks/attached_pumpkin_stem", "growth": 7, "direction": 2 } },
+        { "condition": "q.block_state('minecraft:facing_direction') == 3 && q.block_state('minecraft:growth') == 7", "model": { "type": "stem", "texture": "textures/blocks/pumpkin_stem_disconnected", "connectedTexture": "textures/blocks/attached_pumpkin_stem", "growth": 7, "direction": 3 } },
+        { "condition": "q.block_state('minecraft:facing_direction') == 4 && q.block_state('minecraft:growth') == 7", "model": { "type": "stem", "texture": "textures/blocks/pumpkin_stem_disconnected", "connectedTexture": "textures/blocks/attached_pumpkin_stem", "growth": 7, "direction": 4 } },
+        { "condition": "q.block_state('minecraft:facing_direction') == 5 && q.block_state('minecraft:growth') == 7", "model": { "type": "stem", "texture": "textures/blocks/pumpkin_stem_disconnected", "connectedTexture": "textures/blocks/attached_pumpkin_stem", "growth": 7, "direction": 5 } }
+      ],
+      "default": { "model": { "type": "stem", "texture": "textures/blocks/pumpkin_stem_disconnected", "connectedTexture": "textures/blocks/attached_pumpkin_stem", "growth": 0, "direction": 0 } }
+    },
+    "minecraft:pitcher_crop": {
+      "materials": "alpha_test",
+      "category": "nature/crops",
+      "hardness": 0,
+      "passable": true,
+      "support": "below_block",
+      "states": ["minecraft:growth", "minecraft:upper_block_bit"],
+      "variants": [
+        { "condition": "q.block_state('minecraft:growth') == 1 && q.block_state('minecraft:upper_block_bit') == false", "model": { "type": "pitcher_crop", "growth": 1, "upper": false, "textures": { "bottom": "textures/blocks/pitcher_crop_bottom", "side": "textures/blocks/pitcher_crop_side", "top": "textures/blocks/pitcher_crop_top", "stage": "textures/blocks/pitcher_crop_bottom_stage_1" } } },
+        { "condition": "q.block_state('minecraft:growth') == 3 && q.block_state('minecraft:upper_block_bit') == false", "model": { "type": "pitcher_crop", "growth": 2, "upper": false, "textures": { "bottom": "textures/blocks/pitcher_crop_bottom", "side": "textures/blocks/pitcher_crop_side", "top": "textures/blocks/pitcher_crop_top", "stage": "textures/blocks/pitcher_crop_bottom_stage_2" } } },
+        { "condition": "q.block_state('minecraft:growth') == 5 && q.block_state('minecraft:upper_block_bit') == false", "model": { "type": "pitcher_crop", "growth": 3, "upper": false, "textures": { "bottom": "textures/blocks/pitcher_crop_bottom", "side": "textures/blocks/pitcher_crop_side", "top": "textures/blocks/pitcher_crop_top", "stage": "textures/blocks/pitcher_crop_bottom_stage_3" } } },
+        { "condition": "q.block_state('minecraft:growth') == 7 && q.block_state('minecraft:upper_block_bit') == false", "model": { "type": "pitcher_crop", "growth": 4, "upper": false, "textures": { "bottom": "textures/blocks/pitcher_crop_bottom", "side": "textures/blocks/pitcher_crop_side", "top": "textures/blocks/pitcher_crop_top", "stage": "textures/blocks/pitcher_crop_bottom_stage_4" } } },
+        { "condition": "(q.block_state('minecraft:growth') == 0 || q.block_state('minecraft:growth') == 1 || q.block_state('minecraft:growth') == 3) && q.block_state('minecraft:upper_block_bit') == true", "model": { "type": "pitcher_crop", "growth": 0, "upper": true, "textures": { "bottom": "textures/blocks/pitcher_crop_bottom", "side": "textures/blocks/pitcher_crop_side", "top": "textures/blocks/pitcher_crop_top" } } },
+        { "condition": "q.block_state('minecraft:growth') == 5 && q.block_state('minecraft:upper_block_bit') == true", "model": { "type": "pitcher_crop", "growth": 3, "upper": true, "textures": { "bottom": "textures/blocks/pitcher_crop_bottom", "side": "textures/blocks/pitcher_crop_side", "top": "textures/blocks/pitcher_crop_top", "stage": "textures/blocks/pitcher_crop_top_stage_3" } } },
+        { "condition": "q.block_state('minecraft:growth') == 7 && q.block_state('minecraft:upper_block_bit') == true", "model": { "type": "pitcher_crop", "growth": 4, "upper": true, "textures": { "bottom": "textures/blocks/pitcher_crop_bottom", "side": "textures/blocks/pitcher_crop_side", "top": "textures/blocks/pitcher_crop_top", "stage": "textures/blocks/pitcher_crop_top_stage_4" } } }
+      ],
+      "default": { "model": { "type": "pitcher_crop", "growth": 0, "upper": false, "textures": { "bottom": "textures/blocks/pitcher_crop_bottom", "side": "textures/blocks/pitcher_crop_side", "top": "textures/blocks/pitcher_crop_top" } } }
     }
   }
 }

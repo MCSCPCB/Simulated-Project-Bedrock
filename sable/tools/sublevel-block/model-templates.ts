@@ -179,6 +179,16 @@ function faceUvMap(faces: readonly FullFace[]): JsonObject {
   return uv;
 }
 
+function cropPlaneUv(faces: readonly FullFace[], height = 16): JsonObject {
+  const uv: JsonObject = {};
+  for (const face of faces) {
+    uv[face] = face === "south" || face === "east"
+      ? { uv: [16, 0], uv_size: [-16, height] }
+      : { uv: [0, 0], uv_size: [16, height] };
+  }
+  return uv;
+}
+
 function libraryChannels(type: string, variant: string): Readonly<Record<string, LibraryChannel>> {
   const channels = MODEL_GEOMETRY[type]?.[variant]?.channels;
   if (!channels) throw new Error(`Model geometry library is missing ${type}/${variant}.`);
@@ -255,6 +265,161 @@ function grassSideCubes(faces: readonly FullFace[], tinted: boolean): JsonObject
 function modelChannels(model: CompiledModel): ModelChannel[] {
   const description = model.model as JsonObject;
   const type = String(description.type);
+  if (type === "crop" || type === "cross") {
+    const texture = String(description.texture);
+    const cross = type === "cross";
+    const bones: LibraryBone[] = [{ name: "slot_{s}", pivot: [0, -16, 0] }];
+    if (cross) {
+      bones.push(
+        {
+          name: "cross_a_{s}", parent: "slot_{s}", pivot: [0, -16, 0], rotation: [0, 45, 0],
+          cubes: [{ origin: [-7.2, -24, 0], size: [14.4, 16, 0], uv: faceUvMap(["north", "south"]) }]
+        },
+        {
+          name: "cross_b_{s}", parent: "slot_{s}", pivot: [0, -16, 0], rotation: [0, 45, 0],
+          cubes: [{ origin: [0, -24, -7.2], size: [0, 16, 14.4], uv: faceUvMap(["east", "west"]) }]
+        }
+      );
+    } else {
+      bones.push(
+        { name: "crop_x_a_{s}", parent: "slot_{s}", pivot: [0, -16, 0], cubes: [{ origin: [-4, -25, -8], size: [0, 16, 16], uv: {
+          west: { uv: [0, 0], uv_size: [16, 16] }, east: { uv: [16, 0], uv_size: [-16, 16] }
+        } }] },
+        { name: "crop_x_b_{s}", parent: "slot_{s}", pivot: [0, -16, 0], cubes: [{ origin: [4, -25, -8], size: [0, 16, 16], uv: {
+          west: { uv: [16, 0], uv_size: [-16, 16] }, east: { uv: [0, 0], uv_size: [16, 16] }
+        } }] },
+        { name: "crop_z_a_{s}", parent: "slot_{s}", pivot: [0, -16, 0], cubes: [{ origin: [-8, -25, -4], size: [16, 16, 0], uv: {
+          north: { uv: [0, 0], uv_size: [16, 16] }, south: { uv: [16, 0], uv_size: [-16, 16] }
+        } }] },
+        { name: "crop_z_b_{s}", parent: "slot_{s}", pivot: [0, -16, 0], cubes: [{ origin: [-8, -25, 4], size: [16, 16, 0], uv: {
+          north: { uv: [16, 0], uv_size: [-16, 16] }, south: { uv: [0, 0], uv_size: [16, 16] }
+        } }] }
+      );
+    }
+    return [{ name: "default", texture, textureSize: [16, 16], bones }];
+  }
+  if (type === "stem") {
+    const stem = description as { texture: string; connectedTexture: string; growth: number; direction: number };
+    // stem_fruit's upperstem plane is unrotated on the west-facing side.
+    // Match its center to Bedrock's attached-stem direction states while
+    // retaining the model-space Z reflection used by the shared projection.
+    const turn = stem.direction >= 2 ? ({ 2: 90, 3: 270, 4: 0, 5: 180 } as Record<number, number>)[stem.direction] : 0;
+    const height = stem.direction >= 2 ? 8 : 2 * (stem.growth + 1);
+    const stemBones: LibraryBone[] = [
+      { name: "slot_{s}", pivot: [0, -16, 0] },
+      { name: "stem_a_{s}", parent: "slot_{s}", pivot: [0, -16, 0], rotation: [0, 45, 0], cubes: [{ origin: [0, -25, -8], size: [0, height, 16], uv: {
+        west: { uv: [0, 0], uv_size: [16, height] }, east: { uv: [16, 0], uv_size: [-16, height] }
+      } }] },
+      { name: "stem_b_{s}", parent: "slot_{s}", pivot: [0, -16, 0], rotation: [0, 45, 0], cubes: [{ origin: [-8, -25, 0], size: [16, height, 0], uv: cropPlaneUv(["north", "south"], height) }] }
+    ];
+    if (stem.direction < 2) return [{ name: "default", texture: stem.texture, textureSize: [16, 16], bones: stemBones }];
+    return [
+      { name: "stem", texture: stem.texture, textureSize: [16, 16], wrapperRotation: [0, turn, 0], bones: stemBones },
+      { name: "upper", texture: stem.connectedTexture, textureSize: [16, 16], wrapperRotation: [0, turn, 0], bones: [
+        { name: "slot_{s}", pivot: [0, -16, 0] },
+        { name: "upperstem_{s}", parent: "slot_{s}", pivot: [0, -16, 0], cubes: [{ origin: [-8, -24, 0], size: [9, 16, 0], uv: {
+          north: { uv: [9, 0], uv_size: [-9, 16] }, south: { uv: [0, 0], uv_size: [9, 16] }
+        } }] }
+      ] }
+    ];
+  }
+  if (type === "orientable") {
+    const textures = description.textures as { top: string; side: string; front: string };
+    const facing = String(description.facing);
+    const turn = QUARTER_TURN_BY_DIRECTION[facing] ?? 0;
+    // Java's orientable parent places the front texture on north; the other
+    // three horizontal faces use the side texture.
+    const faces: Record<string, string> = { up: textures.top, down: textures.top, north: textures.front, south: textures.side, east: textures.side, west: textures.side };
+    const byTexture = new Map<string, string[]>();
+    for (const face of FULL_FACES) {
+      const list = byTexture.get(faces[face]!);
+      if (list) list.push(face);
+      else byTexture.set(faces[face]!, [face]);
+    }
+    return [...byTexture].map(([texture, selectedFaces]) => ({
+      name: selectedFaces[0]!, texture, textureSize: [16, 16], wrapperRotation: [0, turn * 90, 0],
+      bones: [{ name: "slot_{s}", pivot: [0, -16, 0], cubes: [{ origin: [-8, -24, -8], size: [16, 16, 16], uv: faceUvMap(selectedFaces as FullFace[]) }] }]
+    }));
+  }
+  if (type === "pitcher_crop") {
+    const crop = description as { growth: number; upper: boolean; textures: { bottom: string; side: string; top: string; stage?: string } };
+    const stage = crop.growth;
+    const base = stage === 0
+      ? { origin: [-3, -25, -3], size: [6, 4, 6], sideUv: { uv: [3, 10], uv_size: [6, 4] }, capUv: { uv: [5, 5], uv_size: [6, 6] } }
+      : { origin: [-5, -25, -5], size: [10, 6, 10], sideUv: { uv: [3, 10], uv_size: [10, 6] }, capUv: { uv: [3, 3], uv_size: [10, 10] } };
+    const baseSideBones: LibraryBone[] = [
+      { name: "slot_{s}", pivot: [0, -16, 0] },
+      { name: "pitcher_base_side_{s}", parent: "slot_{s}", pivot: [0, -16, 0], cubes: [{
+        origin: base.origin, size: base.size,
+        uv: { north: base.sideUv, east: base.sideUv, south: base.sideUv, west: base.sideUv }
+      }] }
+    ];
+    const baseTopBones: LibraryBone[] = [
+      { name: "slot_{s}", pivot: [0, -16, 0] },
+      { name: "pitcher_base_top_{s}", parent: "slot_{s}", pivot: [0, -16, 0], cubes: [{
+        origin: base.origin, size: base.size, uv: { up: base.capUv }
+      }] }
+    ];
+    const baseBottomBones: LibraryBone[] = [
+      { name: "slot_{s}", pivot: [0, -16, 0] },
+      { name: "pitcher_base_bottom_{s}", parent: "slot_{s}", pivot: [0, -16, 0], cubes: [{
+        origin: base.origin, size: base.size, uv: { down: base.capUv }
+      }] }
+    ];
+    if (!crop.upper && stage === 0) return [
+      { name: "base_side", texture: crop.textures.side, textureSize: [16, 16], bones: baseSideBones },
+      { name: "base_top", texture: crop.textures.top, textureSize: [16, 16], bones: baseTopBones },
+      { name: "base_bottom", texture: crop.textures.bottom, textureSize: [16, 16], bones: baseBottomBones }
+    ];
+    if (crop.upper && stage < 3) {
+      return [{ name: "default", texture: crop.textures.top, textureSize: [16, 16], bones: [{ name: "slot_{s}", pivot: [0, -16, 0] }] }];
+    }
+    const flowerBones: LibraryBone[] = [{ name: "slot_{s}", pivot: [0, -16, 0] }];
+    const flowerName = `pitcher_${crop.upper ? "upper" : "lower"}_${stage}`;
+    const plane = (
+      name: string,
+      origin: readonly [number, number, number],
+      size: readonly [number, number, number],
+      pivot: readonly [number, number, number],
+      angle: number,
+      faces: readonly FullFace[]
+    ): LibraryBone => ({
+      name: `${name}_{s}`,
+      parent: "slot_{s}",
+      pivot,
+      rotation: [0, angle, 0],
+      cubes: [{ origin, size, uv: faceUvMap(faces) }]
+    });
+    if (stage === 1) {
+      flowerBones.push(
+        plane(`${flowerName}_x`, [-8, -19, 0], [16, 16, 0], [0, -19, 0], 45, ["north", "south"]),
+        plane(`${flowerName}_z`, [0, -19, -8], [0, 16, 16], [0, -19, 0], -45, ["east", "west"])
+      );
+    } else if (stage === 2) {
+      flowerBones.push(
+        plane(`${flowerName}_x`, [-8, -19, 0], [16, 16, 0], [0, -18, 0], 45, ["north", "south"]),
+        plane(`${flowerName}_z`, [0, -19, -8], [0, 16, 16], [0, -18, 0], 45, ["east", "west"])
+      );
+    } else if (stage === 3) {
+      flowerBones.push(
+        plane(`${flowerName}_x`, [-8, -24, 0], [16, 16, 0], [0, crop.upper ? -8 : -24, 0], 45, ["north", "south"]),
+        plane(`${flowerName}_z`, [0, -24, -8], [0, 16, 16], [0, crop.upper ? -8 : -24, 0], -45, ["east", "west"])
+      );
+    } else {
+      flowerBones.push(
+        plane(`${flowerName}_z`, [0, -24, -8], [0, 16, 16], [0, -24, 0], 45, ["east", "west"]),
+        plane(`${flowerName}_x`, [-8, -24, 0], [16, 16, 0], [0, -24, 0], 45, ["north", "south"])
+      );
+    }
+    const stageTexture = crop.textures.stage ?? crop.textures.top;
+    if (crop.upper) return [{ name: "default", texture: stageTexture, textureSize: [16, 16], bones: flowerBones }];
+    return [
+      { name: "base_side", texture: crop.textures.side, textureSize: [16, 16], bones: baseSideBones },
+      { name: "base_top", texture: crop.textures.top, textureSize: [16, 16], bones: baseTopBones },
+      { name: "base_bottom", texture: crop.textures.bottom, textureSize: [16, 16], bones: baseBottomBones },
+      { name: "stage", texture: stageTexture, textureSize: [16, 16], bones: flowerBones }
+    ];
+  }
   if (type === "full_block" || type === "grass_path") {
     const textures = description.textures as Record<FullFace, string>;
     const size = type === "grass_path" ? [16, 15, 16]

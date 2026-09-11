@@ -7,7 +7,8 @@ import type { FancySubLevelModelDescription } from "../../src/sublevel/render/fa
 const MODEL_TYPES = new Set([
   "full_block", "pillar", "chest", "bee_nest", "cocoa", "vine", "hanging_roots",
   "mangrove_propagule", "pale_hanging_moss", "mangrove_roots", "creaking_heart",
-  "wall", "grass_path", "moss_carpet", "pointed_dripstone", "multi_face", "sculk_shrieker"
+  "wall", "grass_path", "moss_carpet", "pointed_dripstone", "multi_face", "sculk_shrieker",
+  "crop", "cross", "stem", "orientable", "pitcher_crop"
 ]);
 const MATERIALS = new Set([
   "opaque", "alpha_test", "alpha_test_tint", "opaque_tint",
@@ -547,6 +548,41 @@ function validateModel(model: Record<string, unknown>, path: string): void {
     validateResource(model.texture, `${path}.model.texture`);
     validateDirection(model.direction, path);
     if (![0, 1, 2].includes(model.age as number)) throw new Error(`${path}: invalid cocoa age.`);
+    return;
+  }
+  if (type === "crop" || type === "cross") {
+    validateResource(model.texture, `${path}.model.texture`);
+    return;
+  }
+  if (type === "stem") {
+    validateResource(model.texture, `${path}.model.texture`);
+    validateResource(model.connectedTexture, `${path}.model.connectedTexture`);
+    if (!Number.isInteger(model.growth) || (model.growth as number) < 0 || (model.growth as number) > 7) {
+      throw new Error(`${path}: stem growth must be 0..7.`);
+    }
+    if (!Number.isInteger(model.direction) || (model.direction as number) < 0 || (model.direction as number) > 5) {
+      throw new Error(`${path}: stem direction must be 0..5.`);
+    }
+    return;
+  }
+  if (type === "orientable") {
+    validateSideTop(model, path);
+    validateResource((model.textures as Record<string, unknown>).front, `${path}.model.textures.front`);
+    if (!DIRECTIONS.has(String(model.facing))) throw new Error(`${path}: invalid orientable facing.`);
+    return;
+  }
+  if (type === "pitcher_crop") {
+    if (!Number.isInteger(model.growth) || (model.growth as number) < 0 || (model.growth as number) > 4) {
+      throw new Error(`${path}: pitcher crop growth must be 0..4.`);
+    }
+    if (typeof model.upper !== "boolean") throw new Error(`${path}: pitcher crop upper is required.`);
+    const textures = model.textures;
+    if (!textures || typeof textures !== "object") throw new Error(`${path}: pitcher crop textures required.`);
+    const textureRecord = textures as Record<string, unknown>;
+    for (const name of ["bottom", "side", "top"]) {
+      validateResource(textureRecord[name], `${path}.model.textures.${name}`);
+    }
+    if (textureRecord.stage !== undefined) validateResource(textureRecord.stage, `${path}.model.textures.stage`);
     return;
   }
   if (type === "vine") {
