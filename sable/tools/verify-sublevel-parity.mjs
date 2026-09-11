@@ -471,13 +471,16 @@ test("corrected terrain classification is complete and the registry is the only 
     fire_coral: "水体与冰雪", glowstone: "光源", pale_hanging_moss: "植物与花卉"
   })) assert.equal(classified.find(entry => entry.name === name).catalog, category, name);
   const expected = readData("自然/地形与石材/blocks.json").map(entry => `minecraft:${entry.name}`).sort();
+  const expectedOres = readData("自然/矿石与金属/blocks.json").map(entry => `minecraft:${entry.name}`).sort();
   const file = join(sable, "src/data/sublevel-block.json");
   const raw = json(file);
   const compiler = moduleLoader(join(sable, "tools"), {})("sublevel-block/registry.ts");
   const compiled = await compiler.readAndCompileRegistry(file);
-  assert.equal(Object.keys(raw.blocks).length, 143);
+  assert.equal(Object.keys(raw.blocks).length, 176);
   assert.equal(expected.length, 81);
+  assert.equal(expectedOres.length, 33);
   assert.deepEqual(Object.entries(raw.blocks).filter(([, entry]) => entry.category === "nature/terrain_and_stone").map(([id]) => id).sort(), expected);
+  assert.deepEqual(Object.entries(raw.blocks).filter(([, entry]) => entry.category === "nature/ores_and_metals").map(([id]) => id).sort(), expectedOres);
   assert.deepEqual(Object.keys(compiled.compiled).sort(), Object.keys(raw.blocks).sort());
   const grass = raw.blocks["minecraft:grass_block"];
   const copies = compiler.compileRegistry({ format_version: "1.0.0", blocks: {
@@ -517,6 +520,30 @@ test("terrain tools use the registered category and harvest tier, including unbr
   const { canBreakSubLevelBlock } = f.load("content/punching/SubLevelBlockPermissions.ts");
   assert.equal(canBreakSubLevelBlock("survival", "minecraft:bedrock", false, []), false);
   assert.equal(canBreakSubLevelBlock("creative", "minecraft:bedrock", false, []), true);
+});
+
+test("ore and metal registrations preserve six-face textures and lit materials", () => {
+  const registry = json(join(sable, "src/data/sublevel-block.json")).blocks;
+  const expected = JSON.parse(readFileSync(join(root, ".sample/VanillaBlock/VanillaBlockData/main/自然/矿石与金属/blocks.json"), "utf8"));
+  const expectedIds = new Set(expected.map(entry => `minecraft:${entry.name}`));
+  const rawVanilla = json(join(vanilla, "bedrock-sample-1.26.40.5/resource_pack/blocks.json"));
+  const rootTexture = join(vanilla, "bedrock-sample-1.26.40.5/resource_pack");
+  const texturePath = value => {
+    const path = join(rootTexture, `${value}.png`);
+    return existsSync(path) || existsSync(join(rootTexture, `${value}.tga`));
+  };
+  for (const id of expectedIds) {
+    const entry = registry[id];
+    assert(entry, `${id}: missing registry entry`);
+    assert.equal(entry.states.length, 0, `${id}: unexpected states`);
+    assert.equal(entry.variants.length, 0, `${id}: unexpected variants`);
+    assert.equal(entry.materials, id === "minecraft:lit_redstone_ore" || id === "minecraft:lit_deepslate_redstone_ore" ? "opaque_emissive" : "opaque", id);
+    const textures = entry.default.model.textures;
+    const values = Object.values(textures);
+    assert.equal(new Set(values).size, id === "minecraft:ancient_debris" ? 2 : 1, `${id}: face texture mismatch`);
+    for (const texture of values) assert(texturePath(texture), `${id}: missing ${texture}`);
+    assert(rawVanilla[id.slice("minecraft:".length)], `${id}: missing vanilla block definition`);
+  }
 });
 
 test("all multi-face and pale-moss states select the same faces in dense, sparse and available pools", () => {

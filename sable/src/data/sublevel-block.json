@@ -1994,6 +1994,699 @@
         }
       }
     },
+    "minecraft:ancient_debris": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 30,
+      "mining": { "tool": "pickaxe", "harvest_level": 3 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/ancient_debris_top",
+            "down": "textures/blocks/ancient_debris_top",
+            "north": "textures/blocks/ancient_debris_side",
+            "south": "textures/blocks/ancient_debris_side",
+            "east": "textures/blocks/ancient_debris_side",
+            "west": "textures/blocks/ancient_debris_side"
+          }
+        }
+      }
+    },
+    "minecraft:coal_block": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/coal_block",
+            "down": "textures/blocks/coal_block",
+            "north": "textures/blocks/coal_block",
+            "south": "textures/blocks/coal_block",
+            "east": "textures/blocks/coal_block",
+            "west": "textures/blocks/coal_block"
+          }
+        }
+      }
+    },
+    "minecraft:copper_block": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 3,
+      "mining": { "tool": "pickaxe", "harvest_level": 1 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/copper_block",
+            "down": "textures/blocks/copper_block",
+            "north": "textures/blocks/copper_block",
+            "south": "textures/blocks/copper_block",
+            "east": "textures/blocks/copper_block",
+            "west": "textures/blocks/copper_block"
+          }
+        }
+      }
+    },
+    "minecraft:diamond_block": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 5,
+      "mining": { "tool": "pickaxe", "harvest_level": 2 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/diamond_block",
+            "down": "textures/blocks/diamond_block",
+            "north": "textures/blocks/diamond_block",
+            "south": "textures/blocks/diamond_block",
+            "east": "textures/blocks/diamond_block",
+            "west": "textures/blocks/diamond_block"
+          }
+        }
+      }
+    },
+    "minecraft:emerald_block": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 5,
+      "mining": { "tool": "pickaxe", "harvest_level": 2 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/emerald_block",
+            "down": "textures/blocks/emerald_block",
+            "north": "textures/blocks/emerald_block",
+            "south": "textures/blocks/emerald_block",
+            "east": "textures/blocks/emerald_block",
+            "west": "textures/blocks/emerald_block"
+          }
+        }
+      }
+    },
+    "minecraft:gold_block": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 3,
+      "mining": { "tool": "pickaxe", "harvest_level": 2 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/gold_block",
+            "down": "textures/blocks/gold_block",
+            "north": "textures/blocks/gold_block",
+            "south": "textures/blocks/gold_block",
+            "east": "textures/blocks/gold_block",
+            "west": "textures/blocks/gold_block"
+          }
+        }
+      }
+    },
+    "minecraft:iron_block": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 5,
+      "mining": { "tool": "pickaxe", "harvest_level": 1 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/iron_block",
+            "down": "textures/blocks/iron_block",
+            "north": "textures/blocks/iron_block",
+            "south": "textures/blocks/iron_block",
+            "east": "textures/blocks/iron_block",
+            "west": "textures/blocks/iron_block"
+          }
+        }
+      }
+    },
+    "minecraft:lapis_block": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 3,
+      "mining": { "tool": "pickaxe", "harvest_level": 1 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/lapis_block",
+            "down": "textures/blocks/lapis_block",
+            "north": "textures/blocks/lapis_block",
+            "south": "textures/blocks/lapis_block",
+            "east": "textures/blocks/lapis_block",
+            "west": "textures/blocks/lapis_block"
+          }
+        }
+      }
+    },
+    "minecraft:netherite_block": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 50,
+      "mining": { "tool": "pickaxe", "harvest_level": 3 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/netherite_block",
+            "down": "textures/blocks/netherite_block",
+            "north": "textures/blocks/netherite_block",
+            "south": "textures/blocks/netherite_block",
+            "east": "textures/blocks/netherite_block",
+            "west": "textures/blocks/netherite_block"
+          }
+        }
+      }
+    },
+    "minecraft:raw_copper_block": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 5,
+      "mining": { "tool": "pickaxe", "harvest_level": 1 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/raw_copper_block",
+            "down": "textures/blocks/raw_copper_block",
+            "north": "textures/blocks/raw_copper_block",
+            "south": "textures/blocks/raw_copper_block",
+            "east": "textures/blocks/raw_copper_block",
+            "west": "textures/blocks/raw_copper_block"
+          }
+        }
+      }
+    },
+    "minecraft:raw_gold_block": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 5,
+      "mining": { "tool": "pickaxe", "harvest_level": 2 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/raw_gold_block",
+            "down": "textures/blocks/raw_gold_block",
+            "north": "textures/blocks/raw_gold_block",
+            "south": "textures/blocks/raw_gold_block",
+            "east": "textures/blocks/raw_gold_block",
+            "west": "textures/blocks/raw_gold_block"
+          }
+        }
+      }
+    },
+    "minecraft:raw_iron_block": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 5,
+      "mining": { "tool": "pickaxe", "harvest_level": 1 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/raw_iron_block",
+            "down": "textures/blocks/raw_iron_block",
+            "north": "textures/blocks/raw_iron_block",
+            "south": "textures/blocks/raw_iron_block",
+            "east": "textures/blocks/raw_iron_block",
+            "west": "textures/blocks/raw_iron_block"
+          }
+        }
+      }
+    },
+    "minecraft:redstone_block": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/redstone_block",
+            "down": "textures/blocks/redstone_block",
+            "north": "textures/blocks/redstone_block",
+            "south": "textures/blocks/redstone_block",
+            "east": "textures/blocks/redstone_block",
+            "west": "textures/blocks/redstone_block"
+          }
+        }
+      }
+    },
+    "minecraft:coal_ore": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 3,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/coal_ore",
+            "down": "textures/blocks/coal_ore",
+            "north": "textures/blocks/coal_ore",
+            "south": "textures/blocks/coal_ore",
+            "east": "textures/blocks/coal_ore",
+            "west": "textures/blocks/coal_ore"
+          }
+        }
+      }
+    },
+    "minecraft:copper_ore": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 3,
+      "mining": { "tool": "pickaxe", "harvest_level": 1 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/copper_ore",
+            "down": "textures/blocks/copper_ore",
+            "north": "textures/blocks/copper_ore",
+            "south": "textures/blocks/copper_ore",
+            "east": "textures/blocks/copper_ore",
+            "west": "textures/blocks/copper_ore"
+          }
+        }
+      }
+    },
+    "minecraft:deepslate_coal_ore": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 4.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/deepslate/deepslate_coal_ore",
+            "down": "textures/blocks/deepslate/deepslate_coal_ore",
+            "north": "textures/blocks/deepslate/deepslate_coal_ore",
+            "south": "textures/blocks/deepslate/deepslate_coal_ore",
+            "east": "textures/blocks/deepslate/deepslate_coal_ore",
+            "west": "textures/blocks/deepslate/deepslate_coal_ore"
+          }
+        }
+      }
+    },
+    "minecraft:deepslate_copper_ore": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 4.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 1 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/deepslate/deepslate_copper_ore",
+            "down": "textures/blocks/deepslate/deepslate_copper_ore",
+            "north": "textures/blocks/deepslate/deepslate_copper_ore",
+            "south": "textures/blocks/deepslate/deepslate_copper_ore",
+            "east": "textures/blocks/deepslate/deepslate_copper_ore",
+            "west": "textures/blocks/deepslate/deepslate_copper_ore"
+          }
+        }
+      }
+    },
+    "minecraft:deepslate_diamond_ore": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 4.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 2 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/deepslate/deepslate_diamond_ore",
+            "down": "textures/blocks/deepslate/deepslate_diamond_ore",
+            "north": "textures/blocks/deepslate/deepslate_diamond_ore",
+            "south": "textures/blocks/deepslate/deepslate_diamond_ore",
+            "east": "textures/blocks/deepslate/deepslate_diamond_ore",
+            "west": "textures/blocks/deepslate/deepslate_diamond_ore"
+          }
+        }
+      }
+    },
+    "minecraft:deepslate_emerald_ore": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 4.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 2 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/deepslate/deepslate_emerald_ore",
+            "down": "textures/blocks/deepslate/deepslate_emerald_ore",
+            "north": "textures/blocks/deepslate/deepslate_emerald_ore",
+            "south": "textures/blocks/deepslate/deepslate_emerald_ore",
+            "east": "textures/blocks/deepslate/deepslate_emerald_ore",
+            "west": "textures/blocks/deepslate/deepslate_emerald_ore"
+          }
+        }
+      }
+    },
+    "minecraft:deepslate_gold_ore": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 4.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 2 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/deepslate/deepslate_gold_ore",
+            "down": "textures/blocks/deepslate/deepslate_gold_ore",
+            "north": "textures/blocks/deepslate/deepslate_gold_ore",
+            "south": "textures/blocks/deepslate/deepslate_gold_ore",
+            "east": "textures/blocks/deepslate/deepslate_gold_ore",
+            "west": "textures/blocks/deepslate/deepslate_gold_ore"
+          }
+        }
+      }
+    },
+    "minecraft:deepslate_iron_ore": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 4.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 1 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/deepslate/deepslate_iron_ore",
+            "down": "textures/blocks/deepslate/deepslate_iron_ore",
+            "north": "textures/blocks/deepslate/deepslate_iron_ore",
+            "south": "textures/blocks/deepslate/deepslate_iron_ore",
+            "east": "textures/blocks/deepslate/deepslate_iron_ore",
+            "west": "textures/blocks/deepslate/deepslate_iron_ore"
+          }
+        }
+      }
+    },
+    "minecraft:deepslate_lapis_ore": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 4.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 1 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/deepslate/deepslate_lapis_ore",
+            "down": "textures/blocks/deepslate/deepslate_lapis_ore",
+            "north": "textures/blocks/deepslate/deepslate_lapis_ore",
+            "south": "textures/blocks/deepslate/deepslate_lapis_ore",
+            "east": "textures/blocks/deepslate/deepslate_lapis_ore",
+            "west": "textures/blocks/deepslate/deepslate_lapis_ore"
+          }
+        }
+      }
+    },
+    "minecraft:deepslate_redstone_ore": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 4.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 2 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/deepslate/deepslate_redstone_ore",
+            "down": "textures/blocks/deepslate/deepslate_redstone_ore",
+            "north": "textures/blocks/deepslate/deepslate_redstone_ore",
+            "south": "textures/blocks/deepslate/deepslate_redstone_ore",
+            "east": "textures/blocks/deepslate/deepslate_redstone_ore",
+            "west": "textures/blocks/deepslate/deepslate_redstone_ore"
+          }
+        }
+      }
+    },
+    "minecraft:lit_deepslate_redstone_ore": {
+      "materials": "opaque_emissive",
+      "category": "nature/ores_and_metals",
+      "hardness": 4.5,
+      "mining": { "tool": "pickaxe", "harvest_level": 2 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/deepslate/deepslate_redstone_ore",
+            "down": "textures/blocks/deepslate/deepslate_redstone_ore",
+            "north": "textures/blocks/deepslate/deepslate_redstone_ore",
+            "south": "textures/blocks/deepslate/deepslate_redstone_ore",
+            "east": "textures/blocks/deepslate/deepslate_redstone_ore",
+            "west": "textures/blocks/deepslate/deepslate_redstone_ore"
+          }
+        }
+      }
+    },
+    "minecraft:diamond_ore": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 3,
+      "mining": { "tool": "pickaxe", "harvest_level": 2 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/diamond_ore",
+            "down": "textures/blocks/diamond_ore",
+            "north": "textures/blocks/diamond_ore",
+            "south": "textures/blocks/diamond_ore",
+            "east": "textures/blocks/diamond_ore",
+            "west": "textures/blocks/diamond_ore"
+          }
+        }
+      }
+    },
+    "minecraft:emerald_ore": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 3,
+      "mining": { "tool": "pickaxe", "harvest_level": 2 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/emerald_ore",
+            "down": "textures/blocks/emerald_ore",
+            "north": "textures/blocks/emerald_ore",
+            "south": "textures/blocks/emerald_ore",
+            "east": "textures/blocks/emerald_ore",
+            "west": "textures/blocks/emerald_ore"
+          }
+        }
+      }
+    },
+    "minecraft:gold_ore": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 3,
+      "mining": { "tool": "pickaxe", "harvest_level": 2 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/gold_ore",
+            "down": "textures/blocks/gold_ore",
+            "north": "textures/blocks/gold_ore",
+            "south": "textures/blocks/gold_ore",
+            "east": "textures/blocks/gold_ore",
+            "west": "textures/blocks/gold_ore"
+          }
+        }
+      }
+    },
+    "minecraft:iron_ore": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 3,
+      "mining": { "tool": "pickaxe", "harvest_level": 1 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/iron_ore",
+            "down": "textures/blocks/iron_ore",
+            "north": "textures/blocks/iron_ore",
+            "south": "textures/blocks/iron_ore",
+            "east": "textures/blocks/iron_ore",
+            "west": "textures/blocks/iron_ore"
+          }
+        }
+      }
+    },
+    "minecraft:lapis_ore": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 3,
+      "mining": { "tool": "pickaxe", "harvest_level": 1 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/lapis_ore",
+            "down": "textures/blocks/lapis_ore",
+            "north": "textures/blocks/lapis_ore",
+            "south": "textures/blocks/lapis_ore",
+            "east": "textures/blocks/lapis_ore",
+            "west": "textures/blocks/lapis_ore"
+          }
+        }
+      }
+    },
+    "minecraft:nether_gold_ore": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 3,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/nether_gold_ore",
+            "down": "textures/blocks/nether_gold_ore",
+            "north": "textures/blocks/nether_gold_ore",
+            "south": "textures/blocks/nether_gold_ore",
+            "east": "textures/blocks/nether_gold_ore",
+            "west": "textures/blocks/nether_gold_ore"
+          }
+        }
+      }
+    },
+    "minecraft:quartz_ore": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 3,
+      "mining": { "tool": "pickaxe", "harvest_level": 0 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/quartz_ore",
+            "down": "textures/blocks/quartz_ore",
+            "north": "textures/blocks/quartz_ore",
+            "south": "textures/blocks/quartz_ore",
+            "east": "textures/blocks/quartz_ore",
+            "west": "textures/blocks/quartz_ore"
+          }
+        }
+      }
+    },
+    "minecraft:lit_redstone_ore": {
+      "materials": "opaque_emissive",
+      "category": "nature/ores_and_metals",
+      "hardness": 3,
+      "mining": { "tool": "pickaxe", "harvest_level": 2 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/redstone_ore",
+            "down": "textures/blocks/redstone_ore",
+            "north": "textures/blocks/redstone_ore",
+            "south": "textures/blocks/redstone_ore",
+            "east": "textures/blocks/redstone_ore",
+            "west": "textures/blocks/redstone_ore"
+          }
+        }
+      }
+    },
+    "minecraft:redstone_ore": {
+      "materials": "opaque",
+      "category": "nature/ores_and_metals",
+      "hardness": 3,
+      "mining": { "tool": "pickaxe", "harvest_level": 2 },
+      "states": [],
+      "variants": [],
+      "default": {
+        "model": {
+          "type": "full_block",
+          "textures": {
+            "up": "textures/blocks/redstone_ore",
+            "down": "textures/blocks/redstone_ore",
+            "north": "textures/blocks/redstone_ore",
+            "south": "textures/blocks/redstone_ore",
+            "east": "textures/blocks/redstone_ore",
+            "west": "textures/blocks/redstone_ore"
+          }
+        }
+      }
+    },
     "minecraft:oak_log": {
       "materials": "opaque",
       "category": "building/logs_and_wood",
