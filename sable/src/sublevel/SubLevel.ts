@@ -24,12 +24,16 @@ export interface SubLevelBlockCollisionBox {
 }
 
 export interface SubLevelBlock {
+  /** Displaced fluid volume in whole-block units; the physics table supplies the default. */
+  readonly buoyancyVolume?: number;
   readonly collidable?: boolean;
   readonly collisionResponse?: boolean;
   readonly collisionShape?: "full" | "none" | readonly SubLevelBlockCollisionBox[];
   readonly itemTypeId?: string;
   readonly localLocation: Vector3;
   readonly mapColor?: SubLevelBlockMapColor;
+  /** Rigid-body mass contribution; the physics table supplies the default. */
+  readonly mass?: number;
   readonly rotation?: Vector3;
   /** Neighbor-derived model state; rebuilt from the block grid on load. */
   readonly renderState?: number;

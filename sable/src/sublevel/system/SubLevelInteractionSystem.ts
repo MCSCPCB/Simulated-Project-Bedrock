@@ -1,20 +1,17 @@
-// The sub-level interaction runtime: the interaction-facing capabilities the
-// source contraption object carried (local block index, grid raycast, content
-// revision, render rotation and anchor, model-state passthrough, rider
-// attachment) provided over a plain SubLevel plus its render data.
+// The sub-level interaction runtime: the interaction-facing capabilities of a
+// sub-level (local block index, grid raycast, content revision, render rotation
+// and anchor, model-state passthrough, rider attachment) provided over a plain
+// SubLevel plus its render data.
 import type { Dimension, Entity, Vector3 } from "@minecraft/server";
 import type { SubLevel, SubLevelBlock } from "../SubLevel.js";
 import type { SubLevelRenderData } from "../render/SubLevelRenderData.js";
 import { selectSubLevelRenderAnchor } from "../../util/SublevelRenderOffsetHelper.js";
+import { blockLocationKey } from "../../util/SableVector3Utils.js";
 import {
-  EPSILON_1E8,
-  blockLocationKey,
-  isFiniteVector
-} from "../../util/SableVector3Utils.js";
-import {
-  raycastSubLevelGrid,
+  raycastSubLevelBody,
   type SubLevelBlockFace
 } from "../../content/raycast/SubLevelGridRaycast.js";
+import type { RigidBodyHandle } from "../../api/physics/handle/RigidBodyHandle.js";
 
 export interface SubLevelInteractionRaycastOptions {
   /** Interaction rays traverse passable foliage; selection rays do not opt in. */
@@ -44,6 +41,8 @@ export interface SubLevelInteractionRegistrationOptions {
   isMoving?(): boolean;
   /** Whether block placement onto this sub-level is supported. Defaults to true. */
   readonly supportsBlockPlacement?: boolean;
+  /** The simulated rigid body behind this sub-level, for punching and dragging. */
+  readonly rigidBody?: RigidBodyHandle;
 }
 
 /** Whether a block stops interaction rays: passable foliage lets them through. */
@@ -107,6 +106,11 @@ export class SubLevelInteractionHandle {
     return this.#options.isMoving?.() ?? false;
   }
 
+  /** The simulated rigid body behind this sub-level, when it has one. */
+  get rigidBody(): RigidBodyHandle | undefined {
+    return this.#options.rigidBody;
+  }
+
   get renderData(): SubLevelRenderData | undefined {
     return this.#options.renderData;
   }
@@ -142,68 +146,20 @@ export class SubLevelInteractionHandle {
     maximumDistance: number,
     options?: SubLevelInteractionRaycastOptions
   ): SubLevelInteractionRaycastHit | undefined {
-    if (!this.isValid || !isFiniteVector(origin) || !isFiniteVector(direction)) {
-      return undefined;
-    }
-    if (Number.isNaN(maximumDistance) || maximumDistance < 0) return undefined;
-    const directionLength = Math.hypot(direction.x, direction.y, direction.z);
-    if (!Number.isFinite(directionLength) || directionLength < EPSILON_1E8) return undefined;
-    const unitDirection = {
-      x: direction.x / directionLength,
-      y: direction.y / directionLength,
-      z: direction.z / directionLength
-    };
-    const localOrigin = this.worldPointToLocal(origin);
-    const localEnd = this.worldPointToLocal({
-      x: origin.x + unitDirection.x,
-      y: origin.y + unitDirection.y,
-      z: origin.z + unitDirection.z
-    });
-    const localDirection = {
-      x: localEnd.x - localOrigin.x,
-      y: localEnd.y - localOrigin.y,
-      z: localEnd.z - localOrigin.z
-    };
-    const blockAt = options?.ignorePassableBlocks
-      ? (x: number, y: number, z: number) => {
-        const block = this.#blocksByKey.get(`${x},${y},${z}`);
-        return block && isSubLevelBlockRaySolid(block) ? block : undefined;
-      }
-      : (x: number, y: number, z: number) => this.#blocksByKey.get(`${x},${y},${z}`);
-    const closest = raycastSubLevelGrid(
-      blockAt,
-      localOrigin,
-      localDirection,
+    if (!this.isValid) return undefined;
+    return raycastSubLevelBody(
+      this,
+      options?.ignorePassableBlocks
+        ? (x: number, y: number, z: number) => {
+          const block = this.#blocksByKey.get(`${x},${y},${z}`);
+          return block && isSubLevelBlockRaySolid(block) ? block : undefined;
+        }
+        : (x: number, y: number, z: number) => this.#blocksByKey.get(`${x},${y},${z}`),
+      origin,
+      direction,
       maximumDistance,
-      { skipContainingCell: options?.skipContainingBlock }
+      options
     );
-    if (!closest) return undefined;
-    const location = {
-      x: origin.x + unitDirection.x * closest.distance,
-      y: origin.y + unitDirection.y * closest.distance,
-      z: origin.z + unitDirection.z * closest.distance
-    };
-    const localLocation = {
-      x: localOrigin.x + localDirection.x * closest.distance,
-      y: localOrigin.y + localDirection.y * closest.distance,
-      z: localOrigin.z + localDirection.z * closest.distance
-    };
-    const localZero = this.localPointToWorld({ x: 0, y: 0, z: 0 });
-    const rotatedNormal = this.localPointToWorld(closest.localNormal);
-    const normal = normalizeVector({
-      x: rotatedNormal.x - localZero.x,
-      y: rotatedNormal.y - localZero.y,
-      z: rotatedNormal.z - localZero.z
-    });
-    return {
-      block: closest.block,
-      distance: closest.distance,
-      face: closest.face,
-      localLocation,
-      localNormal: closest.localNormal,
-      location,
-      normal
-    };
   }
 
   removeBlockAtLocalLocation(location: Vector3): SubLevelBlock | undefined {
@@ -383,8 +339,3 @@ function indexBlocks(blocks: readonly SubLevelBlock[]): Map<string, SubLevelBloc
   return index;
 }
 
-function normalizeVector(value: Vector3): Vector3 {
-  const length = Math.hypot(value.x, value.y, value.z);
-  if (!Number.isFinite(length) || length < EPSILON_1E8) return { x: 0, y: 0, z: 0 };
-  return { x: value.x / length, y: value.y / length, z: value.z / length };
-}

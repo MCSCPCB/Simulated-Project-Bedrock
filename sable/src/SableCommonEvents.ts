@@ -14,6 +14,13 @@ import { SubLevelContainerInteractionController } from "./content/assembly/SubLe
 import { registerVanillaSubLevelBlockBehaviors } from "./content/blocks/vanilla/VanillaSubLevelBlockBehaviors.js";
 import { SubLevelPlayerInteractionController } from "./content/punching/SubLevelPlayerInteraction.js";
 import { SubLevelInteractionSystem } from "./sublevel/system/SubLevelInteractionSystem.js";
+import { sablePhysics } from "./sublevel/system/SubLevelPhysicsSystem.js";
+import { SubLevelForceQueue } from "./api/physics/force/SubLevelForceQueue.js";
+import { installSubLevelExplosionPhysics } from "./content/explosion/SubLevelExplosionPhysics.js";
+import { installSubLevelPistonPhysics } from "./content/piston/SubLevelPistonPhysics.js";
+import { handleSubLevelSurfaceParticle } from "./content/entities_stick_sublevels/effects/SubLevelSurfaceContactEffects.js";
+import { handleBlockColliderLoad } from "./sublevel/entity_collision/SubLevelEntityCollision.js";
+import { handleSubLevelMountLoad } from "./content/entities_stick_sublevels/SubLevelMount.js";
 import { VANILLA_DIMENSION_IDS } from "./util/SableVector3Utils.js";
 
 // Render entities from an earlier session have no owner after a script reload;
@@ -21,15 +28,28 @@ import { VANILLA_DIMENSION_IDS } from "./util/SableVector3Utils.js";
 // entities are always replaced by the restored runtime records.
 const STALE_RENDER_ENTITY_FAMILIES = ["fancy_model", "block"] as const;
 
+export const sableForceQueue = new SubLevelForceQueue(sablePhysics);
 export const sableInteractionSystem = new SubLevelInteractionSystem();
 export const sableBlockBehaviors = new SubLevelBlockBehaviorRegistry();
 export const sableContainerInteraction = new SubLevelContainerInteractionController();
-export const sablePlayerInteraction = new SubLevelPlayerInteractionController(sableInteractionSystem);
+export const sablePlayerInteraction = new SubLevelPlayerInteractionController(
+  sableInteractionSystem,
+  sablePhysics
+);
 export const sableSubLevels = new ServerSubLevelContainer(
   sableInteractionSystem,
   sableBlockBehaviors,
-  sableContainerInteraction
+  sableContainerInteraction,
+  sablePhysics
 );
+
+// Impact damage spares whoever is dragging the sub-level, so the drag sessions
+// owned by the player controller decide immunity.
+sableSubLevels.setDamageImmunityPredicate((subLevel, entity) => (
+  sablePlayerInteraction.isDraggingSubLevel(entity.id, subLevel)
+));
+installSubLevelExplosionPhysics(sableForceQueue);
+installSubLevelPistonPhysics(sableForceQueue);
 
 sablePlayerInteraction.setBlockBreakHandler((player, itemStack, handle, block) => (
   sableSubLevels.breakBlockForPlayerEdit(player, itemStack, handle, block)
@@ -67,15 +87,44 @@ sableContainerInteraction.start();
 sablePlayerInteraction.start();
 
 world.afterEvents.entityLoad.subscribe(event => {
+  handleBlockColliderLoad(event.entity);
+  handleSubLevelMountLoad(event.entity);
   sableSubLevels.handleVisualEntityLoad(event.entity);
   sablePlayerInteraction.handleVisualEntityLoad(event.entity);
   sableContainerInteraction.handleEntityLoad(event.entity);
 });
 
+// Collision reaches gameplay in the source's order: fragile-block breakage
+// resolves which block was struck, and that block's material decides the
+// impact sound.
+sablePhysics.afterEvents.collision.subscribe(event => {
+  const collisionTypeId = sableSubLevels.fragileBlocks.handleCollision(event);
+  sableSubLevels.impactSounds.handleCollision(event, collisionTypeId);
+});
+sablePhysics.afterEvents.waterEntry.subscribe(event => {
+  sableSubLevels.fluidEntryEffects.handleWaterEntry(event);
+});
+sablePhysics.afterEvents.lavaEntry.subscribe(event => {
+  sableSubLevels.fluidEntryEffects.handleLavaEntry(event);
+});
+sablePhysics.afterEvents.surfaceParticle.subscribe(event => {
+  handleSubLevelSurfaceParticle(
+    event,
+    id => sablePhysics.getExistingDimension(event.dimension)?.getSubLevelById(id)
+  );
+});
+
+world.afterEvents.playerSpawn.subscribe(event => {
+  sablePhysics.handleMountPlayerSpawn(event.player);
+});
+
+sablePhysics.start();
+
 system.runInterval(() => {
-  // The container controller ticks through the interaction handler hook.
-  sablePlayerInteraction.tick(system.currentTick);
+  // Physics steps first: the container's own tick reads the poses this step
+  // produced, and the interaction controller then acts on settled sub-levels.
   sableSubLevels.tick(system.currentTick);
+  sablePlayerInteraction.tick(system.currentTick);
 }, 1);
 
 // Dimension queries are unavailable during early execution; reload cleanup and

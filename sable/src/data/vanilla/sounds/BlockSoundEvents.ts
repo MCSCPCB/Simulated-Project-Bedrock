@@ -5756,3 +5756,579 @@ export const VANILLA_BLOCK_HIT_SOUND_EVENT_INDICES = {
   "minecraft:yellow_wool": 19,
   "minecraft:zombie_head": 5
 };
+
+export const VANILLA_BLOCK_STEP_SOUND_EVENTS: readonly GeneratedBlockSoundEvent[] = [
+  [
+    "step.grass",
+    1,
+    1,
+    0.3,
+    0.3
+  ],
+  [
+    "step.wood",
+    1,
+    1,
+    0.3,
+    0.3
+  ],
+  [
+    "step.azalea_leaves",
+    1,
+    1,
+    0.3,
+    0.3
+  ],
+  [
+    "step.cherry_leaves",
+    1,
+    1,
+    0.2,
+    0.2
+  ],
+  [
+    "step.cherry_wood",
+    1,
+    1,
+    0.2,
+    0.2
+  ],
+  [
+    "block.creaking_heart.step",
+    1,
+    1,
+    0.15,
+    0.15
+  ],
+  [
+    "step.hanging_roots",
+    1,
+    1,
+    0.17,
+    0.17
+  ],
+  [
+    "block.mangrove_roots.step",
+    1,
+    1,
+    0.1,
+    0.1
+  ],
+  [
+    "block.muddy_mangrove_roots.step",
+    1,
+    1,
+    0.05,
+    0.05
+  ],
+  [
+    "step.moss",
+    1,
+    1,
+    0.2,
+    0.2
+  ],
+  [
+    "step.vines",
+    1,
+    1,
+    0.3,
+    0.3
+  ]
+];
+
+export const VANILLA_BLOCK_STEP_SOUND_EVENT_INDICES: Readonly<Record<string, number>> = {
+  "minecraft:acacia_leaves": 0,
+  "minecraft:acacia_log": 1,
+  "minecraft:acacia_wood": 1,
+  "minecraft:azalea_leaves": 2,
+  "minecraft:azalea_leaves_flowered": 2,
+  "minecraft:bee_nest": 1,
+  "minecraft:beehive": 1,
+  "minecraft:birch_leaves": 0,
+  "minecraft:birch_log": 1,
+  "minecraft:birch_wood": 1,
+  "minecraft:cherry_leaves": 3,
+  "minecraft:cherry_log": 4,
+  "minecraft:cherry_wood": 4,
+  "minecraft:cocoa": 1,
+  "minecraft:creaking_heart": 5,
+  "minecraft:dark_oak_leaves": 0,
+  "minecraft:dark_oak_log": 1,
+  "minecraft:dark_oak_wood": 1,
+  "minecraft:hanging_roots": 6,
+  "minecraft:jungle_leaves": 0,
+  "minecraft:jungle_log": 1,
+  "minecraft:jungle_wood": 1,
+  "minecraft:leaves": 0,
+  "minecraft:leaves2": 0,
+  "minecraft:log": 1,
+  "minecraft:log2": 1,
+  "minecraft:mangrove_leaves": 0,
+  "minecraft:mangrove_log": 1,
+  "minecraft:mangrove_propagule": 0,
+  "minecraft:mangrove_roots": 7,
+  "minecraft:mangrove_wood": 1,
+  "minecraft:muddy_mangrove_roots": 8,
+  "minecraft:oak_leaves": 0,
+  "minecraft:oak_log": 1,
+  "minecraft:oak_wood": 1,
+  "minecraft:pale_hanging_moss": 9,
+  "minecraft:pale_oak_leaves": 0,
+  "minecraft:pale_oak_log": 1,
+  "minecraft:pale_oak_wood": 1,
+  "minecraft:spruce_leaves": 0,
+  "minecraft:spruce_log": 1,
+  "minecraft:spruce_wood": 1,
+  "minecraft:stripped_acacia_log": 1,
+  "minecraft:stripped_acacia_wood": 1,
+  "minecraft:stripped_birch_log": 1,
+  "minecraft:stripped_birch_wood": 1,
+  "minecraft:stripped_cherry_log": 4,
+  "minecraft:stripped_cherry_wood": 4,
+  "minecraft:stripped_dark_oak_log": 1,
+  "minecraft:stripped_dark_oak_wood": 1,
+  "minecraft:stripped_jungle_log": 1,
+  "minecraft:stripped_jungle_wood": 1,
+  "minecraft:stripped_mangrove_log": 1,
+  "minecraft:stripped_mangrove_wood": 1,
+  "minecraft:stripped_oak_log": 1,
+  "minecraft:stripped_oak_wood": 1,
+  "minecraft:stripped_pale_oak_log": 1,
+  "minecraft:stripped_pale_oak_wood": 1,
+  "minecraft:stripped_spruce_log": 1,
+  "minecraft:stripped_spruce_wood": 1,
+  "minecraft:vine": 10
+};
+
+export const VANILLA_BLOCK_JUMP_SOUND_EVENTS: readonly GeneratedBlockSoundEvent[] = [
+  [
+    "jump.grass",
+    1,
+    1,
+    0.11,
+    0.11
+  ],
+  [
+    "jump.wood",
+    1,
+    1,
+    0.12,
+    0.12
+  ],
+  [
+    "step.azalea_leaves",
+    1,
+    1,
+    0.12,
+    0.12
+  ],
+  [
+    "step.cherry_leaves",
+    1,
+    1,
+    0.12,
+    0.12
+  ],
+  [
+    "step.cherry_wood",
+    1,
+    1,
+    0.12,
+    0.12
+  ],
+  [
+    "block.creaking_heart.step",
+    1.1,
+    1.1,
+    0.12,
+    0.12
+  ],
+  [
+    "jump.hanging_roots",
+    1,
+    1,
+    0.12,
+    0.12
+  ],
+  [
+    "block.mangrove_roots.step",
+    1,
+    1,
+    0.1,
+    0.1
+  ],
+  [
+    "block.muddy_mangrove_roots.step",
+    1,
+    1,
+    0.05,
+    0.05
+  ],
+  [
+    "jump.moss",
+    1,
+    1,
+    1,
+    1
+  ],
+  [
+    "jump.vines",
+    1,
+    1,
+    0.12,
+    0.12
+  ]
+];
+
+export const VANILLA_BLOCK_JUMP_SOUND_EVENT_INDICES: Readonly<Record<string, number>> = {
+  "minecraft:acacia_leaves": 0,
+  "minecraft:acacia_log": 1,
+  "minecraft:acacia_wood": 1,
+  "minecraft:azalea_leaves": 2,
+  "minecraft:azalea_leaves_flowered": 2,
+  "minecraft:bee_nest": 1,
+  "minecraft:beehive": 1,
+  "minecraft:birch_leaves": 0,
+  "minecraft:birch_log": 1,
+  "minecraft:birch_wood": 1,
+  "minecraft:cherry_leaves": 3,
+  "minecraft:cherry_log": 4,
+  "minecraft:cherry_wood": 4,
+  "minecraft:cocoa": 1,
+  "minecraft:creaking_heart": 5,
+  "minecraft:dark_oak_leaves": 0,
+  "minecraft:dark_oak_log": 1,
+  "minecraft:dark_oak_wood": 1,
+  "minecraft:hanging_roots": 6,
+  "minecraft:jungle_leaves": 0,
+  "minecraft:jungle_log": 1,
+  "minecraft:jungle_wood": 1,
+  "minecraft:leaves": 0,
+  "minecraft:leaves2": 0,
+  "minecraft:log": 1,
+  "minecraft:log2": 1,
+  "minecraft:mangrove_leaves": 0,
+  "minecraft:mangrove_log": 1,
+  "minecraft:mangrove_propagule": 0,
+  "minecraft:mangrove_roots": 7,
+  "minecraft:mangrove_wood": 1,
+  "minecraft:muddy_mangrove_roots": 8,
+  "minecraft:oak_leaves": 0,
+  "minecraft:oak_log": 1,
+  "minecraft:oak_wood": 1,
+  "minecraft:pale_hanging_moss": 9,
+  "minecraft:pale_oak_leaves": 0,
+  "minecraft:pale_oak_log": 1,
+  "minecraft:pale_oak_wood": 1,
+  "minecraft:spruce_leaves": 0,
+  "minecraft:spruce_log": 1,
+  "minecraft:spruce_wood": 1,
+  "minecraft:stripped_acacia_log": 1,
+  "minecraft:stripped_acacia_wood": 1,
+  "minecraft:stripped_birch_log": 1,
+  "minecraft:stripped_birch_wood": 1,
+  "minecraft:stripped_cherry_log": 4,
+  "minecraft:stripped_cherry_wood": 4,
+  "minecraft:stripped_dark_oak_log": 1,
+  "minecraft:stripped_dark_oak_wood": 1,
+  "minecraft:stripped_jungle_log": 1,
+  "minecraft:stripped_jungle_wood": 1,
+  "minecraft:stripped_mangrove_log": 1,
+  "minecraft:stripped_mangrove_wood": 1,
+  "minecraft:stripped_oak_log": 1,
+  "minecraft:stripped_oak_wood": 1,
+  "minecraft:stripped_pale_oak_log": 1,
+  "minecraft:stripped_pale_oak_wood": 1,
+  "minecraft:stripped_spruce_log": 1,
+  "minecraft:stripped_spruce_wood": 1,
+  "minecraft:vine": 10
+};
+
+export const VANILLA_BLOCK_LAND_SOUND_EVENTS: readonly GeneratedBlockSoundEvent[] = [
+  [
+    "land.grass",
+    1,
+    1,
+    0.21,
+    0.21
+  ],
+  [
+    "land.wood",
+    1,
+    1,
+    0.18,
+    0.18
+  ],
+  [
+    "step.azalea_leaves",
+    1,
+    1,
+    0.22,
+    0.22
+  ],
+  [
+    "step.cherry_leaves",
+    1,
+    1,
+    0.18,
+    0.18
+  ],
+  [
+    "step.cherry_wood",
+    1,
+    1,
+    0.18,
+    0.18
+  ],
+  [
+    "block.creaking_heart.step",
+    1,
+    1,
+    0.4,
+    0.4
+  ],
+  [
+    "land.hanging_roots",
+    1,
+    1,
+    0.14,
+    0.14
+  ],
+  [
+    "block.mangrove_roots.fall",
+    1,
+    1,
+    0.1,
+    0.1
+  ],
+  [
+    "block.muddy_mangrove_roots.fall",
+    1,
+    1,
+    0.05,
+    0.05
+  ],
+  [
+    "land.moss",
+    1,
+    1,
+    0.5,
+    0.5
+  ],
+  [
+    "land.vines",
+    1,
+    1,
+    0.22,
+    0.22
+  ]
+];
+
+export const VANILLA_BLOCK_LAND_SOUND_EVENT_INDICES: Readonly<Record<string, number>> = {
+  "minecraft:acacia_leaves": 0,
+  "minecraft:acacia_log": 1,
+  "minecraft:acacia_wood": 1,
+  "minecraft:azalea_leaves": 2,
+  "minecraft:azalea_leaves_flowered": 2,
+  "minecraft:bee_nest": 1,
+  "minecraft:beehive": 1,
+  "minecraft:birch_leaves": 0,
+  "minecraft:birch_log": 1,
+  "minecraft:birch_wood": 1,
+  "minecraft:cherry_leaves": 3,
+  "minecraft:cherry_log": 4,
+  "minecraft:cherry_wood": 4,
+  "minecraft:cocoa": 1,
+  "minecraft:creaking_heart": 5,
+  "minecraft:dark_oak_leaves": 0,
+  "minecraft:dark_oak_log": 1,
+  "minecraft:dark_oak_wood": 1,
+  "minecraft:hanging_roots": 6,
+  "minecraft:jungle_leaves": 0,
+  "minecraft:jungle_log": 1,
+  "minecraft:jungle_wood": 1,
+  "minecraft:leaves": 0,
+  "minecraft:leaves2": 0,
+  "minecraft:log": 1,
+  "minecraft:log2": 1,
+  "minecraft:mangrove_leaves": 0,
+  "minecraft:mangrove_log": 1,
+  "minecraft:mangrove_propagule": 0,
+  "minecraft:mangrove_roots": 7,
+  "minecraft:mangrove_wood": 1,
+  "minecraft:muddy_mangrove_roots": 8,
+  "minecraft:oak_leaves": 0,
+  "minecraft:oak_log": 1,
+  "minecraft:oak_wood": 1,
+  "minecraft:pale_hanging_moss": 9,
+  "minecraft:pale_oak_leaves": 0,
+  "minecraft:pale_oak_log": 1,
+  "minecraft:pale_oak_wood": 1,
+  "minecraft:spruce_leaves": 0,
+  "minecraft:spruce_log": 1,
+  "minecraft:spruce_wood": 1,
+  "minecraft:stripped_acacia_log": 1,
+  "minecraft:stripped_acacia_wood": 1,
+  "minecraft:stripped_birch_log": 1,
+  "minecraft:stripped_birch_wood": 1,
+  "minecraft:stripped_cherry_log": 4,
+  "minecraft:stripped_cherry_wood": 4,
+  "minecraft:stripped_dark_oak_log": 1,
+  "minecraft:stripped_dark_oak_wood": 1,
+  "minecraft:stripped_jungle_log": 1,
+  "minecraft:stripped_jungle_wood": 1,
+  "minecraft:stripped_mangrove_log": 1,
+  "minecraft:stripped_mangrove_wood": 1,
+  "minecraft:stripped_oak_log": 1,
+  "minecraft:stripped_oak_wood": 1,
+  "minecraft:stripped_pale_oak_log": 1,
+  "minecraft:stripped_pale_oak_wood": 1,
+  "minecraft:stripped_spruce_log": 1,
+  "minecraft:stripped_spruce_wood": 1,
+  "minecraft:vine": 10
+};
+
+export const VANILLA_BLOCK_FALL_SOUND_EVENTS: readonly GeneratedBlockSoundEvent[] = [
+  [
+    "fall.grass",
+    1,
+    1,
+    0.4,
+    0.4
+  ],
+  [
+    "fall.wood",
+    1,
+    1,
+    0.4,
+    0.4
+  ],
+  [
+    "fall.azalea_leaves",
+    1,
+    1,
+    0.4,
+    0.4
+  ],
+  [
+    "fall.cherry_leaves",
+    1,
+    1,
+    0.4,
+    0.4
+  ],
+  [
+    "fall.cherry_wood",
+    1,
+    1,
+    0.4,
+    0.4
+  ],
+  [
+    "block.creaking_heart.fall",
+    0.75,
+    0.75,
+    0.5,
+    0.5
+  ],
+  [
+    "fall.hanging_roots",
+    1,
+    1,
+    0.4,
+    0.4
+  ],
+  [
+    "block.mangrove_roots.fall",
+    1,
+    1,
+    0.4,
+    0.4
+  ],
+  [
+    "block.muddy_mangrove_roots.fall",
+    1,
+    1,
+    0.4,
+    0.4
+  ],
+  [
+    "fall.moss",
+    1,
+    1,
+    1,
+    1
+  ],
+  [
+    "fall.vines",
+    1,
+    1,
+    0.4,
+    0.4
+  ]
+];
+
+export const VANILLA_BLOCK_FALL_SOUND_EVENT_INDICES: Readonly<Record<string, number>> = {
+  "minecraft:acacia_leaves": 0,
+  "minecraft:acacia_log": 1,
+  "minecraft:acacia_wood": 1,
+  "minecraft:azalea_leaves": 2,
+  "minecraft:azalea_leaves_flowered": 2,
+  "minecraft:bee_nest": 1,
+  "minecraft:beehive": 1,
+  "minecraft:birch_leaves": 0,
+  "minecraft:birch_log": 1,
+  "minecraft:birch_wood": 1,
+  "minecraft:cherry_leaves": 3,
+  "minecraft:cherry_log": 4,
+  "minecraft:cherry_wood": 4,
+  "minecraft:cocoa": 1,
+  "minecraft:creaking_heart": 5,
+  "minecraft:dark_oak_leaves": 0,
+  "minecraft:dark_oak_log": 1,
+  "minecraft:dark_oak_wood": 1,
+  "minecraft:hanging_roots": 6,
+  "minecraft:jungle_leaves": 0,
+  "minecraft:jungle_log": 1,
+  "minecraft:jungle_wood": 1,
+  "minecraft:leaves": 0,
+  "minecraft:leaves2": 0,
+  "minecraft:log": 1,
+  "minecraft:log2": 1,
+  "minecraft:mangrove_leaves": 0,
+  "minecraft:mangrove_log": 1,
+  "minecraft:mangrove_propagule": 0,
+  "minecraft:mangrove_roots": 7,
+  "minecraft:mangrove_wood": 1,
+  "minecraft:muddy_mangrove_roots": 8,
+  "minecraft:oak_leaves": 0,
+  "minecraft:oak_log": 1,
+  "minecraft:oak_wood": 1,
+  "minecraft:pale_hanging_moss": 9,
+  "minecraft:pale_oak_leaves": 0,
+  "minecraft:pale_oak_log": 1,
+  "minecraft:pale_oak_wood": 1,
+  "minecraft:spruce_leaves": 0,
+  "minecraft:spruce_log": 1,
+  "minecraft:spruce_wood": 1,
+  "minecraft:stripped_acacia_log": 1,
+  "minecraft:stripped_acacia_wood": 1,
+  "minecraft:stripped_birch_log": 1,
+  "minecraft:stripped_birch_wood": 1,
+  "minecraft:stripped_cherry_log": 4,
+  "minecraft:stripped_cherry_wood": 4,
+  "minecraft:stripped_dark_oak_log": 1,
+  "minecraft:stripped_dark_oak_wood": 1,
+  "minecraft:stripped_jungle_log": 1,
+  "minecraft:stripped_jungle_wood": 1,
+  "minecraft:stripped_mangrove_log": 1,
+  "minecraft:stripped_mangrove_wood": 1,
+  "minecraft:stripped_oak_log": 1,
+  "minecraft:stripped_oak_wood": 1,
+  "minecraft:stripped_pale_oak_log": 1,
+  "minecraft:stripped_pale_oak_wood": 1,
+  "minecraft:stripped_spruce_log": 1,
+  "minecraft:stripped_spruce_wood": 1,
+  "minecraft:vine": 10
+};

@@ -1,6 +1,8 @@
 import type { Block, Vector3 } from "@minecraft/server";
 import type { SubLevelBlock, SubLevelBlockMapColor } from "../sublevel/SubLevel.js";
 import { getSubLevelBlockRegistration } from "../sublevel/render/fancy/model/FancySubLevelModelRegistry.js";
+import { resolveBlockCollisionShape } from "./physics/collider/block_shape/BlockCollisionShapeResolver.js";
+import { BLOCK_PHYSICS_PROPERTIES } from "../data/vanilla/physics/BlockPhysicsProperties.js";
 
 // The legacy multi-variant blocks have no obtainable item form; the hand-held
 // route displays their modern counterpart instead.
@@ -61,12 +63,13 @@ const ORIENTATION_ROTATIONS: Readonly<Record<string, Vector3>> = {
 const FRONT_FACING_DIRECTION_TURNS = [1, 0, 3, 2] as const;
 
 /**
- * Captures one world block into the sub-level block form the render routes
- * consume: full permutation states, the hand-held item mapping, the
- * state-driven hand-held rotation, the custom-block map color and the
- * registry-declared interaction passability. `origin` is the world position of
- * the sub-level's local origin. Physics fields are the caller's concern and
- * stay unset.
+ * Captures one world block into the sub-level block form the render and
+ * physics routes consume: full permutation states, the hand-held item mapping,
+ * the state-driven hand-held rotation, the custom-block map color, the
+ * registry-declared interaction passability, and the collision shape and
+ * response the physics body simulates. `origin` is the world position of the
+ * sub-level's local origin. Mass and buoyancy come from the physics property
+ * table at normalization time and stay unset here.
  */
 export function captureSubLevelBlock(block: Block, origin: Vector3): SubLevelBlock {
   const permutation = block.permutation;
@@ -83,7 +86,19 @@ export function captureSubLevelBlock(block: Block, origin: Vector3): SubLevelBlo
     states,
     typeId
   };
-  if (getSubLevelBlockRegistration(typeId)?.passable === true) {
+  // The physics collision shape comes from the live block's own geometry, so a
+  // captured slab, stair or fence collides the way it did in the world.
+  const collisionShape = resolveBlockCollisionShape(block);
+  captured.collisionShape = collisionShape;
+  captured.collidable = collisionShape !== "none";
+  // A block that breaks on any contact (fragile impact speed 0 in the physics
+  // table) is a sensor, not a solid: it registers contacts and shatters instead
+  // of pushing the sub-level around. Registry-declared passable blocks behave
+  // the same way for interaction rays.
+  if (
+    getSubLevelBlockRegistration(typeId)?.passable === true
+    || BLOCK_PHYSICS_PROPERTIES[typeId]?.fragileImpactSpeed === 0
+  ) {
     captured.collisionResponse = false;
   }
   const itemTypeId = heldItemTypeId(typeId, states);

@@ -207,6 +207,57 @@ const body = {
   localPointToWorld: value => ({ ...value })
 };
 
+// The container edit pipeline only needs a sub-level whose body answers pose
+// queries; running the cannon pipeline here would test the engine, not the
+// pipeline. The physics modules are exercised directly by the parity tests below.
+function physicsStub() {
+  let nextId = 1;
+  return {
+    getDimension: dimension => ({
+      dimension,
+      createSubLevel(options) {
+        const id = nextId++;
+        let valid = true;
+        const location = { ...options.location };
+        const subLevel = {
+          id, blocks: [...options.blocks], dimension,
+          foliageTint: options.foliageTint,
+          renderEntityTags: options.renderEntityTags,
+          fragileProbeBudget: options.fragileProbeBudget ?? 64,
+          contentRevision: 0,
+          get isValid() { return valid; },
+          body: {
+            id, isActive: false, isSleeping: true, isValid: true,
+            get location() { return { ...location }; },
+            velocity: { x: 0, y: 0, z: 0 }, angularVelocity: { x: 0, y: 0, z: 0 },
+            dimension: { dimension, id: dimension.id },
+            getRotation: () => ({ x: 0, y: 0, z: 0 }),
+            getAabb: () => ({ min: { ...location }, max: { ...location } }),
+            localPointToWorld: local => ({
+              x: location.x + local.x, y: location.y + local.y, z: location.z + local.z
+            }),
+            worldPointToLocal: point => ({
+              x: point.x - location.x, y: point.y - location.y, z: point.z - location.z
+            }),
+            teleport(next) { Object.assign(location, next); },
+            sleep() {}, wakeUp() {}, remove() { valid = false; }
+          },
+          getBlockAtLocalLocation: local => subLevel.blocks.find(entry => (
+            entry.localLocation.x === local.x
+            && entry.localLocation.y === local.y
+            && entry.localLocation.z === local.z
+          )),
+          removeBlocksAtLocalLocations() { return []; },
+          remove() { valid = false; }
+        };
+        return subLevel;
+      }
+    }),
+    getDimensions: () => [],
+    getExistingDimension: () => undefined
+  };
+}
+
 function managedFixture() {
   const f = fixture();
   const { SubLevelInteractionSystem } = f.load("sublevel/system/SubLevelInteractionSystem.ts");
@@ -222,7 +273,7 @@ function managedFixture() {
     deleteSubLevel(id) { if (this.fail) return false; saved.delete(id); return true; }
   };
   const runtime = new SubLevelInteractionSystem();
-  const manager = new ServerSubLevelContainer(runtime, behaviors, containers, storage);
+  const manager = new ServerSubLevelContainer(runtime, behaviors, containers, physicsStub(), storage);
   f.load("content/blocks/vanilla/chest/ChestSubLevelBehavior.ts").registerChestSubLevelBehavior({
     behaviors, containers,
     onNativeDeath: (owner, binding) => manager.handleContainerNativeDeath(owner, binding)
@@ -240,12 +291,32 @@ test("functional resource definitions retain baseline properties, geometry and a
   }
   pairs.push(["TreePhysicsBP/entities/block_entities/chest.json", "SableBP/entities/sable/sublevel/block_entities/chest.json"]);
   pairs.push(["TreePhysicsBP/blocks/functional_blocks/interaction_target.json", "SableBP/blocks/sable/sublevel/functional_blocks/interaction_target.json"]);
+  pairs.push(["TreePhysicsBP/entities/functional_entities/block_collider.json", "SableBP/entities/sable/sublevel/functional_entities/block_collider.json"]);
+  pairs.push(["TreePhysicsBP/entities/functional_entities/contraption_mount.json", "SableBP/entities/sable/sublevel/functional_entities/sublevel_mount.json"]);
   for (const [source, target] of pairs) {
-    const expected = JSON.parse(JSON.stringify(json(join(baseline, "packs/TreePhysics", source))).replaceAll("treephysics", "sable"));
+    const expected = JSON.parse(JSON.stringify(json(join(baseline, "packs/TreePhysics", source))).replaceAll("treephysics", "sable").replaceAll("contraption_mount", "sublevel_mount"));
     const family = expected["minecraft:entity"]?.components["minecraft:type_family"].family;
     if (family?.[0] === "fragment") family[0] = source.endsWith("/chest.json") ? "sable_persistent_rider" : "fancy_model";
     assert.deepEqual(json(join(sable, "packs", target)), expected, target);
   }
+  const particleNames = ["dust", "dust_entry", "splash", "splash_entry", "splash_impulse", "bubbles", "bubbles_impulse", "lava_splash"];
+  for (const name of particleNames) {
+    const source = `TreePhysicsRP/particles/tree_${name}.particle.json`;
+    const target = `SableRP/particles/sable/sublevel/sublevel_${name}.particle.json`;
+    const expected = JSON.parse(JSON.stringify(json(join(baseline, "packs/TreePhysics", source)))
+      .replaceAll("treephysics:tree_", "sable:sublevel_")
+      .replaceAll("treephysics:tree_collide", "sable:block_collide")
+      .replaceAll("spawn_tree_block_slide", "spawn_block_slide")
+      .replaceAll("route_tree_block_slide", "route_block_slide"));
+    assert.deepEqual(json(join(sable, "packs", target)), expected, target);
+  }
+  const routerSource = json(join(baseline, "packs/TreePhysics/TreePhysicsRP/particles/tree_collide.particle.json"));
+  const routerTarget = json(join(sable, "packs/SableRP/particles/sable/sublevel/block_collide.particle.json"));
+  assert(routerTarget, "block_collide.particle.json exists");
+  assert.equal(routerTarget.particle_effect.description.identifier, "sable:block_collide");
+  assert(routerTarget.particle_effect.events.route_block_slide, "route_block_slide event exists");
+  assert(Array.isArray(routerTarget.particle_effect.events.route_block_slide.sequence), "route_block_slide has sequence");
+  assert(routerTarget.particle_effect.events.route_block_slide.sequence.length > 0, "route_block_slide sequence not empty");
 });
 
 test("all generated geometries have unique bones and consistent shared rest transforms", () => {
@@ -3028,4 +3099,165 @@ test("failed storage mounting during reconstruction rolls back with the original
   assert(chest.isValid && chest.vehicle, "the original inventory must remain attached after rollback");
   assert.deepEqual(chest.getComponent("minecraft:inventory").container.getItem(4), { typeId: "minecraft:diamond", amount: 8 });
   assert(managed.handle.renderData.hasIntactEntities());
+});
+
+test("sub-level mass, center of mass and inertia match the baseline", () => {
+  const f = fixture();
+  const mass = f.load("api/physics/mass/MassTracker.ts");
+  const expected = f.reference("physics/contraption/Mass.ts");
+  const collider = f.load("api/physics/collider/SubLevelColliderIndex.ts");
+  const expectedCollider = f.reference("physics/contraption/ColliderIndex.ts");
+  // Table-driven mass replaces the baseline's per-kind fields, so the baseline
+  // blocks carry the same explicit values the table now supplies.
+  const cases = [
+    ["minecraft:oak_log", 1, 1],
+    ["minecraft:oak_leaves", 0.0625, 0.125],
+    ["minecraft:chest", 0.5, 1],
+    ["minecraft:vine", 0.1, 0.1],
+    ["minecraft:stone", 0.25, 0.25]
+  ];
+  for (const [typeId, blockMass, buoyancyVolume] of cases) {
+    for (const count of [1, 2, 9, 40]) {
+      const actualBlocks = [];
+      const baselineBlocks = [];
+      for (let index = 0; index < count; index++) {
+        const localLocation = { x: index % 3, y: Math.floor(index / 3) % 4, z: index % 5 };
+        actualBlocks.push({ typeId, localLocation, collisionShape: "full" });
+        baselineBlocks.push({ typeId, localLocation, collisionShape: "full", mass: blockMass, buoyancyVolume });
+      }
+      assert.deepEqual(
+        mass.computeSubLevelMassProperties(actualBlocks),
+        expected.computeContraptionMassProperties(baselineBlocks),
+        `${typeId} x${count} mass properties`
+      );
+      assert.deepEqual(
+        mass.createDefaultSubLevelBuoyancyPoints(actualBlocks),
+        expected.createDefaultContraptionBuoyancyPoints(baselineBlocks),
+        `${typeId} x${count} buoyancy points`
+      );
+      const actualCollider = new collider.SubLevelColliderIndex(actualBlocks).collider;
+      const baselineCollider = new expectedCollider.ContraptionColliderIndex(baselineBlocks).collider;
+      assert.deepEqual(actualCollider, baselineCollider, `${typeId} x${count} collider`);
+      assert.deepEqual(
+        mass.computeSubLevelInertia(actualCollider, mass.computeSubLevelMassProperties(actualBlocks).mass),
+        expected.computeContraptionInertia(baselineCollider, expected.computeContraptionMassProperties(baselineBlocks).mass),
+        `${typeId} x${count} inertia`
+      );
+    }
+  }
+});
+
+test("block collision shapes resolve identically for every registered block state", () => {
+  const f = fixture();
+  const actual = f.load("api/physics/collider/block_shape/BlockCollisionShapeResolver.ts");
+  const expected = f.reference("physics/collision/BlockShapeResolver.ts");
+  const definitions = json(join(sable, "src/data/sublevel-block.json")).blocks;
+  const stateSets = [
+    {},
+    { upside_down_bit: true },
+    { "minecraft:vertical_half": "top" },
+    { direction: 0 }, { direction: 1 }, { direction: 2 }, { direction: 3 },
+    { "minecraft:cardinal_direction": "north" },
+    { open_bit: true },
+    { growth: 7 },
+    { "minecraft:block_face": "up" },
+    { height: 3 },
+    { vine_direction_bits: 5 },
+    { persistent_bit: true }
+  ];
+  for (const typeId of Object.keys(definitions)) {
+    for (const states of stateSets) {
+      const source = { typeId, states, permutation: { type: { id: typeId }, getAllStates: () => states } };
+      assert.deepEqual(actual.resolveBlockCollisionShape(source), expected.resolveBlockCollisionShape(source), `${typeId} ${JSON.stringify(states)}`);
+    }
+  }
+});
+
+test("greedy voxel meshing and normalization keep the baseline output", () => {
+  const f = fixture();
+  const mesher = f.load("api/physics/collider/SubLevelVoxelMesher.ts");
+  const expectedMesher = f.reference("physics/contraption/Mesher.ts");
+  const normalization = f.load("api/physics/collider/SubLevelBlockNormalization.ts");
+  const expectedNormalization = f.reference("physics/contraption/Normalization.ts");
+  for (let seed = 0; seed < 24; seed++) {
+    const blocks = [];
+    for (let index = 0; index < 30; index++) {
+      const value = (index * 31 + seed * 17) % 97;
+      if (value % 4 === 0) continue;
+      blocks.push({
+        typeId: value % 3 === 0 ? "minecraft:oak_log" : value % 3 === 1 ? "minecraft:oak_leaves" : "minecraft:stone",
+        localLocation: { x: value % 5, y: Math.floor(value / 5) % 5, z: value % 3 },
+        collisionShape: value % 7 === 0 ? "none" : "full",
+        collisionResponse: value % 5 !== 0
+      });
+    }
+    if (blocks.length === 0) continue;
+    const baselineBlocks = blocks.map(entry => ({
+      ...entry,
+      mass: entry.typeId === "minecraft:oak_log" ? 1 : entry.typeId === "minecraft:oak_leaves" ? 0.0625 : 0.25,
+      buoyancyVolume: entry.typeId === "minecraft:oak_log" ? 1 : entry.typeId === "minecraft:oak_leaves" ? 0.125 : 0.25
+    }));
+    assert.deepEqual(
+      normalization.normalizeSubLevelBlocks(blocks).map(entry => ({ ...entry, mass: undefined, buoyancyVolume: undefined })),
+      expectedNormalization.normalizeContraptionBlocks(baselineBlocks).map(entry => ({ ...entry, mass: undefined, buoyancyVolume: undefined, visual: undefined })),
+      `seed ${seed} normalization`
+    );
+    assert.deepEqual(
+      mesher.meshSubLevelVoxels?.(blocks) ?? mesher.meshVoxels?.(blocks),
+      expectedMesher.meshSubLevelVoxels?.(baselineBlocks) ?? expectedMesher.meshVoxels?.(baselineBlocks),
+      `seed ${seed} mesh`
+    );
+  }
+});
+
+test("impact damage contact search and fall distance match the baseline", () => {
+  const f = fixture();
+  const damage = f.load("content/impact/SubLevelImpactDamage.ts");
+  const expected = f.reference("content/tree/contraption/Damage.ts");
+  const blocks = new Map();
+  for (let index = 0; index < 24; index++) {
+    const location = { x: index % 4, y: Math.floor(index / 4) % 3, z: index % 5 };
+    blocks.set(`${location.x},${location.y},${location.z}`, location);
+  }
+  for (let index = 0; index < 200; index++) {
+    const start = { x: index % 7 - 3, y: index % 5 - 2, z: index % 9 - 4 };
+    const end = { x: (index * 3) % 8 - 2, y: (index * 5) % 6 - 1, z: (index * 7) % 7 - 3 };
+    assert.deepEqual(
+      damage.findDamageBlockContact(blocks, start, end),
+      expected.findDamageLogContact(blocks, start, end),
+      `contact ${index}`
+    );
+  }
+  for (const speed of [0, 0.1, 0.5, 1, 2, 3, 3.92, 10, -1, Number.NaN]) {
+    assert.equal(
+      damage.getSubLevelImpactDamage(speed),
+      expected.getTreeImpactDamage(speed),
+      `impact damage ${speed}`
+    );
+  }
+});
+
+test("player fall distance estimation matches the baseline", () => {
+  const f = fixture();
+  const effects = f.load("content/entities_stick_sublevels/effects/SubLevelSurfaceContactEffects.ts");
+  const reference = f.reference("Physics.ts");
+  for (const speed of [0, 0.01, 0.1, 0.4, 0.9, 1.5, 3.9, 3.92, 4, -1, Number.NaN]) {
+    const actual = effects.estimatePlayerFallDistance(speed);
+    const expected = reference.estimatePlayerFallDistance?.(speed);
+    if (expected === undefined) continue;
+    assert.equal(actual, expected, `fall distance ${speed}`);
+  }
+});
+
+test("fragile impact speeds and physics properties cover the baseline table", () => {
+  const f = fixture();
+  const properties = f.load("data/vanilla/physics/BlockPhysicsProperties.ts").BLOCK_PHYSICS_PROPERTIES;
+  const expected = f.reference("data/BlockPhysicsProperties.ts").BLOCK_PHYSICS_PROPERTIES;
+  for (const [typeId, entry] of Object.entries(expected)) {
+    const actual = properties[typeId];
+    assert(actual, `${typeId} must stay in the physics table`);
+    assert.equal(actual.friction, entry.friction, `${typeId} friction`);
+    assert.equal(actual.restitution, entry.restitution, `${typeId} restitution`);
+    assert.equal(actual.fragileImpactSpeed, entry.fragileImpactSpeed, `${typeId} fragile impact speed`);
+  }
 });

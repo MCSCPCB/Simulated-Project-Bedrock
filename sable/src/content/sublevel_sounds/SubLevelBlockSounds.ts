@@ -1,18 +1,30 @@
 import {
   VANILLA_BLOCK_BREAK_SOUND_EVENT_INDICES,
   VANILLA_BLOCK_BREAK_SOUND_EVENTS,
+  VANILLA_BLOCK_FALL_SOUND_EVENT_INDICES,
+  VANILLA_BLOCK_FALL_SOUND_EVENTS,
   VANILLA_BLOCK_HIT_SOUND_EVENT_INDICES,
   VANILLA_BLOCK_HIT_SOUND_EVENTS,
+  VANILLA_BLOCK_JUMP_SOUND_EVENT_INDICES,
+  VANILLA_BLOCK_JUMP_SOUND_EVENTS,
+  VANILLA_BLOCK_LAND_SOUND_EVENT_INDICES,
+  VANILLA_BLOCK_LAND_SOUND_EVENTS,
   VANILLA_BLOCK_PLACE_SOUND_EVENT_INDICES,
   VANILLA_BLOCK_PLACE_SOUND_EVENTS,
+  VANILLA_BLOCK_STEP_SOUND_EVENT_INDICES,
+  VANILLA_BLOCK_STEP_SOUND_EVENTS,
   type GeneratedBlockSoundEvent
 } from "../../data/vanilla/sounds/BlockSoundEvents.js";
 
 const DEFAULT_BLOCK_BREAK_EVENT = ["dig.wood", 0.8, 1, 1, 1] as const;
 const DEFAULT_BLOCK_HIT_EVENT = ["hit.wood", 0.5, 0.5, 0.23, 0.23] as const;
 const DEFAULT_BLOCK_PLACE_EVENT = ["place.wood", 0.8, 0.8, 1, 1] as const;
+const DEFAULT_FALL_EVENT = ["fall.wood", 1, 1, 0.4, 0.4] as const;
+const DEFAULT_JUMP_EVENT = ["jump.wood", 1, 1, 0.12, 0.12] as const;
+const DEFAULT_LAND_EVENT = ["land.wood", 1, 1, 0.18, 0.18] as const;
 const DEFAULT_LEAF_BREAK_EVENT = ["dig.grass", 0.8, 1, 0.7, 0.7] as const;
 const DEFAULT_LEAF_HIT_EVENT = ["hit.grass", 0.5, 0.5, 0.3, 0.3] as const;
+const DEFAULT_STEP_EVENT = ["step.wood", 1, 1, 0.3, 0.3] as const;
 
 export interface VanillaBlockSoundEvent {
   readonly pitch: number;
@@ -82,6 +94,80 @@ export function resolveVanillaBlockHitSound(
   );
   return sampleSoundEvent(
     event ?? leafAwareDefault(normalized, DEFAULT_LEAF_HIT_EVENT, DEFAULT_BLOCK_HIT_EVENT),
+    random
+  );
+}
+
+/** Resolves the vanilla player-step event; unknown blocks use wood. */
+export function resolveVanillaBlockStepSound(
+  typeId: string | undefined,
+  random: () => number = Math.random
+): VanillaBlockSoundEvent {
+  return resolveInteractiveSound(
+    typeId,
+    VANILLA_BLOCK_STEP_SOUND_EVENTS,
+    VANILLA_BLOCK_STEP_SOUND_EVENT_INDICES,
+    DEFAULT_STEP_EVENT,
+    random
+  );
+}
+
+/** Resolves the vanilla player-jump event; unknown blocks use wood. */
+export function resolveVanillaBlockJumpSound(
+  typeId: string | undefined,
+  random: () => number = Math.random
+): VanillaBlockSoundEvent {
+  return resolveInteractiveSound(
+    typeId,
+    VANILLA_BLOCK_JUMP_SOUND_EVENTS,
+    VANILLA_BLOCK_JUMP_SOUND_EVENT_INDICES,
+    DEFAULT_JUMP_EVENT,
+    random
+  );
+}
+
+/** Resolves the vanilla player-land event; unknown blocks use wood. */
+export function resolveVanillaBlockLandSound(
+  typeId: string | undefined,
+  random: () => number = Math.random
+): VanillaBlockSoundEvent {
+  return resolveInteractiveSound(
+    typeId,
+    VANILLA_BLOCK_LAND_SOUND_EVENTS,
+    VANILLA_BLOCK_LAND_SOUND_EVENT_INDICES,
+    DEFAULT_LAND_EVENT,
+    random
+  );
+}
+
+/** Resolves the vanilla player-fall-on-block event; unknown blocks use wood. */
+export function resolveVanillaBlockFallSound(
+  typeId: string | undefined,
+  random: () => number = Math.random
+): VanillaBlockSoundEvent {
+  return resolveInteractiveSound(
+    typeId,
+    VANILLA_BLOCK_FALL_SOUND_EVENTS,
+    VANILLA_BLOCK_FALL_SOUND_EVENT_INDICES,
+    DEFAULT_FALL_EVENT,
+    random
+  );
+}
+
+function resolveInteractiveSound(
+  typeId: string | undefined,
+  events: readonly GeneratedBlockSoundEvent[],
+  indices: Readonly<Record<string, number>>,
+  defaultEvent: GeneratedBlockSoundEvent,
+  random: () => number
+): VanillaBlockSoundEvent {
+  const normalized = normalizeTypeId(typeId);
+  return sampleSoundEvent(
+    lookupGeneratedEvent(
+      events,
+      indices,
+      normalized
+    ) ?? defaultEvent,
     random
   );
 }

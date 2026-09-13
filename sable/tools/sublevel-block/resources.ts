@@ -7,6 +7,7 @@ import {
   type CompiledModel, type CompiledModelResource, type CompiledPool, type CompiledRegistry
 } from "./registry.ts";
 import {
+  collectCollideParticleTargets,
   collectDestructParticleTargets,
   collectFunctionalResourceTargets
 } from "./functional-resources.ts";
@@ -103,7 +104,9 @@ const STATIC_ENTITY_TYPE_IDS = [
   "sable:block_carrier",
   "sable:fancy_model_carrier",
   "sable:block_outline",
-  "sable:block_crack"
+  "sable:block_crack",
+  "sable:block_collider",
+  "sable:sublevel_mount"
 ] as const;
 
 function collectTextTargets(
@@ -377,7 +380,13 @@ async function collectScriptTargets(
   );
   for (const sourcePath of await listFiles(srcRoot)) {
     const relativeSource = relative(srcRoot, sourcePath).split(sep).join("/");
-    if (!relativeSource.endsWith(".ts") || relativeSource.endsWith(".d.ts")) continue;
+    if (relativeSource.endsWith(".d.ts")) continue;
+    if (relativeSource.endsWith(".js")) {
+      const source = await readFile(sourcePath, "utf8");
+      targets.set(`SableBP/scripts/sable/${relativeSource}`, source);
+      continue;
+    }
+    if (!relativeSource.endsWith(".ts")) continue;
     const outputPath = `SableBP/scripts/sable/${relativeSource.slice(0, -3)}.js`;
     const source = await readFile(sourcePath, "utf8");
     const { code } = await transform(source, { format: "esm", loader: "ts" });
@@ -500,6 +509,7 @@ export async function writeSablePacks(
 
   await collectFunctionalResourceTargets(targets);
   collectDestructParticleTargets(models, targets);
+  collectCollideParticleTargets(models, targets);
 
   await collectScriptTargets(srcRoot, toRuntimeRegistry(compiledRegistry, resources), toRuntimeModel(models[0]!, resources), targets);
 

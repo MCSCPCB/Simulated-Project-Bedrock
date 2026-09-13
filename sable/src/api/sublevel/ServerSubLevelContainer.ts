@@ -58,11 +58,31 @@ import {
 import type { SubLevelBlockBehaviorRegistry } from "../block/SubLevelBlockBehaviors.js";
 import type { SubLevelContainerInteractionController } from "../../content/assembly/SubLevelContainerInteraction.js";
 import { SubLevelStorage } from "../../sublevel/storage/serialization/SubLevelStorage.js";
-import type { SerializedSubLevelStructure } from "../../sublevel/storage/serialization/SubLevelData.js";
+import type {
+  SavedPose,
+  SerializedSubLevelStructure
+} from "../../sublevel/storage/serialization/SubLevelData.js";
 import type { SubLevelRemovalReason } from "../../sublevel/storage/SubLevelRemovalReason.js";
+import type { ServerSubLevel } from "../../sublevel/ServerSubLevel.js";
+import type { SubLevelPhysicsSystem } from "../../sublevel/system/SubLevelPhysicsSystem.js";
+import {
+  PhysicsChunkTicketManager,
+  getBodyPose,
+  groupPlayersByDimension,
+  poseSignature,
+  RESTORE_RETRY_TICKS
+} from "../../sublevel/system/ticket/PhysicsChunkTicketManager.js";
+import { FragileBlockCallback } from "../../physics/callback/FragileBlockCallback.js";
+import { SubLevelCollisionParticles } from "../../content/particle/SubLevelCollisionParticles.js";
+import { SubLevelFluidEntryEffects } from "../../content/particle/SubLevelFluidEntryEffects.js";
+import { SubLevelImpactDamage } from "../../content/impact/SubLevelImpactDamage.js";
+import { SubLevelImpactSounds } from "../../content/sublevel_sounds/SubLevelImpactSounds.js";
+import { blockCenter } from "../../util/SableMathUtils.js";
 
 /** Region guard for entity budgets; larger captures need explicit staging. */
 const MAX_REGION_VOLUME = 4096;
+/** Pose writes are bounded to one per second per sub-level. */
+const POSE_PERSISTENCE_INTERVAL_TICKS = 20;
 
 export interface CreateSubLevelFromRegionOptions {
   /** Remove the source world blocks after capture. Defaults to true. */
@@ -79,12 +99,20 @@ export interface ManagedSubLevel {
 
 interface ManagedSubLevelRecord {
   readonly id: string;
-  subLevel: SubLevel;
+  subLevel: ServerSubLevel;
   readonly handle: SubLevelInteractionHandle;
   readonly origin: Vector3;
   renderData: SubLevelRenderData;
   removed: boolean;
   invalidateBody(): void;
+}
+
+/** The rigid-body pose a restored sub-level resumes from. */
+interface RestoredPose {
+  readonly angularVelocity?: Vector3;
+  readonly lastSafePose?: SavedPose;
+  readonly rotation?: Vector3;
+  readonly velocity?: Vector3;
 }
 
 /** Tracks every live sub-level and runs the default edit pipeline over them. */
@@ -94,21 +122,49 @@ export class ServerSubLevelContainer {
   readonly #containers: SubLevelContainerInteractionController;
   readonly #storage: SubLevelStorage;
   readonly #recordsByHandleId = new Map<number, ManagedSubLevelRecord>();
+  readonly #physics: SubLevelPhysicsSystem;
+  readonly #tickets = new PhysicsChunkTicketManager();
+  readonly #fragileBlocks: FragileBlockCallback;
+  readonly #impactDamage: SubLevelImpactDamage;
+  readonly #impactSounds: SubLevelImpactSounds;
+  readonly #fluidEntry: SubLevelFluidEntryEffects;
+  readonly #persistenceSignatures = new Map<string, string>();
+  #isDamageImmune?: (subLevel: ServerSubLevel, entity: Entity) => boolean;
   #nextSubLevelId = 1;
   #initialized = false;
   readonly #pendingRestores = new Map<string, SerializedSubLevelStructure>();
+  readonly #restoreRetryAfterTick = new Map<string, number>();
 
   constructor(
     interactionSystem: SubLevelInteractionSystem,
     blockBehaviors: SubLevelBlockBehaviorRegistry,
     containers: SubLevelContainerInteractionController,
+    physics: SubLevelPhysicsSystem,
     storage = new SubLevelStorage()
   ) {
     this.#interactionSystem = interactionSystem;
     this.#blockBehaviors = blockBehaviors;
     this.#containers = containers;
+    this.#physics = physics;
     this.#storage = storage;
+    this.#fragileBlocks = new FragileBlockCallback(physics, this, new SubLevelCollisionParticles());
+    this.#impactDamage = new SubLevelImpactDamage(
+      (subLevel, entity) => this.#isDamageImmune?.(subLevel, entity) ?? false
+    );
+    this.#impactSounds = new SubLevelImpactSounds(physics);
+    this.#fluidEntry = new SubLevelFluidEntryEffects();
   }
+
+  /** Routes drag immunity in from the interaction controller, which owns the sessions. */
+  setDamageImmunityPredicate(
+    predicate?: (subLevel: ServerSubLevel, entity: Entity) => boolean
+  ): void {
+    this.#isDamageImmune = predicate;
+  }
+
+  get fragileBlocks(): FragileBlockCallback { return this.#fragileBlocks; }
+  get fluidEntryEffects(): SubLevelFluidEntryEffects { return this.#fluidEntry; }
+  get impactSounds(): SubLevelImpactSounds { return this.#impactSounds; }
 
   initialize(): void {
     if (this.#initialized) return;
@@ -141,13 +197,16 @@ export class ServerSubLevelContainer {
     for (const record of this.#recordsByHandleId.values()) {
       if (!record.removed && record.handle.isValid) record.renderData.sync();
     }
+    this.#tickPhysics(currentTick);
     if (currentTick % 20 !== 0) return;
     for (const [id, saved] of this.#pendingRestores) {
       try {
+        if (currentTick < (this.#restoreRetryAfterTick.get(id) ?? 0)) continue;
         const dimension = world.getDimension(saved.dimensionId);
         if (!isSubLevelRegionLoaded(dimension, saved.origin, saved.blocks)) continue;
         this.#restoreSubLevel(saved);
         this.#pendingRestores.delete(id);
+        this.#restoreRetryAfterTick.delete(id);
       } catch (error) {
         console.warn(`Could not restore sub-level ${id}: ${error}`);
       }
@@ -337,25 +396,59 @@ export class ServerSubLevelContainer {
     if (!record || record.removed || !handle.isValid) return false;
     const current = handle.getBlockAtLocalLocation(block.localLocation);
     if (!current || current.typeId !== block.typeId) return false;
+    return this.#breakBlocks(record, [block.localLocation], itemStack, block);
+  }
 
-    const targetKey = blockLocationKey(block.localLocation);
+  /**
+   * Removes blocks the physics layer decided to break — a fragile block that
+   * met its impact speed, or a block a collision knocked out. One support
+   * cascade covers the whole batch, then the ordinary effects and drops run
+   * without a player or a tool. Returns whether the sub-level itself ended.
+   */
+  breakBlocksForPhysics(
+    subLevel: ServerSubLevel,
+    localLocations: readonly Vector3[]
+  ): boolean {
+    this.initialize();
+    const record = this.#findRecordBySubLevel(subLevel);
+    if (!record || record.removed || !record.handle.isValid) return false;
+    const present = localLocations.filter(location =>
+      record.handle.getBlockAtLocalLocation(location) !== undefined);
+    if (present.length === 0) return false;
+    this.#breakBlocks(record, present, undefined, undefined);
+    return record.removed;
+  }
+
+  /** Shared break transaction: one support cascade over every target key. */
+  #breakBlocks(
+    record: ManagedSubLevelRecord,
+    targetLocations: readonly Vector3[],
+    itemStack: ItemStack | undefined,
+    soundBlock: SubLevelBlock | undefined
+  ): boolean {
+    const handle = record.handle;
+    const targetKeys = new Set(targetLocations.map(blockLocationKey));
     const entries: SubLevelBlockSupportEntry[] = handle.blocks.map(entry => ({
       key: blockLocationKey(entry.localLocation),
       localLocation: entry.localLocation,
       snapshot: entry
     }));
-    const support = resolveSubLevelBlockSupport(entries, new Set([targetKey]));
+    const support = resolveSubLevelBlockSupport(entries, targetKeys);
     const removedLocations = [
-      { ...block.localLocation },
+      ...targetLocations.map(location => ({ ...location })),
       ...[...support.unsupportedKeys].map(parseBlockLocationKey)
     ];
     const previousBlocks = [...handle.blocks];
     const previousBindings = this.#containerBindings(record);
     const removedKeys = new Set(removedLocations.map(blockLocationKey));
-    const removedBlocks = [current, ...previousBlocks.filter(entry => (
-      blockLocationKey(entry.localLocation) !== targetKey
-      && removedKeys.has(blockLocationKey(entry.localLocation))
-    ))];
+    // Targets first, so the first entry owns the tool-specific drop.
+    const removedBlocks = [
+      ...previousBlocks.filter(entry => targetKeys.has(blockLocationKey(entry.localLocation))),
+      ...previousBlocks.filter(entry => (
+        !targetKeys.has(blockLocationKey(entry.localLocation))
+        && removedKeys.has(blockLocationKey(entry.localLocation))
+      ))
+    ];
     if (removedBlocks.length === 0) return false;
     const remaining = previousBlocks.filter(entry => !removedKeys.has(blockLocationKey(entry.localLocation)))
       .map(entry => support.stateUpdates.get(blockLocationKey(entry.localLocation))?.snapshot ?? entry);
@@ -392,8 +485,9 @@ export class ServerSubLevelContainer {
         ownerId: record.id
       });
     }
-    const targetPosition = handle.localPointToWorld(block.localLocation);
-    const sound = resolveVanillaBlockBreakSound(block.typeId);
+    const soundSource = soundBlock ?? removedBlocks[0]!;
+    const targetPosition = handle.localPointToWorld(soundSource.localLocation);
+    const sound = resolveVanillaBlockBreakSound(soundSource.typeId);
     dimension.playSound(sound.sound, targetPosition, { pitch: sound.pitch, volume: sound.volume });
 
     if (handle.blocks.length === 0) this.#destroyRecord(record, "natural");
@@ -553,6 +647,51 @@ export class ServerSubLevelContainer {
     });
   }
 
+  /**
+   * The per-tick physics pass, in the source's order: chunk-ticket checks that
+   * can settle a sub-level back to storage, then the fragile-block probes and
+   * pending breaks, then impact damage, then pose persistence.
+   */
+  #tickPhysics(currentTick: number): void {
+    const records = [...this.#recordsByHandleId.values()]
+      .filter(record => !record.removed && record.subLevel.isValid);
+    this.#tickets.beginTick();
+    if (records.length > 0) {
+      const playersByDimension = groupPlayersByDimension(world.getAllPlayers());
+      for (const record of records) {
+        if (!this.#tickets.shouldCheck(record.subLevel, currentTick, false)) continue;
+        const outcome = this.#tickets.tick(
+          record.subLevel,
+          playersByDimension.get(record.subLevel.body.dimension.id) ?? [],
+          currentTick
+        );
+        if (outcome === "keep") continue;
+        // Both outcomes store the record and drop the live sub-level; a deferred
+        // one was already teleported back to its last readable pose.
+        this.#saveRecord(record);
+        this.#pendingRestores.set(record.id, this.#storage.loadSubLevel(record.id)!);
+        this.#restoreRetryAfterTick.set(record.id, currentTick + RESTORE_RETRY_TICKS);
+        this.#destroyRecord(record, "planned");
+      }
+    }
+    this.#fragileBlocks.tick(currentTick);
+    const live = [...this.#recordsByHandleId.values()]
+      .filter(record => !record.removed && record.subLevel.isValid);
+    this.#impactDamage.tick(live.map(record => record.subLevel), currentTick);
+    this.#impactSounds.tick(currentTick);
+    if (currentTick % POSE_PERSISTENCE_INTERVAL_TICKS !== 0) return;
+    for (const record of live) {
+      if (record.removed || !record.subLevel.isValid) continue;
+      const signature = poseSignature(
+        record.subLevel,
+        this.#tickets.getBoundaryThreatTicks(record.subLevel.id),
+        this.#tickets.getLastSafePose(record.subLevel)
+      );
+      if (this.#persistenceSignatures.get(record.id) === signature) continue;
+      this.#saveRecord(record);
+    }
+  }
+
   #removeManagedSubLevel(record: ManagedSubLevelRecord): void {
     if (record.removed) return;
     this.#saveRecord(record);
@@ -569,6 +708,10 @@ export class ServerSubLevelContainer {
     }
     record.removed = true;
     this.#recordsByHandleId.delete(record.handle?.id ?? -1);
+    this.#tickets.removeSubLevel(record.subLevel.id);
+    this.#fragileBlocks.removeSubLevel(record.subLevel.id);
+    this.#impactDamage.removeSubLevel(record.subLevel.id);
+    this.#persistenceSignatures.delete(record.id);
     record.renderData.remove();
     record.handle?.unregister();
     record.invalidateBody();
@@ -579,7 +722,8 @@ export class ServerSubLevelContainer {
     dimension: Dimension,
     origin: Vector3,
     blocks: readonly SubLevelBlock[],
-    foliageTint?: SubLevel["foliageTint"]
+    foliageTint?: SubLevel["foliageTint"],
+    pose?: RestoredPose
   ): ManagedSubLevelRecord {
     const vineKeys = new Set(blocks.filter(block => getSubLevelBlockRegistration(block.typeId)?.support === "vine_faces")
       .map(block => blockLocationKey(block.localLocation)));
@@ -588,23 +732,18 @@ export class ServerSubLevelContainer {
       const updates = resolveSubLevelBlockNeighborStateUpdates(entries, vineKeys);
       blocks = entries.map(entry => updates.get(entry.key)?.snapshot ?? entry.snapshot);
     }
-    let removed = false;
-    // Static pose: integer locals address world cell centers at origin + 0.5.
-    const body = {
-      get isValid() { return !removed; },
-      getRotation: () => ({ x: 0, y: 0, z: 0 }),
-      localPointToWorld: (local: Vector3): Vector3 => ({
-        x: origin.x + local.x + 0.5,
-        y: origin.y + local.y + 0.5,
-        z: origin.z + local.z + 0.5
-      })
-    };
-    const worldPointToLocal = (point: Vector3): Vector3 => ({
-      x: point.x - origin.x - 0.5,
-      y: point.y - origin.y - 0.5,
-      z: point.z - origin.z - 0.5
+    // The body's origin is the center of the origin cell, so an integer local
+    // location addresses the world cell center at origin + local + 0.5, the
+    // same convention the pre-physics static pose used.
+    const subLevel = this.#physics.getDimension(dimension).createSubLevel({
+      angularVelocity: pose?.angularVelocity,
+      blocks,
+      foliageTint,
+      location: blockCenter(origin),
+      name: id,
+      rotation: pose?.rotation,
+      velocity: pose?.velocity
     });
-    const subLevel: SubLevel = { body, blocks, dimension, foliageTint };
     const renderData = SubLevelRenderer.createRenderData(subLevel);
     const record = {
       id,
@@ -613,33 +752,57 @@ export class ServerSubLevelContainer {
       origin: { ...origin },
       renderData,
       removed: false,
-      invalidateBody: () => { removed = true; }
+      invalidateBody: () => { if (subLevel.isValid) subLevel.remove(); }
     };
     try {
       const handle = this.#interactionSystem.register(subLevel, {
-        worldPointToLocal,
+        worldPointToLocal: point => subLevel.body.worldPointToLocal(point),
+        isMoving: () => subLevel.body.isActive,
+        rigidBody: subLevel.body,
         get renderData() { return record.renderData; }
       });
       record.handle = handle;
       return record;
     } catch (error) {
       renderData.remove();
-      removed = true;
+      if (subLevel.isValid) subLevel.remove();
       throw error;
     }
   }
 
   #restoreSubLevel(saved: SerializedSubLevelStructure): void {
+    const dimension = world.getDimension(saved.dimensionId);
+    // A record written before physics existed has no pose; it resumes as a body
+    // at its capture origin with no motion, which is where it was standing.
     const record = this.#createRuntimeRecord(
       saved.id,
-      world.getDimension(saved.dimensionId),
+      dimension,
       saved.origin,
       saved.blocks,
       saved.foliageTint
-        ?? captureSubLevelFoliageTint(world.getDimension(saved.dimensionId), saved.blocks, saved.origin)
+        ?? captureSubLevelFoliageTint(dimension, saved.blocks, saved.origin),
+      {
+        angularVelocity: saved.angularVelocity,
+        lastSafePose: saved.lastSafePose,
+        rotation: saved.pose?.rotation,
+        velocity: saved.velocity
+      }
     );
     this.#recordsByHandleId.set(record.handle.id, record);
     try {
+      if (saved.pose) {
+        record.subLevel.body.teleport(saved.pose.location, {
+          angularVelocity: saved.angularVelocity,
+          rotation: saved.pose.rotation,
+          velocity: saved.velocity
+        });
+      }
+      this.#tickets.adoptRestoredState(
+        record.subLevel,
+        saved.lastSafePose,
+        saved.boundaryThreatTicks
+      );
+      if (saved.sleeping) record.subLevel.body.sleep();
       this.#containers.bindSubLevel(saved.id, record.handle, saved.containerStorages);
     } catch (error) {
       this.#destroyRecord(record, "unexpected");
@@ -652,19 +815,35 @@ export class ServerSubLevelContainer {
     containerStorages = this.#containerBindings(record),
     blocks = record.handle.blocks
   ): void {
+    const body = record.subLevel.body;
+    const lastSafePose = this.#tickets.getLastSafePose(record.subLevel);
     if (!this.#storage.saveSubLevel(record.id, {
+      angularVelocity: { ...body.angularVelocity },
       blocks: [...blocks],
+      boundaryThreatTicks: this.#tickets.getBoundaryThreatTicks(record.subLevel.id),
       containerStorages,
       dimensionId: record.handle.dimension.id,
       foliageTint: record.subLevel.foliageTint,
-      origin: record.origin
+      lastSafePose,
+      origin: record.origin,
+      pose: getBodyPose(record.subLevel),
+      sleeping: body.isSleeping,
+      velocity: { ...body.velocity }
     })) {
       throw new Error(`Could not persist sub-level ${record.id}.`);
     }
+    this.#persistenceSignatures.set(
+      record.id,
+      poseSignature(record.subLevel, this.#tickets.getBoundaryThreatTicks(record.subLevel.id), lastSafePose)
+    );
   }
 
   #findRecord(ownerId: string): ManagedSubLevelRecord | undefined {
     return [...this.#recordsByHandleId.values()].find(record => record.id === ownerId);
+  }
+
+  #findRecordBySubLevel(subLevel: ServerSubLevel): ManagedSubLevelRecord | undefined {
+    return [...this.#recordsByHandleId.values()].find(record => record.subLevel === subLevel);
   }
 
   #containerBindings(record: ManagedSubLevelRecord) {

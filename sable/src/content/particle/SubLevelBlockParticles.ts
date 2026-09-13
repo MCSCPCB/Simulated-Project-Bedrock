@@ -88,6 +88,24 @@ export interface SubLevelBlockParticleColor {
   red: number;
 }
 
+/** The representative texture and frozen tint a block's particle emitters sample. */
+export interface SubLevelBlockParticleVisual {
+  readonly color: SubLevelBlockParticleColor;
+  readonly texture: string;
+}
+
+/** Resolves the particle texture and color for a block; undefined when it has no fancy model. */
+export function resolveSubLevelBlockParticleVisual(
+  block: SubLevelBlock,
+  foliageTint: SubLevelFoliageTint | undefined
+): SubLevelBlockParticleVisual | undefined {
+  const resolved = resolveFancySubLevelBlock(block);
+  if (!resolved) return undefined;
+  const texture = resolveDestructParticleTexture(block, resolved.model);
+  if (texture === undefined) return undefined;
+  return { color: resolveSubLevelBlockParticleColor(block, resolved.model, foliageTint), texture };
+}
+
 export function spawnSubLevelBlockDestructParticle(
   dimension: Dimension,
   location: Vector3,
@@ -95,12 +113,10 @@ export function spawnSubLevelBlockDestructParticle(
   foliageTint: SubLevelFoliageTint | undefined,
   profile: BlockParticleProfile
 ): void {
-  const resolved = resolveFancySubLevelBlock(block);
-  if (!resolved) return;
-  const texture = resolveDestructParticleTexture(block, resolved.model);
-  if (texture === undefined) return;
+  const visual = resolveSubLevelBlockParticleVisual(block, foliageTint);
+  if (!visual) return;
+  const { color: particleColor, texture } = visual;
   const molang = new MolangVariableMap();
-  const particleColor = resolveSubLevelBlockParticleColor(block, resolved.model, foliageTint);
   molang.setFloat("variable.activation_flag", 1);
   molang.setFloat("variable.block_color_r", particleColor.red);
   molang.setFloat("variable.block_color_g", particleColor.green);
@@ -367,7 +383,7 @@ function resolveAddonLogParticleColor(block: SubLevelBlock): SubLevelBlockPartic
   };
 }
 
-function reportParticleSpawnFailure(effectId: string, error: unknown): void {
+export function reportParticleSpawnFailure(effectId: string, error: unknown): void {
   if (REPORTED_PARTICLE_SPAWN_FAILURES.has(effectId)) return;
   REPORTED_PARTICLE_SPAWN_FAILURES.add(effectId);
   (globalThis as unknown as { console: { error(message: string): void } }).console.error(

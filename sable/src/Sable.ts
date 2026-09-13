@@ -7,7 +7,92 @@ export {
   sablePlayerInteraction,
   sableSubLevels
 } from "./SableCommonEvents.js";
+export { sableForceQueue, sablePhysics } from "./SableCommonEvents.js";
 export { ServerSubLevelContainer } from "./api/sublevel/ServerSubLevelContainer.js";
+
+// The physics layer: the simulation, the bodies and sub-levels it owns, the
+// engine-agnostic types, and the block property tables that decide how a
+// captured block behaves.
+export {
+  SubLevelPhysicsSystem
+} from "./sublevel/system/SubLevelPhysicsSystem.js";
+export { SubLevelPhysicsDimension } from "./sublevel/system/SubLevelPhysicsDimension.js";
+export { ServerSubLevel } from "./sublevel/ServerSubLevel.js";
+export { RigidBodyHandle } from "./api/physics/handle/RigidBodyHandle.js";
+export {
+  EventSignal,
+  SubLevelPhysicsAfterEvents,
+  getIndexedWorldSensorHits
+} from "./api/physics/PhysicsEvents.js";
+export type {
+  IndexedWorldSensorHit,
+  SubLevelSurfaceParticleAfterEvent,
+  SubLevelSurfaceParticleProfile
+} from "./api/physics/PhysicsEvents.js";
+export * from "./api/physics/PhysicsTypes.js";
+export {
+  getSubLevelCandidatesNear,
+  getSubLevelRaycastCandidates,
+  getSubLevelById
+} from "./api/SubLevelHelper.js";
+export { resolveBlockCollisionShape } from "./api/physics/collider/block_shape/BlockCollisionShapeResolver.js";
+export {
+  BLOCK_PHYSICS_PROPERTIES,
+  DEFAULT_BLOCK_BUOYANCY_VOLUME,
+  DEFAULT_BLOCK_MASS
+} from "./data/vanilla/physics/BlockPhysicsProperties.js";
+export {
+  createDefaultSubLevelBuoyancyPoints,
+  computeSubLevelInertia,
+  computeSubLevelMassProperties,
+  createDefaultSubLevelCollider,
+  normalizeBlockBuoyancyVolume
+} from "./api/physics/mass/MassTracker.js";
+export {
+  getSablePhysicsPerformanceLevel,
+  getSablePhysicsSettings,
+  getSubLevelCollisionLevel,
+  saveSablePhysicsSettings,
+  shouldCarryPlayers,
+  shouldUseSmoothPlayerCarrying,
+  updateSablePhysicsSettings,
+  SABLE_PHYSICS_PERFORMANCE_HIGH,
+  SABLE_PHYSICS_PERFORMANCE_LOW,
+  SUB_LEVEL_COLLISION_DISABLED,
+  SUB_LEVEL_COLLISION_HIGH,
+  SUB_LEVEL_COLLISION_LOW
+} from "./SableConfig.js";
+export type {
+  SablePhysicsPerformanceLevel,
+  SablePhysicsSettings,
+  SubLevelCollisionLevel
+} from "./SableConfig.js";
+export { computeSubLevelPunchStrength, getSubLevelUprightness } from "./content/punching/SubLevelPunch.js";
+export {
+  BLOCK_COLLIDE_PARTICLE_PREFIX,
+  producesDustOnImpact,
+  spawnSubLevelBlockCollideParticle
+} from "./content/particle/SubLevelCollisionParticles.js";
+export {
+  resolveVanillaBlockFallSound,
+  resolveVanillaBlockJumpSound,
+  resolveVanillaBlockLandSound,
+  resolveVanillaBlockStepSound,
+  selectDominantVanillaBlockBreakSound
+} from "./content/sublevel_sounds/SubLevelBlockSounds.js";
+export { FragileBlockCallback } from "./physics/callback/FragileBlockCallback.js";
+export { SubLevelMount, handleSubLevelMountLoad } from "./content/entities_stick_sublevels/SubLevelMount.js";
+export {
+  SubLevelEntityCollision,
+  handleBlockColliderLoad
+} from "./sublevel/entity_collision/SubLevelEntityCollision.js";
+export { installSubLevelExplosionPhysics } from "./content/explosion/SubLevelExplosionPhysics.js";
+export { installSubLevelPistonPhysics } from "./content/piston/SubLevelPistonPhysics.js";
+export { SubLevelForceQueue } from "./api/physics/force/SubLevelForceQueue.js";
+export {
+  PhysicsChunkTicketManager,
+  groupPlayersByDimension
+} from "./sublevel/system/ticket/PhysicsChunkTicketManager.js";
 export type {
   CreateSubLevelFromRegionOptions,
   ManagedSubLevel

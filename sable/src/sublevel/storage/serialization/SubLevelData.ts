@@ -1,7 +1,9 @@
 // Persistence contract for sub-level structures: the serialized schema and its
 // shape validators. A structure is the block snapshot plus container storage
-// bindings and the foliage tint field; render layout and interaction state are
-// derived at load time and never persisted.
+// bindings, the foliage tint field and the rigid-body pose; render layout and
+// interaction state are derived at load time and never persisted. The pose
+// fields are optional so records written before physics existed still load as
+// static bodies at their origin.
 import type { Vector3 } from "@minecraft/server";
 import type {
   SubLevelBlock,
@@ -11,13 +13,24 @@ import type {
 } from "../../SubLevel.js";
 import type { SubLevelContainerStorageBinding } from "../../../content/assembly/SubLevelContainerInteraction.js";
 
+export interface SavedPose {
+  location: Vector3;
+  rotation: Vector3;
+}
+
 export interface SerializedSubLevelStructure {
+  angularVelocity?: Vector3;
   blocks: SubLevelBlock[];
+  boundaryThreatTicks?: number;
   containerStorages: SubLevelContainerStorageBinding[];
   dimensionId: string;
   foliageTint?: SubLevelFoliageTint;
   id: string;
+  lastSafePose?: SavedPose;
   origin: Vector3;
+  pose?: SavedPose;
+  sleeping?: boolean;
+  velocity?: Vector3;
 }
 
 export interface SubLevelStorageManifest {
@@ -39,12 +52,18 @@ export function isSerializedSubLevelStructure(
   if (!value || typeof value !== "object") return false;
   const structure = value as Partial<SerializedSubLevelStructure>;
   return hasOnlyKeys(structure, [
+    "angularVelocity",
     "blocks",
+    "boundaryThreatTicks",
     "containerStorages",
     "dimensionId",
     "foliageTint",
     "id",
-    "origin"
+    "lastSafePose",
+    "origin",
+    "pose",
+    "sleeping",
+    "velocity"
   ])
     && typeof structure.id === "string"
     && structure.id.length > 0
@@ -56,7 +75,26 @@ export function isSerializedSubLevelStructure(
     && structure.blocks.every(isSerializedSubLevelBlock)
     && Array.isArray(structure.containerStorages)
     && structure.containerStorages.every(isContainerStorageBinding)
-    && (structure.foliageTint === undefined || isSubLevelFoliageTint(structure.foliageTint));
+    && (structure.foliageTint === undefined || isSubLevelFoliageTint(structure.foliageTint))
+    && (structure.pose === undefined || isSavedPose(structure.pose))
+    && (structure.velocity === undefined || isVector(structure.velocity))
+    && (structure.angularVelocity === undefined || isVector(structure.angularVelocity))
+    && (structure.sleeping === undefined || typeof structure.sleeping === "boolean")
+    && (structure.lastSafePose === undefined || isSavedPose(structure.lastSafePose))
+    && (structure.boundaryThreatTicks === undefined
+      || (Number.isInteger(structure.boundaryThreatTicks) && structure.boundaryThreatTicks! >= 0));
+}
+
+export function isSavedPose(value: unknown): value is SavedPose {
+  if (!value || typeof value !== "object") return false;
+  const pose = value as Partial<SavedPose>;
+  return hasOnlyKeys(pose, ["location", "rotation"])
+    && isVector(pose.location)
+    && isVector(pose.rotation);
+}
+
+export function cloneSavedPose(pose: SavedPose): SavedPose {
+  return { location: { ...pose.location }, rotation: { ...pose.rotation } };
 }
 
 export function isContainerStorageBinding(value: unknown): value is SubLevelContainerStorageBinding {
@@ -118,12 +156,14 @@ function isSerializedSubLevelBlock(value: unknown): value is SubLevelBlock {
   if (!value || typeof value !== "object") return false;
   const block = value as Partial<SubLevelBlock>;
   return hasOnlyKeys(block, [
+    "buoyancyVolume",
     "collidable",
     "collisionResponse",
     "collisionShape",
     "itemTypeId",
     "localLocation",
     "mapColor",
+    "mass",
     "rotation",
     "runtimeCollidable",
     "states",
@@ -138,6 +178,9 @@ function isSerializedSubLevelBlock(value: unknown): value is SubLevelBlock {
     && (block.collidable === undefined || typeof block.collidable === "boolean")
     && (block.collisionResponse === undefined || typeof block.collisionResponse === "boolean")
     && (block.runtimeCollidable === undefined || typeof block.runtimeCollidable === "boolean")
+    && (block.mass === undefined || (isFiniteNumber(block.mass) && block.mass > 0))
+    && (block.buoyancyVolume === undefined
+      || (isFiniteNumber(block.buoyancyVolume) && block.buoyancyVolume >= 0))
     && (block.visualYOffset === undefined || isFiniteNumber(block.visualYOffset))
     && (block.visualOffset === undefined || isVector(block.visualOffset))
     && isCollisionShape(block.collisionShape)

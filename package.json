@@ -4,6 +4,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.4.1",
+    "cannon-es": "^0.20.0",
     "esbuild": "^0.28.2",
     "typescript": "^5.9.3"
   }

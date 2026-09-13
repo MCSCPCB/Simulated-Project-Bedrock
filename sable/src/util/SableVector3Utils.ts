@@ -36,6 +36,10 @@ export function distance(left: Vector3, right: Vector3): number {
 }
 
 /** Division-based normalization; non-finite or near-zero input collapses to the origin. */
+export function length(value: Vector3): number {
+  return Math.hypot(value.x, value.y, value.z);
+}
+
 export function normalizeFinite(value: Vector3): Vector3 {
   const magnitude = Math.hypot(value.x, value.y, value.z);
   return !Number.isFinite(magnitude) || magnitude < EPSILON_1E8

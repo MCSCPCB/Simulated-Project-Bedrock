@@ -5,17 +5,25 @@ import type { SubLevelBlock, SubLevelFoliageTint } from "../../SubLevel.js";
 import type { SubLevelContainerStorageBinding } from "../../../content/assembly/SubLevelContainerInteraction.js";
 import {
   cloneContainerStorageBinding,
+  cloneSavedPose,
   cloneSubLevelBlock,
   isSerializedSubLevelStructure,
+  type SavedPose,
   type SerializedSubLevelStructure
 } from "./SubLevelData.js";
 
 export interface SubLevelStructureSource {
+  readonly angularVelocity?: Vector3;
   readonly blocks: readonly SubLevelBlock[];
+  readonly boundaryThreatTicks?: number;
   readonly containerStorages?: readonly SubLevelContainerStorageBinding[];
   readonly dimensionId: string;
   readonly foliageTint?: SubLevelFoliageTint;
+  readonly lastSafePose?: SavedPose;
   readonly origin: Vector3;
+  readonly pose?: SavedPose;
+  readonly sleeping?: boolean;
+  readonly velocity?: Vector3;
 }
 
 export function serializeSubLevelStructure(
@@ -34,6 +42,7 @@ export function serializeSubLevelStructure(
     origin: { ...source.origin }
   };
   if (source.foliageTint) structure.foliageTint = { ...source.foliageTint };
+  copyPoseFields(source, structure);
   if (!isSerializedSubLevelStructure(structure)) {
     throw new Error(`Sub-level ${id} produced an invalid serialized structure.`);
   }
@@ -52,5 +61,18 @@ export function deserializeSubLevelStructure(value: unknown): SerializedSubLevel
     origin: { ...value.origin }
   };
   if (value.foliageTint) structure.foliageTint = { ...value.foliageTint };
+  copyPoseFields(value, structure);
   return structure;
+}
+
+function copyPoseFields(
+  source: SubLevelStructureSource | SerializedSubLevelStructure,
+  target: SerializedSubLevelStructure
+): void {
+  if (source.pose) target.pose = cloneSavedPose(source.pose);
+  if (source.velocity) target.velocity = { ...source.velocity };
+  if (source.angularVelocity) target.angularVelocity = { ...source.angularVelocity };
+  if (source.sleeping !== undefined) target.sleeping = source.sleeping;
+  if (source.lastSafePose) target.lastSafePose = cloneSavedPose(source.lastSafePose);
+  if (source.boundaryThreatTicks !== undefined) target.boundaryThreatTicks = source.boundaryThreatTicks;
 }

@@ -101,6 +101,104 @@ export function raycastSubLevelGrid(
   return undefined;
 }
 
+/** The body transform a sub-level ray needs to move between world and local space. */
+export interface SubLevelRaycastTransform {
+  localPointToWorld(location: Vector3): Vector3;
+  worldPointToLocal(location: Vector3): Vector3;
+}
+
+export interface SubLevelBodyRaycastHit extends SubLevelGridRaycastHit {
+  readonly location: Vector3;
+  readonly normal: Vector3;
+}
+
+export interface SubLevelBodyRaycastOptions extends SubLevelGridRaycastOptions {
+  /** Skip the block the ray starts inside. */
+  readonly skipContainingBlock?: boolean;
+}
+
+/**
+ * Casts a world-space ray against one sub-level's block grid: the ray is moved
+ * into body-local space, traversed by raycastSubLevelGrid, and the hit is
+ * reported back in both spaces. The interaction handle and ServerSubLevel share
+ * this so a ray resolves the same block for selection and for gameplay.
+ */
+export function raycastSubLevelBody(
+  transform: SubLevelRaycastTransform,
+  blockAt: (x: number, y: number, z: number) => SubLevelBlock | undefined,
+  origin: Vector3,
+  direction: Vector3,
+  maximumDistance: number,
+  options?: SubLevelBodyRaycastOptions
+): SubLevelBodyRaycastHit | undefined {
+  if (!isFiniteVector(origin) || !isFiniteVector(direction)) return undefined;
+  // Known inconsistency: this guard admits the Infinity default callers may
+  // pass, but raycastSubLevelGrid rejects non-finite distances, so an unbounded
+  // ray always misses. Callers must pass a finite maximumDistance.
+  if (Number.isNaN(maximumDistance) || maximumDistance < 0) return undefined;
+  const directionLength = Math.hypot(direction.x, direction.y, direction.z);
+  if (!Number.isFinite(directionLength) || directionLength < DIRECTION_EPSILON) return undefined;
+  const unitDirection = {
+    x: direction.x / directionLength,
+    y: direction.y / directionLength,
+    z: direction.z / directionLength
+  };
+  const localOrigin = transform.worldPointToLocal(origin);
+  const localEnd = transform.worldPointToLocal({
+    x: origin.x + unitDirection.x,
+    y: origin.y + unitDirection.y,
+    z: origin.z + unitDirection.z
+  });
+  const localDirection = {
+    x: localEnd.x - localOrigin.x,
+    y: localEnd.y - localOrigin.y,
+    z: localEnd.z - localOrigin.z
+  };
+  const closest = raycastSubLevelGrid(
+    blockAt,
+    localOrigin,
+    localDirection,
+    maximumDistance,
+    { skipContainingCell: options?.skipContainingBlock }
+  );
+  if (!closest) return undefined;
+  const location = {
+    x: origin.x + unitDirection.x * closest.distance,
+    y: origin.y + unitDirection.y * closest.distance,
+    z: origin.z + unitDirection.z * closest.distance
+  };
+  const localLocation = {
+    x: localOrigin.x + localDirection.x * closest.distance,
+    y: localOrigin.y + localDirection.y * closest.distance,
+    z: localOrigin.z + localDirection.z * closest.distance
+  };
+  const localZero = transform.localPointToWorld({ x: 0, y: 0, z: 0 });
+  const rotatedNormal = transform.localPointToWorld(closest.localNormal);
+  const normal = normalizeVector({
+    x: rotatedNormal.x - localZero.x,
+    y: rotatedNormal.y - localZero.y,
+    z: rotatedNormal.z - localZero.z
+  });
+  return {
+    block: closest.block,
+    distance: closest.distance,
+    face: closest.face,
+    localLocation,
+    localNormal: closest.localNormal,
+    location,
+    normal
+  };
+}
+
+// The only caller normalizes a rotated unit normal whose length is always ~1;
+// the zero return covers a non-finite body transform, letting the hit report a
+// zero normal instead of NaN components.
+function normalizeVector(value: Vector3): Vector3 {
+  const length = Math.hypot(value.x, value.y, value.z);
+  if (!Number.isFinite(length) || length < DIRECTION_EPSILON) return { x: 0, y: 0, z: 0 };
+  return { x: value.x / length, y: value.y / length, z: value.z / length };
+}
+
 function isStrictlyInsideUnitCell(origin: Vector3, x: number, y: number, z: number): boolean {
   return origin.x > x - 0.5 && origin.x < x + 0.5
     && origin.y > y - 0.5 && origin.y < y + 0.5

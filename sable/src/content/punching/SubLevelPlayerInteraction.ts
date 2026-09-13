@@ -14,6 +14,10 @@ import {
   type PlayerSwingStartAfterEvent,
   type Vector3
 } from "@minecraft/server";
+import {
+  getSablePhysicsPerformanceLevel,
+  SABLE_PHYSICS_PERFORMANCE_LOW
+} from "../../SableConfig.js";
 import { ActivePlayerRegistry } from "../../api/player/ActivePlayerRegistry.js";
 import {
   blockLocationKey as blockKey,
@@ -23,6 +27,9 @@ import {
   vectorsEqual
 } from "../../util/SableVector3Utils.js";
 import type { SubLevelBlock } from "../../sublevel/SubLevel.js";
+import type { ServerSubLevel } from "../../sublevel/ServerSubLevel.js";
+import type { RigidBodyHandle } from "../../api/physics/handle/RigidBodyHandle.js";
+import type { SubLevelPhysicsDimension } from "../../sublevel/system/SubLevelPhysicsDimension.js";
 import type {
   SubLevelInteractionHandle,
   SubLevelInteractionSystem
@@ -40,15 +47,53 @@ import {
   type SubLevelOutlineActionTarget,
   type SubLevelRaycastResult
 } from "../block_outline_render/SubLevelOutlineController.js";
+import {
+  computeAngularDampingTorque,
+  computeDragDistance,
+  computeDragForce,
+  computeStableAngularDampingTorque,
+  computeStableDragForce,
+  distance,
+  DRAG_ANGULAR_DAMPING,
+  DRAG_DAMPING,
+  DRAG_MAX_FORCE_PER_AXIS,
+  DRAG_STIFFNESS,
+  DRAG_VALIDATION_REACH,
+  getEffectiveInertiaByWorldAxis,
+  getEffectiveMassByWorldAxis,
+  isDragConstraintAtRest,
+  isNegligibleVector,
+  resolveDragItemUseAction
+} from "../dragging/SubLevelDrag.js";
+import {
+  applySableDownwardPunchMultiplier,
+  computeSubLevelPunchStrength,
+  getSubLevelUprightness,
+  isPunchCooldownReady
+} from "./SubLevelPunch.js";
 
 // Break/place gestures can emit the same action from adjacent ticks (native
 // event plus deferred swing); treat a same-target repeat inside this window as
 // one action.
 const PLACE_ACTION_DEDUP_WINDOW_TICKS = 1;
+const DRAG_ITEM_TYPE_ID = "minecraft:slime_ball";
 /** Keeps the native mining proxy alive briefly after the latest attack. */
 const DESKTOP_MINING_LEASE_TICKS = 8;
 /** World blocks slightly beyond interaction reach still occlude selection rays. */
 const WORLD_OCCLUSION_PROBE_REACH = 7;
+
+interface DragSession {
+  body: RigidBodyHandle;
+  dimensionId: string;
+  grabDistance: number;
+  handle: SubLevelInteractionHandle;
+  itemTypeId: string;
+  lastSampleTick: number;
+  localGrabPoint: Vector3;
+  player: Player;
+  slot: number;
+  targetPoint?: Vector3;
+}
 
 interface SubLevelRaycastCache {
   readonly raycastRevision: number;
@@ -90,6 +135,10 @@ export type SubLevelEditAction = "break" | "place";
 export interface SubLevelBlockInteractionHandler {
   canInteract(handle: SubLevelInteractionHandle, block: SubLevelBlock): boolean;
   interact(player: Player, handle: SubLevelInteractionHandle, block: SubLevelBlock): boolean;
+  handleSubLevelReplacement?(
+    source: ServerSubLevel,
+    replacements: readonly ServerSubLevel[]
+  ): void;
   /** When false, every syncTarget call would be a no-op and may be skipped. */
   hasSyncTargets?(dimensionId?: string): boolean;
   releasePlayer?(playerId: string): void;
@@ -102,7 +151,11 @@ export interface SubLevelBlockInteractionHandler {
 }
 
 export class SubLevelPlayerInteractionController {
+  readonly #dimensionSubsteps = new Map<string, () => void>();
+  readonly #drags = new Map<string, DragSession>();
+  readonly #lastDragToggleTickByPlayer = new Map<string, number>();
   readonly #lastPlaceActionByPlayer = new Map<string, CompletedPlaceAction>();
+  readonly #lastPunchTickByPlayer = new Map<string, number>();
   readonly #lastTouchBlockInteractionTickByPlayer = new Map<string, number>();
   readonly #desktopMiningLeaseByPlayer = new Map<string, DesktopMiningLease>();
   readonly #pendingPlaceByPlayer = new Map<string, PendingPlaceAction>();
@@ -131,6 +184,10 @@ export class SubLevelPlayerInteractionController {
     this.#outlines.handleEntityLoad(entity);
   }
 
+  isDraggingSubLevel(playerId: string, subLevel: ServerSubLevel): boolean {
+    return this.#drags.get(playerId)?.handle.subLevel === subLevel;
+  }
+
   setBlockBreakHandler(handler: SubLevelBlockBreakHandler): void {
     this.#outlines.setBreakHandler(handler);
   }
@@ -154,6 +211,13 @@ export class SubLevelPlayerInteractionController {
     this.#outlines.setInteractionTargetSuppressor(
       (handle, block) => handler.canInteract(handle, block)
     );
+  }
+
+  handleSubLevelReplacement(
+    source: ServerSubLevel,
+    replacements: readonly ServerSubLevel[]
+  ): void {
+    this.#interactionHandler?.handleSubLevelReplacement?.(source, replacements);
   }
 
   start(): void {
@@ -225,9 +289,11 @@ export class SubLevelPlayerInteractionController {
     });
     world.afterEvents.playerSwingStart.subscribe(event => this.#handleSwing(event));
     world.afterEvents.playerHotbarSelectedSlotChange.subscribe(event => {
+      this.#stopDrag(event.player.id);
       this.#clearEditActionState(event.player.id);
     });
     world.afterEvents.playerDimensionChange.subscribe(event => {
+      this.#stopDrag(event.player.id);
       this.#raycastByPlayer.delete(event.player.id);
       this.#releasePlayerInteractionSession(event.player.id);
       this.#clearEditActionState(event.player.id);
@@ -239,21 +305,30 @@ export class SubLevelPlayerInteractionController {
       this.#outlines.markInteractionTargetDirty(event.player.id);
     }, { buttons: [InputButton.Sneak] });
     world.afterEvents.playerSpawn.subscribe(event => {
+      this.#stopDrag(event.player.id);
       this.#raycastByPlayer.delete(event.player.id);
+      this.#lastDragToggleTickByPlayer.delete(event.player.id);
+      this.#lastPunchTickByPlayer.delete(event.player.id);
       this.#releasePlayerInteractionSession(event.player.id);
       this.#clearEditActionState(event.player.id);
       this.#outlines.clearPlayer(event.player.id, true);
     });
     world.afterEvents.entityDie.subscribe(event => {
       if (event.deadEntity.typeId !== "minecraft:player") return;
+      this.#stopDrag(event.deadEntity.id);
       this.#raycastByPlayer.delete(event.deadEntity.id);
+      this.#lastDragToggleTickByPlayer.delete(event.deadEntity.id);
+      this.#lastPunchTickByPlayer.delete(event.deadEntity.id);
       this.#releasePlayerInteractionSession(event.deadEntity.id);
       this.#clearEditActionState(event.deadEntity.id);
       this.#outlines.clearPlayer(event.deadEntity.id, true);
     });
     world.beforeEvents.playerLeave.subscribe(event => {
       const playerId = event.player.id;
+      this.#stopDrag(playerId);
       this.#raycastByPlayer.delete(playerId);
+      this.#lastDragToggleTickByPlayer.delete(playerId);
+      this.#lastPunchTickByPlayer.delete(playerId);
       this.#clearEditActionState(playerId);
       system.run(() => {
         this.#releasePlayerInteractionSession(playerId);
@@ -264,17 +339,56 @@ export class SubLevelPlayerInteractionController {
 
   #handleItemUse(event: ItemUseBeforeEvent): void {
     const player = event.source;
+    const heldItemIsSlimeBall = event.itemStack.typeId === DRAG_ITEM_TYPE_ID;
     if (
-      !player.isSneaking
+      !heldItemIsSlimeBall
+      && !player.isSneaking
       && this.#canInteract(player)
       && this.#tryPlayerStandingInteraction(player)
     ) {
       this.#claimStandingChestGesture(player);
       return;
     }
+    if (this.#lastDragToggleTickByPlayer.get(player.id) === system.currentTick) {
+      event.cancel = true;
+      return;
+    }
+    const current = this.#drags.get(player.id);
+    if (resolveDragItemUseAction(current !== undefined, false) === "release") {
+      event.cancel = true;
+      this.#lastDragToggleTickByPlayer.set(player.id, system.currentTick);
+      this.#stopDrag(player.id);
+      return;
+    }
     if (!this.#canInteract(player)) return;
     const inputMode = player.inputInfo.lastInputModeUsed;
     if (shouldPrioritizeFoodUse(player, event.itemStack, inputMode === InputMode.Touch)) return;
+    if (!player.isSneaking && heldItemIsSlimeBall) {
+      const dragTarget = this.#raycastPlayerSubLevels(player, INTERACTION_REACH);
+      if (
+        resolveDragItemUseAction(false, dragTarget !== undefined) !== "acquire"
+        || !dragTarget
+      ) return;
+      const body = dragTarget.handle.rigidBody;
+      if (!body) return;
+      event.cancel = true;
+      this.#lastDragToggleTickByPlayer.set(player.id, system.currentTick);
+      const drag: DragSession = {
+        body,
+        dimensionId: player.dimension.id,
+        grabDistance: computeDragDistance(dragTarget.hit.distance),
+        handle: dragTarget.handle,
+        itemTypeId: event.itemStack.typeId,
+        lastSampleTick: -1,
+        localGrabPoint: { ...dragTarget.hit.localLocation },
+        player,
+        slot: player.selectedSlotIndex
+      };
+      this.#drags.set(player.id, drag);
+      this.#ensureDimensionSubstep(body.dimension);
+      body.wakeUp();
+      return;
+    }
     const target = this.#outlines.captureActionTarget(player);
     if (!target) return;
     if (inputMode === InputMode.Touch) {
@@ -308,6 +422,19 @@ export class SubLevelPlayerInteractionController {
       if (this.#observeStandingMiningAttack(player)) return;
     }
     const itemStack = event.heldItemStack ?? this.#getSelectedItem(player);
+    if (
+      !player.isSneaking
+      && (!itemStack || itemStack.typeId === DRAG_ITEM_TYPE_ID)
+    ) {
+      if (
+        !itemStack
+        && (swingSource === EntitySwingSource.Attack || swingSource === EntitySwingSource.Mine)
+      ) {
+        this.#applyAttackImpulse(player);
+      }
+      return;
+    }
+    this.#stopDrag(player.id);
     const pending = this.#pendingPlaceByPlayer.get(player.id);
     const pendingTouchBreak = this.#pendingTouchBreakByPlayer.get(player.id);
     const editAction = resolveSubLevelEditAction(
@@ -544,12 +671,101 @@ export class SubLevelPlayerInteractionController {
     return this.#runtime.isVisualEntity(entity.dimension.id, entity.id);
   }
 
+  #tickDrag(drag: DragSession): boolean {
+    if (drag.lastSampleTick !== system.currentTick) {
+      drag.lastSampleTick = system.currentTick;
+      drag.targetPoint = this.#sampleDragTarget(drag);
+    }
+    const targetPoint = drag.targetPoint;
+    if (!targetPoint) return false;
+    const grabPoint = drag.body.localPointToWorld(drag.localGrabPoint);
+    if (distance(targetPoint, grabPoint) > DRAG_VALIDATION_REACH) return false;
+    const pointVelocity = drag.body.getVelocityAt(grabPoint);
+    const angularVelocity = drag.body.getAngularVelocity();
+    if (isDragConstraintAtRest({
+      angularVelocity,
+      grabPoint,
+      pointVelocity,
+      targetPoint
+    })) return true;
+
+    let force: Vector3;
+    let torque: Vector3;
+    if (getSablePhysicsPerformanceLevel() === SABLE_PHYSICS_PERFORMANCE_LOW) {
+      const timeStep = drag.body.dimension.fixedTimeStep;
+      force = computeStableDragForce({
+        damping: DRAG_DAMPING,
+        effectiveMass: getEffectiveMassByWorldAxis(drag.body, grabPoint),
+        grabPoint,
+        maxForcePerAxis: DRAG_MAX_FORCE_PER_AXIS,
+        pointVelocity,
+        stiffness: DRAG_STIFFNESS,
+        targetPoint,
+        timeStep
+      });
+      torque = computeStableAngularDampingTorque({
+        angularVelocity,
+        damping: DRAG_ANGULAR_DAMPING,
+        effectiveInertia: getEffectiveInertiaByWorldAxis(drag.body),
+        maxTorquePerAxis: DRAG_MAX_FORCE_PER_AXIS,
+        timeStep
+      });
+    } else {
+      force = computeDragForce({
+        damping: DRAG_DAMPING,
+        grabPoint,
+        maxForcePerAxis: DRAG_MAX_FORCE_PER_AXIS,
+        pointVelocity,
+        stiffness: DRAG_STIFFNESS,
+        targetPoint
+      });
+      torque = computeAngularDampingTorque({
+        angularVelocity,
+        damping: DRAG_ANGULAR_DAMPING,
+        maxTorquePerAxis: DRAG_MAX_FORCE_PER_AXIS
+      });
+    }
+    if (!isNegligibleVector(force)) drag.body.applyForceAt(grabPoint, force);
+    if (!isNegligibleVector(torque)) drag.body.applyTorque(torque);
+    return true;
+  }
+
+  #sampleDragTarget(drag: DragSession): Vector3 | undefined {
+    const { player } = drag;
+    if (
+      !drag.handle.isValid
+      || !this.#canInteract(player)
+      || player.isSneaking
+      || player.dimension.id !== drag.dimensionId
+      || player.selectedSlotIndex !== drag.slot
+      || this.#getSelectedItem(player)?.typeId !== drag.itemTypeId
+    ) return undefined;
+
+    try {
+      const origin = player.getHeadLocation();
+      const direction = normalize(player.getViewDirection());
+      const grabPoint = drag.body.localPointToWorld(drag.localGrabPoint);
+      if (distance(origin, grabPoint) > DRAG_VALIDATION_REACH) return undefined;
+      const targetPoint = {
+        x: origin.x + direction.x * drag.grabDistance,
+        y: origin.y + direction.y * drag.grabDistance,
+        z: origin.z + direction.z * drag.grabDistance
+      };
+      return distance(targetPoint, grabPoint) <= DRAG_VALIDATION_REACH
+        ? targetPoint
+        : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
   /** Interactable blocks consume the gesture before other uses. */
   #tryPlayerStandingInteraction(player: Player): boolean {
     const handler = this.#interactionHandler;
     const target = this.#findStandingInteractionTarget(player);
     if (!target || !handler) return false;
     if (!handler.interact(player, target.handle, target.hit.block)) return false;
+    this.#stopDrag(player.id);
     return true;
   }
 
@@ -600,6 +816,10 @@ export class SubLevelPlayerInteractionController {
         handler.syncTarget(player, undefined, undefined);
         continue;
       }
+      if (this.#getSelectedItem(player)?.typeId === DRAG_ITEM_TYPE_ID) {
+        handler.syncTarget(player, undefined, undefined);
+        continue;
+      }
       const target = this.#raycastPlayerSubLevels(player, INTERACTION_REACH, true);
       if (!target || !handler.canInteract(target.handle, target.hit.block)) {
         handler.syncTarget(player, undefined, undefined);
@@ -611,6 +831,33 @@ export class SubLevelPlayerInteractionController {
 
   #releasePlayerInteractionSession(playerId: string): void {
     this.#interactionHandler?.releasePlayer?.(playerId);
+  }
+
+  #applyAttackImpulse(player: Player): void {
+    if (!this.#canInteract(player)) return;
+    const previousTick = this.#lastPunchTickByPlayer.get(player.id);
+    if (!isPunchCooldownReady(previousTick, system.currentTick)) {
+      return;
+    }
+    const target = this.#raycastPlayerSubLevels(player, INTERACTION_REACH);
+    if (!target) return;
+    const body = target.handle.rigidBody;
+    if (!body) return;
+
+    const direction = applySableDownwardPunchMultiplier(target.direction);
+    const effectiveMass = body.getEffectiveMassAt(target.hit.location, direction);
+    const magnitude = computeSubLevelPunchStrength(
+      effectiveMass,
+      getSubLevelUprightness(target.handle.subLevel)
+    );
+    if (!Number.isFinite(magnitude) || magnitude <= 0) return;
+
+    this.#lastPunchTickByPlayer.set(player.id, system.currentTick);
+    body.applyImpulseAt(target.hit.location, {
+      x: direction.x * magnitude,
+      y: direction.y * magnitude,
+      z: direction.z * magnitude
+    });
   }
 
   #raycastPlayerSubLevels(
@@ -701,6 +948,28 @@ export class SubLevelPlayerInteractionController {
     } catch {
       return undefined;
     }
+  }
+
+  #stopDrag(playerId: string): void {
+    const drag = this.#drags.get(playerId);
+    if (!drag) return;
+    this.#drags.delete(playerId);
+    for (const value of this.#drags.values()) {
+      if (value.dimensionId === drag.dimensionId) return;
+    }
+    this.#dimensionSubsteps.get(drag.dimensionId)?.();
+    this.#dimensionSubsteps.delete(drag.dimensionId);
+  }
+
+  #ensureDimensionSubstep(dimension: SubLevelPhysicsDimension): void {
+    if (this.#dimensionSubsteps.has(dimension.id)) return;
+    const stop = dimension.addBeforeSubstepCallback(() => {
+      for (const [playerId, drag] of this.#drags) {
+        if (drag.dimensionId !== dimension.id) continue;
+        if (!this.#tickDrag(drag)) this.#stopDrag(playerId);
+      }
+    });
+    this.#dimensionSubsteps.set(dimension.id, stop);
   }
 }
 
